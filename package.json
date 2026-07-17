@@ -1,0 +1,25 @@
+{
+  "name": "task-pro-react",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Task Pro — modern responsive web app (Vite + React)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-redux": "^9.3.0",
+    "react-router-dom": "^6.26.2",
+    "recharts": "^3.9.2",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
+  }
+}
