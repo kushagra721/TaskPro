@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlice.js';
 import { organizationsApi } from '../../api/client.js';
 import EmptyState from '../../components/EmptyState.jsx';
 import DateRangeControl from '../../components/DateRangeControl.jsx';
+import Timeline from '../../components/Timeline.jsx';
 import { ActivityIcon } from '../../components/icons.jsx';
-import { timeAgo } from '../../utils/time.js';
 
 export default function ActivitiesPage() {
+  const navigate = useNavigate();
   const orgId = useSelector(selectCurrentOrgId);
   const org = useSelector(selectCurrentOrg);
   const [items, setItems] = useState([]);
@@ -49,18 +51,9 @@ export default function ActivitiesPage() {
       ) : items.length === 0 ? (
         <EmptyState icon={<ActivityIcon size={30} />} title="No activity yet" description="Actions in your organization will show up here." />
       ) : (
-        <section className="panel">
-          <ul className="activity">
-            {items.map((a) => (
-              <li key={a.id} className="activity__item">
-                <span className="activity__dot" />
-                <div className="activity__body">
-                  <span className="activity__actor">{a.actor}</span> {a.summary}
-                  <div className="activity__time">{timeAgo(a.createdAt)}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
+        <section className="panel timeline-panel">
+          {/* Task entries get a "View" link straight to the task detail page. */}
+          <Timeline items={items} onView={(taskId) => navigate(`/tasks/${taskId}`)} />
         </section>
       )}
     </div>

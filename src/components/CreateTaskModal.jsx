@@ -10,6 +10,13 @@ import { groupsApi } from '../api/client.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH'].map((p) => ({ value: p, label: p }));
 
+// YYYY-MM-DD for tomorrow (default due date).
+const tomorrow = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
+};
+
 /**
  * New-task form.
  * - Inside a channel, pass `groupId` — the group is fixed.
@@ -28,7 +35,9 @@ export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated 
   // Members of the picked group, loaded on demand in askGroup mode.
   const [pickedMembers, setPickedMembers] = useState([]);
   const [form, setForm] = useState({
-    title: '', description: '', priority: 'MEDIUM', assigneeId: '', dueDate: '', projectId: '',
+    title: '', description: '', priority: 'MEDIUM', assigneeId: '',
+    // Due date defaults to tomorrow.
+    dueDate: tomorrow(), projectId: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

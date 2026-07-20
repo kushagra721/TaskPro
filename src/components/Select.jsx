@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDownIcon, CheckIcon } from './icons.jsx';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDownIcon, CheckIcon, SearchIcon } from './icons.jsx';
 
 /**
  * Themed custom dropdown (replaces native <select> so the option list matches
- * the app theme). Props:
+ * the app theme). Opens to a searchable list. Props:
  * - value, onChange(value)
  * - options: [{ value, label }]
  * - placeholder
+ * - searchable: show the search box (default true; auto-hidden for ≤5 options)
  */
-export default function Select({ value, onChange, options, placeholder = 'Select…', disabled }) {
+export default function Select({ value, onChange, options, placeholder = 'Select…', disabled, searchable = true }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const ref = useRef(null);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -26,7 +29,24 @@ export default function Select({ value, onChange, options, placeholder = 'Select
     };
   }, [open]);
 
+  // Reset + focus the search each time the menu opens.
+  useEffect(() => {
+    if (open) {
+      setQuery('');
+      const id = setTimeout(() => searchRef.current?.focus(), 0);
+      return () => clearTimeout(id);
+    }
+    return undefined;
+  }, [open]);
+
   const selected = options.find((o) => o.value === value);
+  const showSearch = searchable && options.length > 5;
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.label.toLowerCase().includes(q));
+  }, [options, query]);
 
   const pick = (v) => {
     onChange(v);
@@ -49,17 +69,35 @@ export default function Select({ value, onChange, options, placeholder = 'Select
 
       {open && (
         <div className="sel__menu">
-          {options.map((o) => (
-            <button
-              key={o.value}
-              type="button"
-              className={`sel__option ${o.value === value ? 'sel__option--active' : ''}`}
-              onClick={() => pick(o.value)}
-            >
-              <span>{o.label}</span>
-              {o.value === value && <CheckIcon size={15} />}
-            </button>
-          ))}
+          {showSearch && (
+            <div className="sel__search">
+              <SearchIcon size={15} />
+              <input
+                ref={searchRef}
+                className="sel__search-input"
+                placeholder="Search…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+          )}
+          <div className="sel__list">
+            {filtered.length === 0 ? (
+              <div className="sel__empty">No matches</div>
+            ) : (
+              filtered.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  className={`sel__option ${o.value === value ? 'sel__option--active' : ''}`}
+                  onClick={() => pick(o.value)}
+                >
+                  <span>{o.label}</span>
+                  {o.value === value && <CheckIcon size={15} />}
+                </button>
+              ))
+            )}
+          </div>
         </div>
       )}
     </div>

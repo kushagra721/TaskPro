@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   fetchGroupTasks,
-  updateTask,
-  deleteTask,
   selectGroupTasks,
   selectGroupTasksPagination,
   selectGroupTasksCounts,
@@ -76,7 +74,6 @@ export default function ChannelTasks({ groupId }) {
             onOpen={(id) => navigate(`/tasks/${id}`)}
             subtitle={(t) => t.description || null}
             statusNode={statusNode}
-            onDelete={(t) => dispatch(deleteTask({ taskId: t.id, groupId }))}
           />
           <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
         </>

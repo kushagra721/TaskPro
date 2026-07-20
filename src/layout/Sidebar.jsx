@@ -6,6 +6,7 @@ import Avatar from '../components/Avatar.jsx';
 import { selectUser, logout } from '../store/slices/authSlice.js';
 import { resetOrgs, selectCurrentOrg } from '../store/slices/orgSlice.js';
 import { resetProjects } from '../store/slices/projectSlice.js';
+import { useNavGate } from '../hooks/useNavGate.js';
 
 const NAV = [
   { to: '/dashboard', label: 'Home', Icon: HomeIcon },
@@ -19,6 +20,7 @@ export default function Sidebar({ onCreateOrg }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const org = useSelector(selectCurrentOrg);
+  const { isLocked } = useNavGate();
 
   const doLogout = () => {
     dispatch(logout());
@@ -35,16 +37,23 @@ export default function Sidebar({ onCreateOrg }) {
       <OrgSwitcher onCreate={onCreateOrg} />
 
       <nav className="nav">
-        {NAV.map(({ to, label, Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) => `nav__item ${isActive ? 'nav__item--active' : ''}`}
-          >
-            <Icon size={20} />
-            <span>{label}</span>
-          </NavLink>
-        ))}
+        {NAV.map(({ to, label, Icon }) =>
+          isLocked(to) ? (
+            <span key={to} className="nav__item nav__item--locked" title="Create a group first" aria-disabled="true">
+              <Icon size={20} />
+              <span>{label}</span>
+            </span>
+          ) : (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) => `nav__item ${isActive ? 'nav__item--active' : ''}`}
+            >
+              <Icon size={20} />
+              <span>{label}</span>
+            </NavLink>
+          )
+        )}
       </nav>
 
       <div className="sidebar__foot">

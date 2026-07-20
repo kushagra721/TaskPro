@@ -153,4 +153,8 @@ export const tasksApi = {
   get: (taskId) => request(`/tasks/${taskId}`),
   update: (taskId, payload) => request(`/tasks/${taskId}`, { method: 'PATCH', body: payload }),
   remove: (taskId) => request(`/tasks/${taskId}`, { method: 'DELETE' }),
+  // Per-task timeline: history entries + user-authored messages.
+  activities: (taskId) => request(`/tasks/${taskId}/activities`),
+  addMessage: (taskId, message) =>
+    request(`/tasks/${taskId}/activities`, { method: 'POST', body: { message } }),
 };

@@ -134,10 +134,12 @@ export default function OrgFinderModal({ onClose }) {
               id="org-name"
               className="input"
               autoFocus
-              placeholder="Acme Inc"
+              placeholder="Acme"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              // No spaces allowed — strip them as the user types.
+              onChange={(e) => setName(e.target.value.replace(/\s/g, ''))}
             />
+            <span className="field__hint">No spaces. Must be unique.</span>
           </div>
           <button className="btn" type="submit" disabled={creating || name.trim().length < 2}>
             {creating ? <span className="spinner" /> : (<><PlusIcon size={16} /> Create organization</>)}

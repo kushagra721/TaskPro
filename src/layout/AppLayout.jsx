@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Sidebar from './Sidebar.jsx';
 import BottomNav from './BottomNav.jsx';
 import Topbar from './Topbar.jsx';
 import OrgFinderModal from '../components/OrgFinderModal.jsx';
 import { HeaderActionsProvider } from './HeaderActions.jsx';
-import { fetchMyOrgs } from '../store/slices/orgSlice.js';
+import { fetchMyOrgs, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { fetchGroups } from '../store/slices/groupSlice.js';
 import { fetchNotifications } from '../store/slices/notificationSlice.js';
 import { fetchMyInvitations } from '../store/slices/invitationSlice.js';
 import { fetchIncomingJoinRequests } from '../store/slices/joinRequestSlice.js';
@@ -32,6 +33,7 @@ const ROOT_PATHS = ['/dashboard', '/groups', '/tasks', '/reports', '/more'];
 export default function AppLayout() {
   const dispatch = useDispatch();
   const location = useLocation();
+  const currentOrgId = useSelector(selectCurrentOrgId);
   const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
@@ -40,6 +42,11 @@ export default function AppLayout() {
     dispatch(fetchMyInvitations());
     dispatch(fetchIncomingJoinRequests());
   }, [dispatch]);
+
+  // Keep the group list loaded so the nav can gate on "has any group".
+  useEffect(() => {
+    if (currentOrgId) dispatch(fetchGroups(currentOrgId));
+  }, [currentOrgId, dispatch]);
 
   const title = TITLES.find((t) => location.pathname.startsWith(t.match))?.title || 'Home';
 

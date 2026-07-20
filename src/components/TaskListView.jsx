@@ -1,6 +1,6 @@
 import Avatar from './Avatar.jsx';
-import { XIcon } from './icons.jsx';
 import { relativeDay } from '../utils/time.js';
+import { formatDate } from '../utils/status.js';
 
 const AssigneeCell = ({ assignee }) =>
   assignee ? (
@@ -17,9 +17,8 @@ const AssigneeCell = ({ assignee }) =>
  * - onOpen(id): navigate to detail
  * - subtitle(task): optional secondary line (description)
  * - statusNode(task): a status pill or an editable <select>
- * - onDelete(task): optional delete action
  */
-export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDelete }) {
+export default function TaskListView({ tasks, onOpen, subtitle, statusNode }) {
   return (
     <>
       <div className="table-wrap task-desktop">
@@ -29,11 +28,11 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDe
               <th>Task</th>
               <th>Priority</th>
               <th>Created</th>
+              <th>Due date</th>
               <th>Assigned to</th>
               <th>Group</th>
               <th>Project</th>
               <th>Status</th>
-              {onDelete && <th aria-label="actions" />}
             </tr>
           </thead>
           <tbody>
@@ -45,17 +44,11 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDe
                 </td>
                 <td><span className={`prio prio--${t.priority.toLowerCase()}`}>{t.priority}</span></td>
                 <td className="nowrap">{relativeDay(t.createdAt)}</td>
+                <td className="nowrap">{t.dueDate ? formatDate(t.dueDate) : '—'}</td>
                 <td><AssigneeCell assignee={t.assignee} /></td>
                 <td className="nowrap">{t.group ? `#${t.group.name}` : '—'}</td>
                 <td className="nowrap">{t.project ? t.project.name : '—'}</td>
                 <td onClick={(e) => e.stopPropagation()}>{statusNode(t)}</td>
-                {onDelete && (
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <button className="task-card__del" onClick={() => onDelete(t)} aria-label="Delete task">
-                      <XIcon size={15} />
-                    </button>
-                  </td>
-                )}
               </tr>
             ))}
           </tbody>
@@ -68,21 +61,13 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDe
             <div className="tcard__row">
               <span className={`prio prio--${t.priority.toLowerCase()}`}>{t.priority}</span>
               <span className="tcard__date">{relativeDay(t.createdAt)}</span>
-              {onDelete && (
-                <button
-                  className="task-card__del tcard__del"
-                  onClick={(e) => { e.stopPropagation(); onDelete(t); }}
-                  aria-label="Delete task"
-                >
-                  <XIcon size={15} />
-                </button>
-              )}
             </div>
             <div className="tcard__title">{t.title}</div>
             {subtitle?.(t) && <div className="tcard__sub">{subtitle(t)}</div>}
             <div className="tcard__tags">
               {t.group && <span className="tcard__group">#{t.group.name}</span>}
               {t.project && <span className="tcard__project">{t.project.name}</span>}
+              <span className="tcard__due">Due: {t.dueDate ? formatDate(t.dueDate) : '—'}</span>
             </div>
             <div className="tcard__foot">
               <AssigneeCell assignee={t.assignee} />

@@ -14,11 +14,11 @@ export default function ChannelMembers({ group, canManage, onAddMember }) {
       <section className="panel">
         <div className="panel__head">
           <h2 className="panel__title">Members ({members.length})</h2>
-          {canManage && (
+          {/* {canManage && (
             <button className="mini-btn mini-btn--primary" onClick={onAddMember}>
               <PlusIcon size={14} /> Add member
             </button>
-          )}
+          )} */}
         </div>
         <ul className="member-list">
           {members.map((m) => (
