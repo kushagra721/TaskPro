@@ -9,12 +9,10 @@ import {
 } from '../../store/slices/orgSlice.js';
 import { fetchGroups, selectGroups } from '../../store/slices/groupSlice.js';
 import { organizationsApi } from '../../api/client.js';
-import { useSearchParams } from 'react-router-dom';
 import Avatar from '../../components/Avatar.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Select from '../../components/Select.jsx';
 import Modal from '../../components/Modal.jsx';
-import DateRangeControl from '../../components/DateRangeControl.jsx';
 import { BuildingIcon, PlusIcon } from '../../components/icons.jsx';
 
 export default function ManageOrgPage() {
@@ -34,10 +32,7 @@ export default function ManageOrgPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [urlParams] = useSearchParams();
-  const [period, setPeriod] = useState({ from: '', to: '' });
   const [inviteOpen, setInviteOpen] = useState(false);
-  const initialPeriod = { from: urlParams.get('from') || '', to: urlParams.get('to') || '' };
 
   const loadInvites = useCallback(async () => {
     if (!orgId || !isAdmin) return;
@@ -61,19 +56,19 @@ export default function ManageOrgPage() {
 
   useEffect(() => {
     if (orgId) {
-      dispatch(fetchMembers({ orgId, params: period }));
+      dispatch(fetchMembers(orgId));
       dispatch(fetchGroups(orgId));
     }
     loadInvites();
     loadJoinRequests();
-  }, [orgId, period, dispatch, loadInvites, loadJoinRequests]);
+  }, [orgId, dispatch, loadInvites, loadJoinRequests]);
 
   const respondJoin = async (reqId, approve) => {
     try {
       if (approve) await organizationsApi.approveJoinRequest(orgId, reqId);
       else await organizationsApi.declineJoinRequest(orgId, reqId);
       loadJoinRequests();
-      dispatch(fetchMembers({ orgId, params: period }));
+      dispatch(fetchMembers(orgId));
     } catch (err) {
       setError(err.message);
     }
@@ -119,7 +114,7 @@ export default function ManageOrgPage() {
     const next = m.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
     try {
       await organizationsApi.changeRole(orgId, m.id, next);
-      dispatch(fetchMembers({ orgId, params: period }));
+      dispatch(fetchMembers(orgId));
     } catch (err) {
       setError(err.message);
     }
@@ -128,7 +123,7 @@ export default function ManageOrgPage() {
   const remove = async (m) => {
     try {
       await organizationsApi.removeMember(orgId, m.id);
-      dispatch(fetchMembers({ orgId, params: period }));
+      dispatch(fetchMembers(orgId));
     } catch (err) {
       setError(err.message);
     }
@@ -138,7 +133,7 @@ export default function ManageOrgPage() {
     <div className="page">
       <div className="org-header org-header--row">
         <div className="org-header__left">
-          <span className="org-badge lg">{org.name[0].toUpperCase()}</span>
+          <span className="org-badge lg">{org.icon || org.name[0].toUpperCase()}</span>
           <div>
             <div className="org-header__name">{org.name}</div>
             <div className="org-header__meta">
@@ -147,9 +142,8 @@ export default function ManageOrgPage() {
           </div>
         </div>
         <div className="head-actions">
-          <DateRangeControl onChange={setPeriod} initial={initialPeriod} defaultMode="all" />
           {isAdmin && (
-            <button className="btn" style={{ width: 'auto', padding: '0 16px' }} onClick={() => setInviteOpen(true)}>
+            <button className="btn btn--sm" onClick={() => setInviteOpen(true)}>
               <PlusIcon size={16} /> Invite member
             </button>
           )}

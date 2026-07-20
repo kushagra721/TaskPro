@@ -1,10 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchTaskDetail, updateTask, selectTaskDetail } from '../store/slices/taskSlice.js';
 import { fetchGroup, selectGroupDetail } from '../store/slices/groupSlice.js';
-import { TASK_STATUSES, STATUS_META, formatDate } from '../utils/status.js';
+import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
+import { selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { STATUS_META, formatDate } from '../utils/status.js';
 import Select from '../components/Select.jsx';
+import TaskStatusModal from '../components/TaskStatusModal.jsx';
+import { CheckIcon, XIcon } from '../components/icons.jsx';
 
 export default function TaskDetailPage() {
   const { taskId } = useParams();
@@ -12,8 +16,13 @@ export default function TaskDetailPage() {
   const dispatch = useDispatch();
   const task = useSelector(selectTaskDetail);
   const groupDetail = useSelector(selectGroupDetail);
-  // Only members of the task's group can be assigned.
-  const members = groupDetail?.id === task?.groupId ? groupDetail.members || [] : [];
+  const orgId = useSelector(selectCurrentOrgId);
+  const projects = useSelector(selectAllProjects);
+  // Which status-change confirmation modal is open ('complete'|'cancel'|'reopen').
+  const [statusAction, setStatusAction] = useState(null);
+  // Only members of the task's group can be assigned. Guard against the initial
+  // render where both are null (undefined === undefined would be truthy).
+  const members = groupDetail && groupDetail.id === task?.groupId ? groupDetail.members || [] : [];
 
   useEffect(() => {
     dispatch(fetchTaskDetail(taskId));
@@ -24,6 +33,10 @@ export default function TaskDetailPage() {
     if (task?.groupId) dispatch(fetchGroup(task.groupId));
   }, [task?.groupId, dispatch]);
 
+  useEffect(() => {
+    if (orgId) dispatch(fetchAllProjects(orgId));
+  }, [orgId, dispatch]);
+
   if (!task || task.id !== taskId) {
     return (
       <div className="screen-center" style={{ minHeight: '40vh' }}>
@@ -32,15 +45,20 @@ export default function TaskDetailPage() {
     );
   }
 
-  const setStatus = (status) => dispatch(updateTask({ taskId: task.id, groupId: task.groupId, status }));
   const setAssignee = (assigneeId) =>
     dispatch(updateTask({ taskId: task.id, groupId: task.groupId, assigneeId: assigneeId || null }));
+  const setProject = (projectId) =>
+    dispatch(updateTask({ taskId: task.id, groupId: task.groupId, projectId: projectId || null }));
   const setDueDate = (value) =>
     dispatch(updateTask({
       taskId: task.id,
       groupId: task.groupId,
       dueDate: value ? new Date(value).toISOString() : null,
     }));
+  // The status modal returns { status, remarks, dueDate? }; unwrap so it can
+  // surface errors and only close on success.
+  const applyStatus = (payload) =>
+    dispatch(updateTask({ taskId: task.id, groupId: task.groupId, ...payload })).unwrap();
 
   return (
     <div className="page page--narrow">
@@ -57,28 +75,44 @@ export default function TaskDetailPage() {
 
         <div className="task-detail__grid">
           <div className="kv"><span className="kv__k">Group</span><span className="kv__v">#{task.group?.name}</span></div>
+          <div className="kv"><span className="kv__k">Project</span><span className="kv__v">{task.project?.name || 'No project'}</span></div>
           <div className="kv"><span className="kv__k">Assigned to</span><span className="kv__v">{task.assignee ? task.assignee.name || task.assignee.email : 'Unassigned'}</span></div>
           <div className="kv"><span className="kv__k">Created by</span><span className="kv__v">{task.createdBy ? task.createdBy.name || task.createdBy.email : '—'}</span></div>
           <div className="kv"><span className="kv__k">Created</span><span className="kv__v">{formatDate(task.createdAt)}</span></div>
           <div className="kv"><span className="kv__k">Due date</span><span className="kv__v">{formatDate(task.dueDate)}</span></div>
+          {task.remarks && (
+            <div className="kv kv--full">
+              <span className="kv__k">Latest remark</span>
+              <span className="kv__v">{task.remarks}</span>
+            </div>
+          )}
         </div>
 
         <div className="task-detail__status">
-          <span className="field__label">Change status</span>
-          <div className="status-choices">
-            {TASK_STATUSES.map((s) => (
-              <button
-                key={s}
-                className={`status-choice ${task.status === s ? 'status-choice--active' : ''}`}
-                onClick={() => setStatus(s)}
-                style={task.status === s ? { borderColor: STATUS_META[s].color, color: STATUS_META[s].color } : undefined}
-              >
-                {STATUS_META[s].label}
+          <span className="field__label">Status</span>
+          {/* Contextual actions replace the old segmented control. */}
+          <div className="status-actions">
+            {task.status === 'OPEN' && (
+              <>
+                <button className="btn btn--success" onClick={() => setStatusAction('complete')}>
+                  <CheckIcon size={16} /> Mark as complete
+                </button>
+                <button className="btn btn--danger" onClick={() => setStatusAction('cancel')}>
+                  <XIcon size={16} /> Cancel task
+                </button>
+              </>
+            )}
+            {(task.status === 'COMPLETED' || task.status === 'CANCELLED') && (
+              <button className="btn" onClick={() => setStatusAction('reopen')}>
+                Reopen task
               </button>
-            ))}
+            )}
           </div>
         </div>
 
+        {/* Assignee / project / due date are editable only while the task is
+            open; once completed or cancelled they're read-only (shown above). */}
+        {task.status === 'OPEN' && (
         <div className="task-detail__controls">
           <div className="field">
             <label className="field__label">Assignee</label>
@@ -93,17 +127,40 @@ export default function TaskDetailPage() {
             />
           </div>
           <div className="field">
+            <label className="field__label">Project</label>
+            <Select
+              value={task.project?.id || ''}
+              onChange={setProject}
+              placeholder="No project"
+              options={[
+                { value: '', label: 'No project' },
+                ...projects.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          </div>
+          <div className="field">
             <label className="field__label" htmlFor="due">Due date</label>
             <input
               id="due"
               className="input"
               type="date"
+              min={new Date().toISOString().slice(0, 10)}
               value={task.dueDate ? task.dueDate.slice(0, 10) : ''}
               onChange={(e) => setDueDate(e.target.value)}
             />
           </div>
         </div>
+        )}
       </div>
+
+      {statusAction && (
+        <TaskStatusModal
+          type={statusAction}
+          currentDueDate={task.dueDate}
+          onConfirm={applyStatus}
+          onClose={() => setStatusAction(null)}
+        />
+      )}
     </div>
   );
 }

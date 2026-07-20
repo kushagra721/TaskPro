@@ -10,6 +10,7 @@ import ChannelTasks from './ChannelTasks.jsx';
 import ChannelMembers from './ChannelMembers.jsx';
 import AddMemberModal from '../../components/AddMemberModal.jsx';
 import CreateTaskModal from '../../components/CreateTaskModal.jsx';
+import Fab from '../../components/Fab.jsx';
 import { PlusIcon } from '../../components/icons.jsx';
 
 export default function ChannelPage() {
@@ -37,20 +38,24 @@ export default function ChannelPage() {
   return (
     <div className="channel">
       <div className="channel__header">
-        <button className="link-btn" onClick={() => navigate('/groups')}>← Groups</button>
+        {/* Back link + description are hidden on mobile (the header already
+            shows the org, and the bottom nav is gone on this drill-down). */}
+        <button className="link-btn channel__back" onClick={() => navigate('/groups')}>← Groups</button>
         <div className="channel__title-row">
           <h1 className="channel__title">#{loaded ? group.name : '…'}</h1>
           {loaded && <span className="channel__members">{group.members?.length || 0} members</span>}
         </div>
         {loaded && group.description && <p className="channel__desc">{group.description}</p>}
 
-        <div className="channel__tabs">
-          <button className={`tab ${tab === 'chat' ? 'tab--active' : ''}`} onClick={() => setTab('chat')}>Chat</button>
-          <button className={`tab ${tab === 'tasks' ? 'tab--active' : ''}`} onClick={() => setTab('tasks')}>Tasks</button>
-          <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>Members</button>
-          <div className="channel__spacer" />
+        <div className="channel__tabbar">
+          <div className="channel__tabs">
+            <button className={`tab ${tab === 'chat' ? 'tab--active' : ''}`} onClick={() => setTab('chat')}>Chat</button>
+            <button className={`tab ${tab === 'tasks' ? 'tab--active' : ''}`} onClick={() => setTab('tasks')}>Tasks</button>
+            <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>Members</button>
+          </div>
           <div className="channel__actions">
-            <button className="btn btn--sm" onClick={() => setCreateTaskOpen(true)}>
+            {/* New task is inline on desktop; on mobile it's the FAB below. */}
+            <button className="btn btn--sm hide-mobile" onClick={() => setCreateTaskOpen(true)}>
               <PlusIcon size={14} /> New task
             </button>
             {canManage && (
@@ -72,6 +77,12 @@ export default function ChannelPage() {
         <ChannelTasks groupId={groupId} />
       ) : (
         <ChannelMembers group={group} canManage={canManage} onAddMember={() => setAddMemberOpen(true)} />
+      )}
+
+      {/* Mobile: floating New task. Hidden on the chat tab so it never covers
+          the message composer. */}
+      {loaded && tab !== 'chat' && (
+        <Fab label="New task" onClick={() => setCreateTaskOpen(true)} />
       )}
 
       {addMemberOpen && <AddMemberModal groupId={groupId} onClose={() => setAddMemberOpen(false)} />}

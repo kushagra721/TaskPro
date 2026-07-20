@@ -75,7 +75,7 @@ export default function ReportsPage() {
 
   const header = (
     <div className="page__head page__head--row">
-      <div>
+      <div className="page__head-text">
         <h1 className="page__title">Reports</h1>
         <p className="page__subtitle">Progress across {org.name} — overall, by member and by group.</p>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentOrg, selectCurrentOrgId, selectMembers, fetchMembers } from '../../store/slices/orgSlice.js';
@@ -12,9 +12,13 @@ import TaskListView from '../../components/TaskListView.jsx';
 import TaskStatusTabs from '../../components/TaskStatusTabs.jsx';
 import TaskSearchBar from '../../components/TaskSearchBar.jsx';
 import TaskFilterDrawer from '../../components/TaskFilterDrawer.jsx';
-import DateRangeControl from '../../components/DateRangeControl.jsx';
+import CreateTaskModal from '../../components/CreateTaskModal.jsx';
 import Pagination from '../../components/Pagination.jsx';
-import { TaskIcon } from '../../components/icons.jsx';
+import Fab from '../../components/Fab.jsx';
+import { fetchAllProjects, selectAllProjects } from '../../store/slices/projectSlice.js';
+import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { TaskIcon, PlusIcon } from '../../components/icons.jsx';
 
 export default function ManageTasksPage() {
   const dispatch = useDispatch();
@@ -27,42 +31,48 @@ export default function ManageTasksPage() {
   const counts = useSelector(selectMyTasksCounts);
   const groups = useSelector(selectGroups);
   const members = useSelector(selectMembers);
+  const projects = useSelector(selectAllProjects);
   const [urlParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [period, setPeriod] = useState({ from: '', to: '' });
+  const [createOpen, setCreateOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Seed filters from the URL (dashboard deep-links: ?status=OPEN, ?assignee=me).
   // Default status is Open when nothing is specified.
   const initial = {
     status: (urlParams.get('status') || 'OPEN').toUpperCase(),
     assigneeId: urlParams.get('assignee') === 'me' ? user?.id || '' : '',
+    createdFrom: urlParams.get('from') || '',
+    createdTo: urlParams.get('to') || '',
   };
-  const initialPeriod = { from: urlParams.get('from') || '', to: urlParams.get('to') || '' };
 
   const { search, setSearch, filters, applyFilters, clearFilters, activeFilterCount, page, setPage, params } =
     useTaskQuery(initial);
-
-  // The period control drives the created-date range.
-  const effParams = useMemo(
-    () => ({ ...params, createdFrom: period.from || undefined, createdTo: period.to || undefined }),
-    [params, period]
-  );
-
-  // Reset to first page whenever the period changes.
-  useEffect(() => {
-    setPage(1);
-  }, [period, setPage]);
 
   useEffect(() => {
     if (orgId) {
       dispatch(fetchGroups(orgId));
       dispatch(fetchMembers(orgId));
+      dispatch(fetchAllProjects(orgId));
     }
   }, [orgId, dispatch]);
 
+  const reload = useCallback(() => {
+    if (orgId) dispatch(fetchMyTasks({ orgId, params }));
+  }, [orgId, params, dispatch]);
+
   useEffect(() => {
-    if (orgId) dispatch(fetchMyTasks({ orgId, params: effParams }));
-  }, [orgId, effParams, dispatch]);
+    reload();
+  }, [reload]);
+
+  // Mirror search + filters into the mobile header.
+  const openFilters = useCallback(() => setDrawerOpen(true), []);
+  useRegisterHeaderActions({
+    search,
+    onSearch: setSearch,
+    onOpenFilters: openFilters,
+    filterCount: activeFilterCount,
+  });
 
   const setTab = (t) => applyFilters({ ...filters, status: t === 'ALL' ? '' : t });
   const activeTab = filters.status || 'ALL';
@@ -78,11 +88,18 @@ export default function ManageTasksPage() {
   return (
     <div className="page">
       <div className="page__head page__head--row">
-        <div>
+        <div className="page__head-text">
           <h1 className="page__title">Manage Tasks</h1>
           <p className="page__subtitle">Tasks across all groups you belong to.</p>
         </div>
-        <DateRangeControl onChange={setPeriod} initial={initialPeriod} />
+        {/* Desktop keeps the inline button; mobile uses the FAB below. */}
+        {!isMobile && (
+          <div className="head-actions">
+            <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
+              <PlusIcon size={16} /> New task
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="list-controls">
@@ -118,7 +135,14 @@ export default function ManageTasksPage() {
         onClear={clearFilters}
         groups={groups}
         members={members}
+        projects={projects}
       />
+
+      {/* Manage Tasks is a root page — raise the FAB above the bottom nav. */}
+      <Fab raised label="New task" onClick={() => setCreateOpen(true)} />
+
+      {/* Created outside any one channel, so the modal asks which group it goes to. */}
+      {createOpen && <CreateTaskModal askGroup onClose={() => setCreateOpen(false)} onCreated={reload} />}
     </div>
   );
 }

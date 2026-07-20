@@ -1,28 +1,49 @@
 import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   UserIcon,
   BuildingIcon,
   MailIcon,
-  TaskIcon,
+  FolderIcon,
   ActivityIcon,
+  LogoutIcon,
   ChevronRightIcon,
 } from '../../components/icons.jsx';
 import { selectInvitationCount } from '../../store/slices/invitationSlice.js';
-import { selectCurrentOrg } from '../../store/slices/orgSlice.js';
+import { selectCurrentOrg, resetOrgs } from '../../store/slices/orgSlice.js';
+import { logout } from '../../store/slices/authSlice.js';
+import { resetProjects } from '../../store/slices/projectSlice.js';
 
 export default function MorePage() {
+  const dispatch = useDispatch();
   const invitationCount = useSelector(selectInvitationCount);
   const org = useSelector(selectCurrentOrg);
   const isAdmin = org?.role === 'ADMIN';
 
+  const doLogout = () => {
+    dispatch(logout());
+    dispatch(resetOrgs());
+    dispatch(resetProjects());
+  };
+
   const items = [
     { to: '/more/profile', label: 'My Profile', desc: 'Your name and account', Icon: UserIcon },
-    { to: '/more/tasks', label: 'Manage Tasks', desc: 'All your tasks across groups', Icon: TaskIcon },
+    {
+      to: '/more/organizations',
+      label: 'Manage Organizations',
+      desc: 'Organizations you belong to',
+      Icon: BuildingIcon,
+    },
+    {
+      to: '/more/projects',
+      label: 'Manage Projects',
+      desc: 'Projects tasks can be grouped under',
+      Icon: FolderIcon,
+    },
     { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your organization', Icon: ActivityIcon },
     // Manage Members is admin-only.
     ...(isAdmin
-      ? [{ to: '/more/members', label: 'Manage Members', desc: 'Members, roles and invitations', Icon: BuildingIcon }]
+      ? [{ to: '/more/members', label: 'Manage Members', desc: 'Members, roles and invitations', Icon: UserIcon }]
       : []),
     {
       to: '/more/invitations',
@@ -49,6 +70,17 @@ export default function MorePage() {
             <ChevronRightIcon size={18} />
           </Link>
         ))}
+
+        {/* The sidebar owns logout on desktop; mobile needs it here. */}
+        <button className="menu-item menu-item--danger" onClick={doLogout}>
+          <span className="menu-item__icon">
+            <LogoutIcon size={20} />
+          </span>
+          <span className="menu-item__text">
+            <span className="menu-item__label">Log out</span>
+            <span className="menu-item__desc">Sign out of Task Pro on this device</span>
+          </span>
+        </button>
       </div>
     </div>
   );

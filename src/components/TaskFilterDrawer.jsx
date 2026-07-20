@@ -5,14 +5,18 @@ import Select from './Select.jsx';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
 
+// Tasks can't be created in the future, so cap the created-date inputs at today.
+const TODAY = new Date().toISOString().slice(0, 10);
+
 /**
  * Right-side filter drawer for task lists.
  * - value: current filter object
  * - onApply(filters) / onClear()
  * - groups: optional [{id,name}] (omit inside a single group)
  * - members: [{id,name,email}]
+ * - projects: optional [{id,name}]
  */
-export default function TaskFilterDrawer({ open, onClose, value, onApply, onClear, groups, members }) {
+export default function TaskFilterDrawer({ open, onClose, value, onApply, onClear, groups, members, projects }) {
   const [draft, setDraft] = useState(value);
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
   const clear = () => {
     // Keep status (controlled by the tabs); clear everything else.
     const empty = {
-      priority: '', groupId: '', assigneeId: '',
+      priority: '', groupId: '', assigneeId: '', projectId: '',
       createdFrom: '', createdTo: '', dueFrom: '', dueTo: '',
     };
     setDraft((d) => ({ ...d, ...empty }));
@@ -90,6 +94,30 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
                 ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
               ]}
             />
+          </div>
+
+          {projects && (
+            <div className="field">
+              <label className="field__label">Project</label>
+              <Select
+                value={draft.projectId || ''}
+                onChange={setVal('projectId')}
+                placeholder="All projects"
+                options={[
+                  { value: '', label: 'All projects' },
+                  { value: 'none', label: 'No project' },
+                  ...projects.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+              />
+            </div>
+          )}
+
+          <div className="field">
+            <label className="field__label">Created date</label>
+            <div className="row2">
+              <input className="input" type="date" max={TODAY} value={draft.createdFrom || ''} onChange={set('createdFrom')} />
+              <input className="input" type="date" max={TODAY} value={draft.createdTo || ''} onChange={set('createdTo')} />
+            </div>
           </div>
 
           <div className="field">

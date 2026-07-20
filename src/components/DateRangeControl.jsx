@@ -67,7 +67,9 @@ export default function DateRangeControl({ onChange, initial, defaultMode = 'mon
     });
   };
 
-  const canGoNext = !isCurrentOrPastMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1));
+  // Forward is allowed only while the *next* month is still current-or-past
+  // (so from June→July is fine, but July→August, a future month, is blocked).
+  const canGoNext = isCurrentOrPastMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1));
   const monthLabel = month.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   const max = today();
 

@@ -8,7 +8,13 @@ const FilterIcon = ({ size = 16 }) => (
 );
 
 /** Search input + Filters button (with active-count badge). */
-export default function TaskSearchBar({ search, onSearch, onOpenFilters, activeCount }) {
+export default function TaskSearchBar({
+  search,
+  onSearch,
+  onOpenFilters,
+  activeCount,
+  placeholder = 'Search tasks by name…',
+}) {
   return (
     <div className="task-toolbar">
       <div className="search-box">
@@ -19,7 +25,7 @@ export default function TaskSearchBar({ search, onSearch, onOpenFilters, activeC
         </svg>
         <input
           className="search-box__input"
-          placeholder="Search tasks by name…"
+          placeholder={placeholder}
           value={search}
           onChange={(e) => onSearch(e.target.value)}
         />

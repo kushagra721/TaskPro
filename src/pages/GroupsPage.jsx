@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { fetchGroups, selectGroups } from '../store/slices/groupSlice.js';
 import EmptyState from '../components/EmptyState.jsx';
 import CreateChannelModal from '../components/CreateChannelModal.jsx';
-import DateRangeControl from '../components/DateRangeControl.jsx';
+import Fab from '../components/Fab.jsx';
+import { useIsMobile } from '../hooks/useIsMobile.js';
 import { GroupsIcon, PlusIcon } from '../components/icons.jsx';
 
 export default function GroupsPage() {
@@ -16,13 +17,11 @@ export default function GroupsPage() {
   const groups = useSelector(selectGroups);
   const isAdmin = org?.role === 'ADMIN';
   const [createOpen, setCreateOpen] = useState(false);
-  const [urlParams] = useSearchParams();
-  const [period, setPeriod] = useState({ from: '', to: '' });
-  const initialPeriod = { from: urlParams.get('from') || '', to: urlParams.get('to') || '' };
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (orgId) dispatch(fetchGroups({ orgId, params: period }));
-  }, [orgId, period, dispatch]);
+    if (orgId) dispatch(fetchGroups(orgId));
+  }, [orgId, dispatch]);
 
   if (!org) {
     return (
@@ -35,18 +34,18 @@ export default function GroupsPage() {
   return (
     <div className="page">
       <div className="page__head page__head--row">
-        <div>
+        <div className="page__head-text">
           <h1 className="page__title">Groups</h1>
           <p className="page__subtitle">Chat and manage tasks with your team.</p>
         </div>
-        <div className="head-actions">
-          <DateRangeControl onChange={setPeriod} initial={initialPeriod} defaultMode="all" />
-          {isAdmin && (
-            <button className="btn" style={{ width: 'auto', padding: '0 16px' }} onClick={() => setCreateOpen(true)}>
+        {/* Desktop keeps the inline button; mobile uses the FAB below. */}
+        {isAdmin && !isMobile && (
+          <div className="head-actions">
+            <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
               <PlusIcon size={16} /> New group
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {groups.length === 0 ? (
@@ -71,13 +70,16 @@ export default function GroupsPage() {
                 <div className="channel-card__name">{g.name}</div>
                 <div className="channel-card__desc">{g.description || 'No description'}</div>
                 <div className="channel-card__meta">
-                  {g.memberCount ?? 0} member{g.memberCount === 1 ? '' : 's'} · {g.messageCount ?? 0} messages
+                  {g.memberCount ?? 0} member{g.memberCount === 1 ? '' : 's'} · {g.taskCount ?? 0} task{g.taskCount === 1 ? '' : 's'} · {g.messageCount ?? 0} messages
                 </div>
               </div>
             </button>
           ))}
         </div>
       )}
+
+      {/* Groups is a root page — raise the FAB above the bottom nav. */}
+      {isAdmin && <Fab raised label="New group" onClick={() => setCreateOpen(true)} />}
 
       {createOpen && (
         <CreateChannelModal

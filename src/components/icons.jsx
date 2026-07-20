@@ -115,6 +115,45 @@ export const TaskIcon = ({ size, ...p }) => (
   </svg>
 );
 
+export const ArrowLeftIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M19 12H5" />
+    <path d="m12 19-7-7 7-7" />
+  </svg>
+);
+
+export const SearchIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m21 21-4.3-4.3" />
+  </svg>
+);
+
+export const FilterIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4 5h16M7 12h10M10 19h4" />
+  </svg>
+);
+
+export const FolderIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+  </svg>
+);
+
+export const EditIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+
+export const TrashIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+  </svg>
+);
+
 export const ActivityIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M3 12h4l3 8 4-16 3 8h4" />

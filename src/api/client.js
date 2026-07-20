@@ -71,6 +71,7 @@ export const organizationsApi = {
   list: () => request('/organizations'),
   create: (payload) => request('/organizations', { method: 'POST', body: payload }),
   get: (orgId) => request(`/organizations/${orgId}`),
+  update: (orgId, payload) => request(`/organizations/${orgId}`, { method: 'PATCH', body: payload }),
   dashboard: (orgId, params) => request(`/organizations/${orgId}/dashboard${qs(params)}`),
   members: (orgId, params) => request(`/organizations/${orgId}/members${qs(params)}`),
   myTasks: (orgId, params) => request(`/organizations/${orgId}/my-tasks${qs(params)}`),
@@ -91,6 +92,18 @@ export const organizationsApi = {
     request(`/organizations/${orgId}/join-requests/${requestId}/approve`, { method: 'POST' }),
   declineJoinRequest: (orgId, requestId) =>
     request(`/organizations/${orgId}/join-requests/${requestId}/decline`, { method: 'POST' }),
+};
+
+// ---- Projects ----
+export const projectsApi = {
+  list: (orgId, params) => request(`/organizations/${orgId}/projects${qs(params)}`),
+  // `all=1` returns every project unpaginated — used by the task form dropdowns.
+  listAll: (orgId) => request(`/organizations/${orgId}/projects${qs({ all: 1 })}`),
+  create: (orgId, payload) => request(`/organizations/${orgId}/projects`, { method: 'POST', body: payload }),
+  update: (orgId, projectId, payload) =>
+    request(`/organizations/${orgId}/projects/${projectId}`, { method: 'PATCH', body: payload }),
+  remove: (orgId, projectId) =>
+    request(`/organizations/${orgId}/projects/${projectId}`, { method: 'DELETE' }),
 };
 
 // ---- Invitations (invitee side) ----

@@ -7,6 +7,7 @@ import groupReducer from './slices/groupSlice.js';
 import messageReducer from './slices/messageSlice.js';
 import taskReducer from './slices/taskSlice.js';
 import joinRequestReducer from './slices/joinRequestSlice.js';
+import projectReducer from './slices/projectSlice.js';
 import { socketMiddleware } from './socketMiddleware.js';
 
 export const store = configureStore({
@@ -19,6 +20,7 @@ export const store = configureStore({
     messages: messageReducer,
     tasks: taskReducer,
     joinRequests: joinRequestReducer,
+    projects: projectReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(socketMiddleware),
 });

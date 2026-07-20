@@ -28,8 +28,8 @@ import { STATUS_META } from '../utils/status.js';
 const STAT_CARDS = [
   { key: 'members', label: 'Members', accent: 'indigo', to: '/more/members' },
   { key: 'groups', label: 'Groups', accent: 'violet', to: '/groups' },
-  { key: 'openTasks', label: 'Open tasks', accent: 'amber', to: '/more/tasks?status=OPEN' },
-  { key: 'myOpenTasks', label: 'Assigned to me', accent: 'emerald', to: '/more/tasks?assignee=me' },
+  { key: 'openTasks', label: 'Open tasks', accent: 'amber', to: '/tasks?status=OPEN' },
+  { key: 'myOpenTasks', label: 'Assigned to me', accent: 'emerald', to: '/tasks?assignee=me' },
 ];
 
 // Append the current period so the destination page filters identically.
@@ -87,7 +87,7 @@ export default function DashboardHome() {
   return (
     <div className="page">
       <div className="page__head page__head--row">
-        <div>
+        <div className="page__head-text">
           <h1 className="page__title">Welcome back{firstName ? `, ${firstName}` : ''} 👋</h1>
           <p className="page__subtitle">Here&apos;s what&apos;s happening in {currentOrg?.name}.</p>
         </div>
@@ -170,7 +170,7 @@ export default function DashboardHome() {
           <div className="panel__head">
             <h2 className="panel__title">Open tasks</h2>
             {openList.length > 0 && (
-              <button className="link-btn" onClick={() => navigate('/more/tasks?status=OPEN')}>View all</button>
+              <button className="link-btn" onClick={() => navigate('/tasks?status=OPEN')}>View all</button>
             )}
           </div>
           {openList.length === 0 ? (

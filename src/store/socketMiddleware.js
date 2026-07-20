@@ -6,6 +6,7 @@ import { fetchIncomingJoinRequests } from './slices/joinRequestSlice.js';
 import { groupReceived } from './slices/groupSlice.js';
 import { messageReceived, reactionUpdated } from './slices/messageSlice.js';
 import { taskReceived, taskUpdatedLive, taskRemovedLive } from './slices/taskSlice.js';
+import { projectChanged } from './slices/projectSlice.js';
 
 /**
  * Bridges the Redux store and the Socket.io connection: connects on auth,
@@ -43,6 +44,9 @@ export const socketMiddleware = (store) => (next) => (action) => {
       socket.on('task:new', (task) => store.dispatch(taskReceived(task)));
       socket.on('task:updated', (task) => store.dispatch(taskUpdatedLive(task)));
       socket.on('task:deleted', (payload) => store.dispatch(taskRemovedLive(payload)));
+
+      // Projects (org-wide, so the task-form dropdown stays fresh)
+      socket.on('project:changed', (project) => store.dispatch(projectChanged(project)));
     }
   }
 

@@ -296,6 +296,16 @@ input {
   box-shadow: none;
 }
 
+.btn--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 10px 24px -8px rgba(16, 185, 129, 0.5);
+}
+
+.btn--danger {
+  background: linear-gradient(135deg, #f43f5e, #e11d48);
+  box-shadow: 0 10px 24px -8px rgba(244, 63, 94, 0.5);
+}
+
 .spinner {
   width: 18px;
   height: 18px;
@@ -771,8 +781,7 @@ input {
 /* Topbar */
 .topbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   padding: 14px 30px;
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.72);
@@ -782,10 +791,54 @@ input {
   z-index: 20;
 }
 
+.topbar__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
 .topbar__left {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Search/filter icons, the user line and the back button only exist on mobile —
+   the desktop sidebar shows the user, and pages keep their own inline toolbar. */
+.topbar__action,
+.topbar__userline,
+.topbar__userstrip,
+.topbar__back {
+  display: none;
+}
+
+.topbar__search {
+  display: none;
+}
+
+/* The logged-in user line (primary line on mobile root pages). */
+.topbar__user-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.topbar__userline .role-pill {
+  flex-shrink: 0;
 }
 
 .topbar__mobile-brand {
@@ -800,6 +853,13 @@ input {
 
 .topbar__titles {
   position: relative;
+  min-width: 0;
+}
+
+.topbar__org-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar__org {
@@ -818,10 +878,13 @@ input {
   font: inherit;
   font-size: 12.5px;
   color: var(--text-muted);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .topbar__org--btn svg {
   color: var(--text-faint);
+  flex-shrink: 0;
 }
 
 .topbar__org-menu {
@@ -840,6 +903,11 @@ input {
   .topbar__org--btn svg {
     display: none;
   }
+}
+
+/* Floating action button — mobile only (see the 900px block for the reveal). */
+.fab {
+  display: none;
 }
 
 /* Icon buttons */
@@ -1024,6 +1092,31 @@ input {
 
 .modal__body {
   padding: 18px 22px 22px;
+}
+
+.modal__intro {
+  color: var(--text-muted);
+  font-size: 13.5px;
+  margin-bottom: 14px;
+}
+
+/* Back / confirm row at the bottom of a confirmation dialog. */
+.modal__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.modal__actions .btn {
+  flex: 1;
+}
+
+.textarea {
+  height: auto;
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.45;
+  padding: 10px 14px;
 }
 
 /* ============================================================
@@ -1234,6 +1327,178 @@ input {
   font-weight: 700;
   display: grid;
   place-items: center;
+}
+
+/* Logout sits in the same list, styled as the destructive option. */
+.menu-item--danger {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: var(--danger);
+}
+
+.menu-item--danger:hover {
+  border-color: var(--danger);
+}
+
+.menu-item--danger .menu-item__icon {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+}
+
+.menu-item--danger .menu-item__desc {
+  color: var(--text-muted);
+}
+
+/* ---------- Projects list (Manage Projects) ---------- */
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.project-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.project-card__icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.16));
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.project-card__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.project-card__name {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card__desc,
+.project-card__meta {
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-card__meta {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.project-card__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---------- Organizations list (Manage Organizations) ---------- */
+.org-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.org-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.org-row--current {
+  border-color: var(--primary-2);
+}
+
+.org-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.org-row__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  min-width: 0;
+}
+
+.org-row__name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.org-row__name .tag {
+  flex-shrink: 0;
+}
+
+.org-row__meta {
+  margin-top: 4px;
+}
+
+.org-row__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Emoji picker used when editing an organization. */
+.icon-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.icon-picker__item {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+}
+
+.icon-picker__item:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.icon-picker__item--active {
+  border-color: var(--primary-2);
+  box-shadow: 0 0 0 2px var(--primary-glow);
 }
 
 /* Members / roles */
@@ -1661,13 +1926,21 @@ input {
   margin-top: 4px;
 }
 
+/* Tabs (left) + actions (right) share one underlined row. */
+.channel__tabbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
 .channel__tabs {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .tab {
@@ -1685,10 +1958,6 @@ input {
 .tab--active {
   color: var(--text);
   border-bottom-color: var(--primary-2);
-}
-
-.channel__spacer {
-  flex: 1;
 }
 
 /* Chat */
@@ -2057,14 +2326,26 @@ input {
   box-shadow: var(--shadow);
 }
 
+/* Always one row — scroll horizontally rather than wrapping onto a second line. */
 .filter-tabs {
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Room for the pills' focus ring / shadow inside the scroll area. */
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-tab {
+  flex: 0 0 auto;
+  white-space: nowrap;
   padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -2094,10 +2375,32 @@ input {
   font-weight: 700;
 }
 
+.tcard__tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  min-width: 0;
+}
+
 .tcard__group {
   color: var(--text-muted);
   font-size: 12.5px;
-  margin-top: 4px;
+}
+
+.tcard__project {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .table-wrap {
@@ -2246,37 +2549,33 @@ input {
   font-size: 14.5px;
 }
 
+/* A kv row that spans the full grid width (e.g. a long remark). */
+.kv--full {
+  grid-column: 1 / -1;
+}
+
+.kv--full .kv__v {
+  white-space: pre-wrap;
+}
+
 .task-detail__status {
   border-top: 1px solid var(--border);
   padding-top: 18px;
 }
 
-.status-choices {
+/* Contextual status buttons (Mark complete / Cancel / Reopen). */
+.status-actions {
   display: flex;
   gap: 10px;
   margin-top: 10px;
   flex-wrap: wrap;
 }
 
-.status-choice {
-  padding: 9px 18px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text-muted);
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.status-choice:hover {
-  border-color: var(--border-strong);
-  color: var(--text);
-}
-
-.status-choice--active {
-  background: var(--surface);
-  font-weight: 700;
+.status-actions .btn {
+  width: auto;
+  flex: 1;
+  min-width: 150px;
+  height: 46px;
 }
 
 /* Channel tasks toolbar + list helpers */
@@ -2335,6 +2634,13 @@ input {
 .channel__actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
+  padding-bottom: 6px;
+}
+
+/* Utility: hide on the mobile layout (≤900px). */
+.hide-mobile {
+  display: inline-flex;
 }
 
 /* Task detail: assignee + due date controls */
@@ -2940,9 +3246,13 @@ input {
     flex-direction: column;
     gap: 12px;
   }
+  /* Tabs scroll sideways rather than wrapping, keeping Add member on the right. */
   .channel__tabs {
-    flex-wrap: wrap;
-    row-gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .channel__tabs::-webkit-scrollbar {
+    display: none;
   }
   .task-detail__controls {
     grid-template-columns: 1fr;
@@ -2990,13 +3300,17 @@ input {
     min-width: 96px;
   }
 
-  /* Channel action buttons + tabs wrap cleanly */
+  /* Channel action buttons wrap cleanly. Status tabs deliberately do NOT wrap —
+     they stay on one line and scroll sideways (see .filter-tabs). */
   .channel__actions {
     flex-wrap: wrap;
   }
-  .filter-tabs {
-    flex-wrap: wrap;
-    row-gap: 8px;
+
+  /* Project + organization rows: let the actions drop below the name */
+  .project-card__actions,
+  .org-row__actions {
+    flex-basis: 100%;
+    justify-content: flex-end;
   }
 
   /* Member rows: let role + actions drop below the name */
@@ -3057,7 +3371,187 @@ input {
     padding: 18px 16px calc(78px + env(safe-area-inset-bottom));
   }
   .topbar {
-    padding: 12px 16px;
+    padding: 10px 16px;
+    gap: 8px;
+  }
+
+  /* The header competes with up to three icon buttons — let the titles shrink. */
+  .topbar__titles {
+    flex: 1;
+    min-width: 0;
+  }
+  .topbar__title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Mobile header: compact icon actions + a "who am I" strip. */
+  .topbar__action {
+    display: grid;
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+  .icon-btn--active {
+    color: var(--primary-2);
+    border-color: var(--primary-2);
+  }
+  .topbar__action-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--primary-2);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+  }
+  .topbar__right {
+    gap: 6px;
+  }
+  .topbar__right .icon-btn:not(.topbar__action) {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  /* Back button leads the header on drill-down pages (before the ✓ brand). */
+  .topbar__back {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .topbar__back:active {
+    background: var(--surface-2);
+  }
+
+  /* Inner-page user + role strip (mobile row 2). */
+  .topbar__userstrip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .topbar__userstrip .topbar__user-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .topbar__userstrip .role-pill {
+    flex-shrink: 0;
+  }
+
+  .topbar__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 10px;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--text-faint);
+  }
+  .topbar__search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    outline: none;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+  }
+  .topbar__search .icon-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: none;
+  }
+
+  /* Root (bottom-nav) pages show the user as the primary line and the org as
+     the secondary line — a single stacked column (name over organisation). */
+  .topbar--root .topbar__title {
+    display: none;
+  }
+  .topbar--root .topbar__userline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  /* Sub-pages hide the bottom nav, so their content needs no nav clearance. */
+  .layout--subpage .layout__content {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  /* Desktop-only elements disappear on the mobile layout. */
+  .hide-mobile {
+    display: none !important;
+  }
+
+  /* Channel drill-down: the header already shows the org, and there's no bottom
+     nav, so drop the back link + description to save vertical space. */
+  .channel__back,
+  .channel__desc {
+    display: none;
+  }
+  .channel__actions {
+    padding-bottom: 8px;
+  }
+
+  /* Floating action button appears on mobile. */
+  .fab {
+    display: grid;
+    place-items: center;
+    position: fixed;
+    right: 18px;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: none;
+    color: #fff;
+    background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    box-shadow: 0 14px 30px -8px var(--primary-glow);
+    cursor: pointer;
+    z-index: 55;
+    transition: transform 0.12s, box-shadow 0.18s;
+  }
+  .fab:active {
+    transform: scale(0.94);
+  }
+  /* Raised variant clears the bottom nav on root pages. */
+  .fab--raised {
+    bottom: calc(86px + env(safe-area-inset-bottom));
+  }
+
+  /* The page title/subtitle duplicate the header, so drop them on mobile. */
+  .page__head-text {
+    display: none;
+  }
+  /* A head that only held text collapses; one with controls keeps its spacing. */
+  .page__head:not(:has(> *:not(.page__head-text))) {
+    display: none;
+  }
+
+  /* The page's own search toolbar moves into the header on mobile. */
+  .list-controls .task-toolbar {
+    display: none;
   }
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -3071,8 +3565,13 @@ input {
   .board {
     grid-template-columns: 1fr;
   }
+  /* No bottom nav on this drill-down, so let the chat fill the screen. The
+     offset covers the two-row header + channel title/tabs. dvh accounts for
+     mobile browser chrome; the vh line is the fallback. */
   .chat {
-    height: 60vh;
+    height: calc(100vh - 250px);
+    height: calc(100dvh - 250px);
+    min-height: 400px;
   }
   .donut-wrap {
     flex-direction: column;

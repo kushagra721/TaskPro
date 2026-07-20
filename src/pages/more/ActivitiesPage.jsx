@@ -35,7 +35,7 @@ export default function ActivitiesPage() {
   return (
     <div className="page page--narrow">
       <div className="page__head page__head--row">
-        <div>
+        <div className="page__head-text">
           <h1 className="page__title">All Activities</h1>
           <p className="page__subtitle">Everything happening in {org.name}.</p>
         </div>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -14,9 +14,10 @@ import TaskListView from '../../components/TaskListView.jsx';
 import TaskStatusTabs from '../../components/TaskStatusTabs.jsx';
 import TaskSearchBar from '../../components/TaskSearchBar.jsx';
 import TaskFilterDrawer from '../../components/TaskFilterDrawer.jsx';
-import DateRangeControl from '../../components/DateRangeControl.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import { useTaskQuery } from '../../hooks/useTaskQuery.js';
+import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
+import { selectAllProjects } from '../../store/slices/projectSlice.js';
 import { STATUS_META } from '../../utils/status.js';
 
 export default function ChannelTasks({ groupId }) {
@@ -27,24 +28,23 @@ export default function ChannelTasks({ groupId }) {
   const counts = useSelector(selectGroupTasksCounts(groupId));
   const detail = useSelector(selectGroupDetail);
   const members = detail?.id === groupId ? detail.members || [] : [];
+  const projects = useSelector(selectAllProjects);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [period, setPeriod] = useState({ from: '', to: '' });
 
   const { search, setSearch, filters, applyFilters, clearFilters, activeFilterCount, page, setPage, params } =
     useTaskQuery({ status: 'OPEN' });
 
-  const effParams = useMemo(
-    () => ({ ...params, createdFrom: period.from || undefined, createdTo: period.to || undefined }),
-    [params, period]
-  );
-
   useEffect(() => {
-    setPage(1);
-  }, [period, setPage]);
+    dispatch(fetchGroupTasks({ groupId, params }));
+  }, [groupId, params, dispatch]);
 
-  useEffect(() => {
-    dispatch(fetchGroupTasks({ groupId, params: effParams }));
-  }, [groupId, effParams, dispatch]);
+  const openFilters = useCallback(() => setDrawerOpen(true), []);
+  useRegisterHeaderActions({
+    search,
+    onSearch: setSearch,
+    onOpenFilters: openFilters,
+    filterCount: activeFilterCount,
+  });
 
   const setTab = (t) => applyFilters({ ...filters, status: t === 'ALL' ? '' : t });
   const activeTab = filters.status || 'ALL';
@@ -55,9 +55,6 @@ export default function ChannelTasks({ groupId }) {
 
   return (
     <div className="tasks">
-      <div className="tasks__period">
-        <DateRangeControl onChange={setPeriod} />
-      </div>
       <div className="list-controls">
         <TaskStatusTabs active={activeTab} counts={counts} onChange={setTab} />
         <TaskSearchBar
@@ -92,6 +89,7 @@ export default function ChannelTasks({ groupId }) {
         onApply={applyFilters}
         onClear={clearFilters}
         members={members}
+        projects={projects}
       />
     </div>
   );

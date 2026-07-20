@@ -31,6 +31,7 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDe
               <th>Created</th>
               <th>Assigned to</th>
               <th>Group</th>
+              <th>Project</th>
               <th>Status</th>
               {onDelete && <th aria-label="actions" />}
             </tr>
@@ -46,6 +47,7 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDe
                 <td className="nowrap">{relativeDay(t.createdAt)}</td>
                 <td><AssigneeCell assignee={t.assignee} /></td>
                 <td className="nowrap">{t.group ? `#${t.group.name}` : '—'}</td>
+                <td className="nowrap">{t.project ? t.project.name : '—'}</td>
                 <td onClick={(e) => e.stopPropagation()}>{statusNode(t)}</td>
                 {onDelete && (
                   <td onClick={(e) => e.stopPropagation()}>
@@ -78,7 +80,10 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode, onDe
             </div>
             <div className="tcard__title">{t.title}</div>
             {subtitle?.(t) && <div className="tcard__sub">{subtitle(t)}</div>}
-            {t.group && <div className="tcard__group">#{t.group.name}</div>}
+            <div className="tcard__tags">
+              {t.group && <span className="tcard__group">#{t.group.name}</span>}
+              {t.project && <span className="tcard__project">{t.project.name}</span>}
+            </div>
             <div className="tcard__foot">
               <AssigneeCell assignee={t.assignee} />
               <div onClick={(e) => e.stopPropagation()}>{statusNode(t)}</div>
