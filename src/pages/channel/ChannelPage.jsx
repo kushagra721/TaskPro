@@ -21,7 +21,7 @@ export default function ChannelPage() {
   const org = useSelector(selectCurrentOrg);
   const orgId = useSelector(selectCurrentOrgId);
   const user = useSelector(selectUser);
-  const [tab, setTab] = useState('chat');
+  const [tab, setTab] = useState('tasks');
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
 
@@ -49,9 +49,9 @@ export default function ChannelPage() {
 
         <div className="channel__tabbar">
           <div className="channel__tabs">
-            <button className={`tab ${tab === 'chat' ? 'tab--active' : ''}`} onClick={() => setTab('chat')}>Chat</button>
             <button className={`tab ${tab === 'tasks' ? 'tab--active' : ''}`} onClick={() => setTab('tasks')}>Tasks</button>
             <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>Members</button>
+            <button className={`tab ${tab === 'chat' ? 'tab--active' : ''}`} onClick={() => setTab('chat')}>Chat</button>
           </div>
           <div className="channel__actions">
             {/* New task is inline on desktop; on mobile it's the FAB below. */}

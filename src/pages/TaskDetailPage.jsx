@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchTaskDetail, updateTask, selectTaskDetail } from '../store/slices/taskSlice.js';
@@ -88,28 +89,6 @@ export default function TaskDetailPage() {
           )}
         </div>
 
-        <div className="task-detail__status">
-          <span className="field__label">Status</span>
-          {/* Contextual actions replace the old segmented control. */}
-          <div className="status-actions">
-            {task.status === 'OPEN' && (
-              <>
-                <button className="btn btn--success" onClick={() => setStatusAction('complete')}>
-                  <CheckIcon size={16} /> Mark as complete
-                </button>
-                <button className="btn btn--danger" onClick={() => setStatusAction('cancel')}>
-                  <XIcon size={16} /> Cancel task
-                </button>
-              </>
-            )}
-            {(task.status === 'COMPLETED' || task.status === 'CANCELLED') && (
-              <button className="btn" onClick={() => setStatusAction('reopen')}>
-                Reopen task
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Assignee / project / due date are editable only while the task is
             open; once completed or cancelled they're read-only (shown above). */}
         {task.status === 'OPEN' && (
@@ -152,6 +131,30 @@ export default function TaskDetailPage() {
         </div>
         )}
       </div>
+
+      {/* Fixed footer action bar. Portaled to body so `.page`'s transform can't
+          trap the fixed positioning (same reason the FAB is portaled). */}
+      {createPortal(
+        <div className="task-actionbar">
+          <div className="task-actionbar__inner">
+            {task.status === 'OPEN' ? (
+              <>
+                <button className="btn btn--success" onClick={() => setStatusAction('complete')}>
+                  <CheckIcon size={16} /> Mark as complete
+                </button>
+                <button className="btn btn--danger" onClick={() => setStatusAction('cancel')}>
+                  <XIcon size={16} /> Cancel task
+                </button>
+              </>
+            ) : (
+              <button className="btn" onClick={() => setStatusAction('reopen')}>
+                Reopen task
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {statusAction && (
         <TaskStatusModal

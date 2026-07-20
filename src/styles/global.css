@@ -2505,6 +2505,8 @@ input {
   border-radius: var(--radius);
   padding: 24px;
   margin-top: 12px;
+  /* Clear the fixed action bar so the last field isn't hidden behind it. */
+  margin-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 .task-detail__head {
@@ -2558,24 +2560,30 @@ input {
   white-space: pre-wrap;
 }
 
-.task-detail__status {
+/* Fixed footer holding the status action buttons. Offset by the sidebar on
+   desktop; full-width on mobile (which has no bottom nav on this page). */
+.task-actionbar {
+  position: fixed;
+  bottom: 0;
+  left: 264px;
+  right: 0;
+  z-index: 40;
+  padding: 12px 30px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
-  padding-top: 18px;
 }
 
-/* Contextual status buttons (Mark complete / Cancel / Reopen). */
-.status-actions {
+.task-actionbar__inner {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
+  max-width: 560px; /* aligns with .page--narrow content */
+  margin: 0 auto;
 }
 
-.status-actions .btn {
-  width: auto;
+.task-actionbar .btn {
   flex: 1;
-  min-width: 150px;
-  height: 46px;
+  height: 48px;
 }
 
 /* Channel tasks toolbar + list helpers */
@@ -3512,6 +3520,12 @@ input {
   }
   .channel__actions {
     padding-bottom: 8px;
+  }
+
+  /* The task action bar spans full width (no sidebar on mobile). */
+  .task-actionbar {
+    left: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   }
 
   /* Floating action button appears on mobile. */
