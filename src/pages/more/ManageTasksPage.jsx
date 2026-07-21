@@ -142,7 +142,9 @@ export default function ManageTasksPage() {
       <Fab raised label="New task" onClick={() => setCreateOpen(true)} />
 
       {/* Created outside any one channel, so the modal asks which group it goes to. */}
-      {createOpen && <CreateTaskModal askGroup onClose={() => setCreateOpen(false)} onCreated={reload} />}
+      {createOpen && (
+        <CreateTaskModal askGroup members={members} onClose={() => setCreateOpen(false)} onCreated={reload} />
+      )}
     </div>
   );
 }

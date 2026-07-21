@@ -18,6 +18,11 @@ export const fetchGroup = createAsyncThunk('groups/fetchOne', async (groupId) =>
   return res.group;
 });
 
+export const updateGroup = createAsyncThunk('groups/update', async ({ groupId, ...payload }) => {
+  const res = await groupsApi.update(groupId, payload);
+  return res.group;
+});
+
 export const addGroupMember = createAsyncThunk('groups/addMember', async ({ groupId, userId }) => {
   const res = await groupsApi.addMember(groupId, userId);
   return { groupId, members: res.members };
@@ -59,6 +64,17 @@ const groupSlice = createSlice({
       })
       .addCase(fetchGroup.fulfilled, (state, action) => {
         state.detail = action.payload;
+      })
+      .addCase(updateGroup.fulfilled, (state, action) => {
+        // The update response doesn't carry member/message/task counts or the
+        // members list — patch just name/description so nothing already
+        // loaded (counts, members) gets clobbered with undefined.
+        const patch = { name: action.payload.name, description: action.payload.description };
+        const i = state.list.findIndex((g) => g.id === action.payload.id);
+        if (i >= 0) state.list[i] = { ...state.list[i], ...patch };
+        if (state.detail && state.detail.id === action.payload.id) {
+          state.detail = { ...state.detail, ...patch };
+        }
       })
       .addCase(addGroupMember.fulfilled, (state, action) => {
         if (state.detail && state.detail.id === action.payload.groupId) {

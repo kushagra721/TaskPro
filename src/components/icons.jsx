@@ -154,6 +154,78 @@ export const TrashIcon = ({ size, ...p }) => (
   </svg>
 );
 
+export const BoldIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M6 4h7a3.5 3.5 0 0 1 0 7H6z" />
+    <path d="M6 11h8a3.5 3.5 0 0 1 0 7H6z" />
+  </svg>
+);
+
+export const ItalicIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M10 4h7M7 20h7M14 4 10 20" />
+  </svg>
+);
+
+export const UnderlineIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M6 4v7a6 6 0 0 0 12 0V4" />
+    <path d="M4 21h16" />
+  </svg>
+);
+
+export const ListIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <circle cx="4.5" cy="6" r="1.2" fill="currentColor" stroke="none" />
+    <circle cx="4.5" cy="12" r="1.2" fill="currentColor" stroke="none" />
+    <circle cx="4.5" cy="18" r="1.2" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+export const ListOrderedIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <path d="M4 5v3M4 5h1M4 8h1.5" />
+    <path d="M4.2 12.2h1.3a.9.9 0 0 1 0 1.8H4.2M4.2 14h1.3a.9.9 0 0 1 0 1.8H4" />
+    <path d="M4 19.5h1.6L4 21.5h1.6" />
+  </svg>
+);
+
+export const LinkIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+    <path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+  </svg>
+);
+
+export const PaperclipIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M21.4 11.05 12.5 20a5.5 5.5 0 0 1-7.78-7.78l9-9a3.5 3.5 0 1 1 4.95 4.95l-9 9a1.5 1.5 0 1 1-2.12-2.12l8.3-8.3" />
+  </svg>
+);
+
+export const FileIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+    <path d="M14 3v4h4" />
+  </svg>
+);
+
+export const DownloadIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 3v12m0 0 4.5-4.5M12 15 7.5 10.5" />
+    <path d="M4 19h16" />
+  </svg>
+);
+
+export const VideoIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <rect x="3" y="5" width="13" height="14" rx="2" />
+    <path d="m16 10 5-3v10l-5-3" />
+  </svg>
+);
+
 export const ActivityIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M3 12h4l3 8 4-16 3 8h4" />

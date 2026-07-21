@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Modal from './Modal.jsx';
 import Select from './Select.jsx';
+import DateField from './DateField.jsx';
+import AttachmentPicker from './AttachmentPicker.jsx';
 import { createTask } from '../store/slices/taskSlice.js';
 import { selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { selectCurrentOrgId } from '../store/slices/orgSlice.js';
-import { groupsApi } from '../api/client.js';
 
-const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH'].map((p) => ({ value: p, label: p }));
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
 // YYYY-MM-DD for tomorrow (default due date).
 const tomorrow = () => {
@@ -20,11 +21,13 @@ const tomorrow = () => {
 /**
  * New-task form.
  * - Inside a channel, pass `groupId` — the group is fixed.
- * - From the Tasks page, pass `askGroup` — the user picks one of the groups they
- *   belong to, and the assignee list follows that choice.
+ * - From the Tasks page, pass `askGroup` plus `members` — the user picks one of
+ *   the groups they belong to, and the assignee list is the org-scoped member
+ *   list the caller already loaded (admins see everyone, regular members only
+ *   see people they share a group with — same scoping as the org roster/filters).
  * `onCreated` lets the caller refresh a list the slice can't update on its own.
  */
-export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated }) {
+export default function CreateTaskModal({ groupId, askGroup, members: askGroupMembers = [], onClose, onCreated }) {
   const dispatch = useDispatch();
   const orgId = useSelector(selectCurrentOrgId);
   const detail = useSelector(selectGroupDetail);
@@ -32,13 +35,12 @@ export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated 
   const projects = useSelector(selectAllProjects);
 
   const [pickedGroupId, setPickedGroupId] = useState(groupId || '');
-  // Members of the picked group, loaded on demand in askGroup mode.
-  const [pickedMembers, setPickedMembers] = useState([]);
   const [form, setForm] = useState({
     title: '', description: '', priority: 'MEDIUM', assigneeId: '',
     // Due date defaults to tomorrow.
     dueDate: tomorrow(), projectId: '',
   });
+  const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -52,34 +54,7 @@ export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated 
     if (orgId && projects.length === 0) dispatch(fetchAllProjects(orgId));
   }, [orgId, projects.length, dispatch]);
 
-  // In channel mode the detail slice already holds the members.
-  useEffect(() => {
-    if (!askGroup) return undefined;
-    if (!pickedGroupId) {
-      setPickedMembers([]);
-      return undefined;
-    }
-    let cancelled = false;
-    groupsApi
-      .get(pickedGroupId)
-      .then((res) => {
-        if (!cancelled) setPickedMembers(res.group.members || []);
-      })
-      .catch(() => {
-        if (!cancelled) setPickedMembers([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [askGroup, pickedGroupId]);
-
-  // Changing the group invalidates the chosen assignee.
-  const changeGroup = (v) => {
-    setPickedGroupId(v);
-    setForm((f) => ({ ...f, assigneeId: '' }));
-  };
-
-  const members = askGroup ? pickedMembers : (detail?.id === groupId ? detail.members || [] : []);
+  const members = askGroup ? askGroupMembers : (detail?.id === groupId ? detail.members || [] : []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -99,6 +74,7 @@ export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated 
           assigneeId: form.assigneeId || null,
           projectId: form.projectId || null,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+          attachments,
         })
       ).unwrap();
       onCreated?.();
@@ -125,7 +101,7 @@ export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated 
             <label className="field__label">Group <span className="req">*</span></label>
             <Select
               value={pickedGroupId}
-              onChange={changeGroup}
+              onChange={setPickedGroupId}
               placeholder={myGroups.length ? 'Choose a group' : 'You are not in any group yet'}
               options={myGroups.map((g) => ({ value: g.id, label: `#${g.name}` }))}
             />
@@ -171,7 +147,12 @@ export default function CreateTaskModal({ groupId, askGroup, onClose, onCreated 
 
         <div className="field">
           <label className="field__label">Due date (optional)</label>
-          <input className="input" type="date" min={today} value={form.dueDate} onChange={up('dueDate')} />
+          <DateField min={today} value={form.dueDate} onChange={set('dueDate')} />
+        </div>
+
+        <div className="field">
+          <label className="field__label">Attachments (optional)</label>
+          <AttachmentPicker value={attachments} onChange={setAttachments} />
         </div>
 
         <button className="btn" type="submit" disabled={loading || !form.title.trim() || !pickedGroupId}>

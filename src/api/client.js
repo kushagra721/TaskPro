@@ -84,6 +84,8 @@ export const organizationsApi = {
   invite: (orgId, payload) =>
     request(`/organizations/${orgId}/invitations`, { method: 'POST', body: payload }),
   listInvitations: (orgId) => request(`/organizations/${orgId}/invitations`),
+  cancelInvitation: (orgId, invitationId) =>
+    request(`/organizations/${orgId}/invitations/${invitationId}`, { method: 'DELETE' }),
   // Search + join requests
   search: (q) => request(`/organizations/search${qs({ q })}`),
   requestToJoin: (orgId) => request(`/organizations/${orgId}/join-requests`, { method: 'POST' }),
@@ -132,19 +134,46 @@ export const groupsApi = {
   listForOrg: (orgId, params) => request(`/organizations/${orgId}/groups${qs(params)}`),
   create: (orgId, payload) => request(`/organizations/${orgId}/groups`, { method: 'POST', body: payload }),
   get: (groupId) => request(`/groups/${groupId}`),
+  update: (groupId, payload) => request(`/groups/${groupId}`, { method: 'PATCH', body: payload }),
   addMember: (groupId, userId) =>
     request(`/groups/${groupId}/members`, { method: 'POST', body: { userId } }),
   removeMember: (groupId, userId) =>
     request(`/groups/${groupId}/members/${userId}`, { method: 'DELETE' }),
   messages: (groupId, cursor) =>
     request(`/groups/${groupId}/messages${cursor ? `?cursor=${cursor}` : ''}`),
-  sendMessage: (groupId, content) =>
-    request(`/groups/${groupId}/messages`, { method: 'POST', body: { content } }),
+  sendMessage: (groupId, content, attachments) =>
+    request(`/groups/${groupId}/messages`, { method: 'POST', body: { content, attachments } }),
   react: (groupId, messageId, emoji) =>
     request(`/groups/${groupId}/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } }),
   tasks: (groupId, params) => request(`/groups/${groupId}/tasks${qs(params)}`),
   createTask: (groupId, payload) =>
     request(`/groups/${groupId}/tasks`, { method: 'POST', body: payload }),
+};
+
+// ---- Uploads (bulk images/videos/docs -> Azure Blob Storage URLs) ----
+export const uploadsApi = {
+  /** `files`: File[]. Multipart, so it bypasses the JSON `request()` wrapper. */
+  async upload(files) {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    const headers = {};
+    const token = tokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    let res;
+    try {
+      res = await fetch(`${API_URL}/uploads`, { method: 'POST', headers, body: form });
+    } catch {
+      throw new Error('Cannot reach the server. Is the backend running?');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.message || 'Upload failed');
+      error.status = res.status;
+      throw error;
+    }
+    return data;
+  },
 };
 
 // ---- Tasks ----

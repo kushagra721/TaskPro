@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { XIcon } from './icons.jsx';
 import Select from './Select.jsx';
 
-const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'];
+const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 // Tasks can't be created in the future, so cap the created-date inputs at today.
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -41,7 +41,7 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
   const clear = () => {
     // Keep status (controlled by the tabs); clear everything else.
     const empty = {
-      priority: '', groupId: '', assigneeId: '', projectId: '',
+      priority: '', groupId: '', assigneeId: '', projectId: '', createdById: '',
       createdFrom: '', createdTo: '', dueFrom: '', dueTo: '',
     };
     setDraft((d) => ({ ...d, ...empty }));
@@ -91,6 +91,19 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
               options={[
                 { value: '', label: 'Anyone' },
                 { value: 'unassigned', label: 'Unassigned' },
+                ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
+              ]}
+            />
+          </div>
+
+          <div className="field">
+            <label className="field__label">Created by</label>
+            <Select
+              value={draft.createdById || ''}
+              onChange={setVal('createdById')}
+              placeholder="Anyone"
+              options={[
+                { value: '', label: 'Anyone' },
                 ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
               ]}
             />

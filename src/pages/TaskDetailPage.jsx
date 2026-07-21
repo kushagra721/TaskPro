@@ -10,10 +10,13 @@ import { fetchGroup, selectGroupDetail } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { selectUser } from '../store/slices/authSlice.js';
-import { STATUS_META, formatDate } from '../utils/status.js';
+import { STATUS_META, formatDate, formatDateTime } from '../utils/status.js';
 import Select from '../components/Select.jsx';
+import DateField from '../components/DateField.jsx';
 import TaskStatusModal from '../components/TaskStatusModal.jsx';
-import { CheckIcon, XIcon, PlusIcon, EditIcon, TrashIcon } from '../components/icons.jsx';
+import { CheckIcon, XIcon, PlusIcon, EditIcon, TrashIcon, FileIcon, DownloadIcon } from '../components/icons.jsx';
+
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
 export default function TaskDetailPage() {
   const { taskId } = useParams();
@@ -164,7 +167,7 @@ export default function TaskDetailPage() {
           <div className="kv"><span className="kv__k">Project</span><span className="kv__v">{task.project?.name || 'No project'}</span></div>
           <div className="kv"><span className="kv__k">Assigned to</span><span className="kv__v">{task.assignee ? task.assignee.name || task.assignee.email : 'Unassigned'}</span></div>
           <div className="kv"><span className="kv__k">Created by</span><span className="kv__v">{task.createdBy ? task.createdBy.name || task.createdBy.email : '—'}</span></div>
-          <div className="kv"><span className="kv__k">Created</span><span className="kv__v">{formatDate(task.createdAt)}</span></div>
+          <div className="kv"><span className="kv__k">Created</span><span className="kv__v">{formatDateTime(task.createdAt)}</span></div>
           <div className="kv"><span className="kv__k">Due date</span><span className="kv__v">{formatDate(task.dueDate)}</span></div>
           {task.remarks && (
             <div className="kv kv--full">
@@ -173,6 +176,36 @@ export default function TaskDetailPage() {
             </div>
           )}
         </div>
+
+        {task.attachments?.length > 0 && (
+          <div className="attach-view">
+            <span className="kv__k">Attachments ({task.attachments.length})</span>
+            <div className="attach-view__grid">
+              {task.attachments.map((a) => (
+                <a
+                  key={a.id}
+                  className="attach-view__item"
+                  href={a.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download={a.kind === 'document' ? a.fileName : undefined}
+                >
+                  {a.kind === 'image' ? (
+                    <img className="attach-view__thumb" src={a.url} alt={a.fileName} />
+                  ) : a.kind === 'video' ? (
+                    <video className="attach-view__thumb" src={a.url} muted />
+                  ) : (
+                    <span className="attach-view__icon">
+                      <FileIcon size={20} />
+                    </span>
+                  )}
+                  <span className="attach-view__name">{a.fileName}</span>
+                  {a.kind === 'document' && <DownloadIcon size={14} />}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Assignee / project / due date are editable only while the task is
             open; once completed or cancelled they're read-only (shown above). */}
@@ -192,13 +225,11 @@ export default function TaskDetailPage() {
           </div>
           <div className="field">
             <label className="field__label" htmlFor="due">Due date</label>
-            <input
+            <DateField
               id="due"
-              className="input"
-              type="date"
               min={new Date().toISOString().slice(0, 10)}
               value={task.dueDate ? task.dueDate.slice(0, 10) : ''}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={setDueDate}
             />
           </div>
         </div>
@@ -280,6 +311,7 @@ function EditTaskModal({ task, projects, onClose, onSaved }) {
   const [title, setTitle] = useState(task.title || '');
   const [description, setDescription] = useState(task.description || '');
   const [projectId, setProjectId] = useState(task.project?.id || '');
+  const [priority, setPriority] = useState(task.priority || 'MEDIUM');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -295,6 +327,7 @@ function EditTaskModal({ task, projects, onClose, onSaved }) {
           title: title.trim(),
           description: description.trim(),
           projectId: projectId || null,
+          priority,
         })
       ).unwrap();
       onSaved?.();
@@ -333,6 +366,10 @@ function EditTaskModal({ task, projects, onClose, onSaved }) {
               ...projects.map((p) => ({ value: p.id, label: p.name })),
             ]}
           />
+        </div>
+        <div className="field">
+          <label className="field__label">Priority</label>
+          <Select value={priority} onChange={setPriority} options={PRIORITY_OPTIONS} />
         </div>
         <div className="modal__actions">
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>

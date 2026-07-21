@@ -5,7 +5,7 @@ import Avatar from './Avatar.jsx';
 import { selectMembers, selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { selectGroupDetail, addGroupMember } from '../store/slices/groupSlice.js';
 import { organizationsApi } from '../api/client.js';
-import { SearchIcon, PlusIcon, MailIcon } from './icons.jsx';
+import { SearchIcon, PlusIcon, MailIcon, XIcon } from './icons.jsx';
 
 /**
  * "Add member" popup for a group.
@@ -21,6 +21,7 @@ export default function AddMemberModal({ groupId, onClose }) {
   const orgMembers = useSelector(selectMembers);
   const detail = useSelector(selectGroupDetail);
   const isAdmin = org?.role === 'ADMIN';
+  const [tab, setTab] = useState('search'); // 'search' | 'invite'
 
   const groupMemberIds = useMemo(
     () => new Set((detail?.id === groupId ? detail.members || [] : []).map((m) => m.id)),
@@ -57,6 +58,16 @@ export default function AddMemberModal({ groupId, onClose }) {
 
   const invitedEmails = new Set(invites.map((i) => i.email.toLowerCase()));
 
+  const revoke = async (invitationId) => {
+    setError('');
+    try {
+      await organizationsApi.cancelInvitation(orgId, invitationId);
+      loadInvites();
+    } catch (err) {
+      setError(err.message || 'Could not cancel the invitation');
+    }
+  };
+
   const invite = async (e) => {
     e.preventDefault();
     setError('');
@@ -78,85 +89,107 @@ export default function AddMemberModal({ groupId, onClose }) {
 
   return (
     <Modal title="Add member" onClose={onClose}>
+      {isAdmin && (
+        <div className="seg-tabs">
+          <button className={`seg-tab ${tab === 'search' ? 'seg-tab--active' : ''}`} onClick={() => setTab('search')}>
+            Search & Add
+          </button>
+          <button className={`seg-tab ${tab === 'invite' ? 'seg-tab--active' : ''}`} onClick={() => setTab('invite')}>
+            Invite New
+          </button>
+        </div>
+      )}
+
       {error && <div className="alert alert--error">{error}</div>}
       {message && <div className="alert alert--info">{message}</div>}
 
-      <div className="search-box" style={{ width: '100%', marginBottom: 12 }}>
-        <SearchIcon size={16} />
-        <input
-          className="search-box__input"
-          style={{ width: '100%' }}
-          placeholder="Search members…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-      </div>
+      {tab === 'search' ? (
+        <>
+          <div className="search-box" style={{ width: '100%', marginBottom: 12 }}>
+            <SearchIcon size={16} />
+            <input
+              className="search-box__input"
+              style={{ width: '100%' }}
+              autoFocus
+              placeholder="Search members…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
 
-      <ul className="member-list member-list--scroll">
-        {filtered.length === 0 && <li className="dropdown__empty">No members match.</li>}
-        {filtered.map((m) => {
-          const joined = groupMemberIds.has(m.id);
-          return (
-            <li key={m.id} className="member">
-              <Avatar name={m.name} email={m.email} size={36} />
-              <div className="member__info">
-                <div className="member__name">
-                  <span className="member__name-text">{m.name || m.email}</span>
-                </div>
-                <div className="member__email">{m.email}</div>
-              </div>
-              {joined ? (
-                <span className="tag tag--success">Joined</span>
-              ) : (
-                <button
-                  className="mini-btn mini-btn--primary"
-                  onClick={() => dispatch(addGroupMember({ groupId, userId: m.id }))}
-                >
-                  <PlusIcon size={13} /> Add
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+          <ul className="member-list member-list--scroll">
+            {filtered.length === 0 && <li className="dropdown__empty">No members match.</li>}
+            {filtered.map((m) => {
+              const joined = groupMemberIds.has(m.id);
+              return (
+                <li key={m.id} className="member">
+                  <Avatar name={m.name} email={m.email} size={36} />
+                  <div className="member__info">
+                    <div className="member__name">
+                      <span className="member__name-text">{m.name || m.email}</span>
+                    </div>
+                    <div className="member__email">{m.email}</div>
+                  </div>
+                  {joined ? (
+                    <span className="tag tag--success">Joined</span>
+                  ) : (
+                    <button
+                      className="mini-btn mini-btn--primary"
+                      onClick={() => dispatch(addGroupMember({ groupId, userId: m.id }))}
+                    >
+                      <PlusIcon size={13} /> Add
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      ) : (
+        <>
+          {/* Pending email invitations into this group. */}
+          {invites.length > 0 && (
+            <ul className="member-list" style={{ marginBottom: 12 }}>
+              {invites.map((i) => (
+                <li key={i.id} className="member">
+                  <span className="org-badge sm ghost">@</span>
+                  <div className="member__info">
+                    <div className="member__name">{i.email}</div>
+                    <div className="member__email">Invited to this group</div>
+                  </div>
+                  <span className="tag">Invited</span>
+                  <button
+                    className="icon-btn icon-btn--danger"
+                    onClick={() => revoke(i.id)}
+                    title="Cancel invitation"
+                    aria-label="Cancel invitation"
+                  >
+                    <XIcon size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
 
-      {/* Pending email invitations into this group. */}
-      {invites.length > 0 && (
-        <ul className="member-list" style={{ marginTop: 8 }}>
-          {invites.map((i) => (
-            <li key={i.id} className="member">
-              <span className="org-badge sm ghost">@</span>
-              <div className="member__info">
-                <div className="member__name">{i.email}</div>
-                <div className="member__email">Invited to this group</div>
-              </div>
-              <span className="tag">Invited</span>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Admins can invite someone who isn't in the org yet. */}
-      {isAdmin && (
-        <form className="invite-inline" onSubmit={invite}>
-          <div className="field" style={{ marginBottom: 8 }}>
-            <label className="field__label">
-              <MailIcon size={13} /> Invite by email
-            </label>
-            <div className="invite-inline__row">
+          <form onSubmit={invite}>
+            <div className="field">
+              <label className="field__label">
+                <MailIcon size={13} /> Invite by email
+              </label>
               <input
                 className="input"
                 type="email"
+                autoFocus
                 placeholder="teammate@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              <button className="btn btn--sm" type="submit" disabled={busy || !email.trim()}>
-                {busy ? <span className="spinner" /> : 'Invite'}
-              </button>
             </div>
-          </div>
-        </form>
+            <button className="btn" type="submit" disabled={busy || !email.trim()}>
+              {busy ? <span className="spinner" /> : 'Invite'}
+            </button>
+          </form>
+        </>
       )}
     </Modal>
   );

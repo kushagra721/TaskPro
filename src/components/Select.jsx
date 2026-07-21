@@ -7,7 +7,7 @@ import { ChevronDownIcon, CheckIcon, SearchIcon } from './icons.jsx';
  * - value, onChange(value)
  * - options: [{ value, label }]
  * - placeholder
- * - searchable: show the search box (default true; auto-hidden for ≤5 options)
+ * - searchable: show the search box (default true)
  */
 export default function Select({ value, onChange, options, placeholder = 'Select…', disabled, searchable = true }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +40,7 @@ export default function Select({ value, onChange, options, placeholder = 'Select
   }, [open]);
 
   const selected = options.find((o) => o.value === value);
-  const showSearch = searchable && options.length > 5;
+  const showSearch = searchable;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

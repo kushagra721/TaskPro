@@ -1091,6 +1091,9 @@ input {
 .modal {
   width: 100%;
   max-width: 440px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   background: var(--panel);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
@@ -1103,6 +1106,7 @@ input {
   align-items: center;
   justify-content: space-between;
   padding: 20px 22px 0;
+  flex-shrink: 0;
 }
 
 .modal__title {
@@ -1112,6 +1116,12 @@ input {
 
 .modal__body {
   padding: 18px 22px 22px;
+  overflow-y: auto;
+}
+
+.modal__foot {
+  flex-shrink: 0;
+  padding: 0 22px 22px;
 }
 
 .modal__intro {
@@ -1733,6 +1743,11 @@ input {
   color: #059669;
 }
 
+.tag--pending {
+  background: rgba(245, 158, 11, 0.16);
+  color: #b45309;
+}
+
 /* Inline "invite by email" row inside the add-member popup. */
 .invite-inline {
   margin-top: 12px;
@@ -1973,12 +1988,17 @@ input {
   margin-top: 4px;
 }
 
-/* Tabs (left) + actions (right) share one underlined row. */
+/* Tabs (left) + actions (right) share one underlined row, bottom-aligned so
+   the (taller) action buttons sit flush on the same baseline as the tabs
+   instead of being vertically centered and poking above the row. */
 .channel__tabbar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 4px;
+  row-gap: 8px;
+  margin-top: 12px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -2142,9 +2162,236 @@ input {
 
 .composer {
   display: flex;
+  align-items: flex-end;
   gap: 10px;
   padding: 12px;
   border-top: 1px solid var(--border);
+}
+
+.composer--column {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.composer__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.attach-view__grid--msg {
+  max-width: 360px;
+}
+
+.attach-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attach-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.attach-item__thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.attach-item__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--surface-3, rgba(99, 102, 241, 0.12));
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.attach-item__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.attach-item__name {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attach-item__size {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.attach-view {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.attach-view__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.attach-view__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+  text-align: center;
+}
+
+.attach-view__thumb {
+  width: 100%;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #000;
+}
+
+.attach-view__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 84px;
+  border-radius: 8px;
+  background: var(--surface-3, rgba(99, 102, 241, 0.12));
+  color: var(--text-muted);
+}
+
+.attach-view__name {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.date-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.date-field__text {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.date-field__text--placeholder {
+  color: var(--text-faint);
+}
+
+.date-field__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+}
+
+.rte {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.rte__toolbar {
+  display: flex;
+  gap: 2px;
+  padding: 5px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.rte__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.rte__btn:hover {
+  background: var(--surface-3, rgba(99, 102, 241, 0.12));
+  color: var(--text);
+}
+
+.rte__input {
+  min-height: 40px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  outline: none;
+}
+
+.rte__input:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.rte__input ul,
+.rte__input ol {
+  padding-left: 22px;
+}
+
+.msg__content ul,
+.msg__content ol {
+  padding-left: 20px;
+}
+
+.msg__content a {
+  color: var(--accent, #6366f1);
+  text-decoration: underline;
 }
 
 /* Task board */
@@ -2278,6 +2525,11 @@ input {
 .prio--high {
   background: rgba(244, 63, 94, 0.14);
   color: #be123c;
+}
+
+.prio--critical {
+  background-color: #dc2626;
+  color: #fff;
 }
 
 /* Dashboard charts */
@@ -2838,9 +3090,10 @@ input {
 
 .channel__actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-shrink: 0;
-  padding-bottom: 6px;
+  margin-left: auto;
 }
 
 /* Utility: hide on the mobile layout (≤900px). */

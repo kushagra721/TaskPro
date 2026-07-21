@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Modal from './Modal.jsx';
+import DateField from './DateField.jsx';
 
 // Per-action copy. `reopen` also collects a new due date.
 const ACTIONS = {
@@ -80,13 +81,7 @@ export default function TaskStatusModal({ type, currentDueDate, onConfirm, onClo
         {cfg.withDueDate && (
           <div className="field">
             <label className="field__label">New due date</label>
-            <input
-              className="input"
-              type="date"
-              min={today}
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
+            <DateField min={today} value={dueDate} onChange={setDueDate} />
           </div>
         )}
 

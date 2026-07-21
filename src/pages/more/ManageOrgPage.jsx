@@ -13,7 +13,7 @@ import Avatar from '../../components/Avatar.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Select from '../../components/Select.jsx';
 import Modal from '../../components/Modal.jsx';
-import { BuildingIcon, PlusIcon } from '../../components/icons.jsx';
+import { BuildingIcon, PlusIcon, XIcon } from '../../components/icons.jsx';
 
 export default function ManageOrgPage() {
   const dispatch = useDispatch();
@@ -62,6 +62,15 @@ export default function ManageOrgPage() {
     loadInvites();
     loadJoinRequests();
   }, [orgId, dispatch, loadInvites, loadJoinRequests]);
+
+  const cancelInvite = async (invitationId) => {
+    try {
+      await organizationsApi.cancelInvitation(orgId, invitationId);
+      loadInvites();
+    } catch (err) {
+      setError(err.message || 'Could not cancel the invitation');
+    }
+  };
 
   const respondJoin = async (reqId, approve) => {
     try {
@@ -270,6 +279,16 @@ export default function ManageOrgPage() {
                   <div className="member__email">Invited as {i.role.toLowerCase()}</div>
                 </div>
                 <span className="role-pill role-pill--pending">PENDING</span>
+                {isAdmin && (
+                  <button
+                    className="icon-btn icon-btn--danger"
+                    onClick={() => cancelInvite(i.id)}
+                    title="Cancel invitation"
+                    aria-label="Cancel invitation"
+                  >
+                    <XIcon size={14} />
+                  </button>
+                )}
               </li>
             ))}
           </ul>

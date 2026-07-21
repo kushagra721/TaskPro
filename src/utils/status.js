@@ -10,3 +10,13 @@ export const statusLabel = (s) => STATUS_META[s]?.label || s;
 
 export const formatDate = (d) =>
   d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+
+// "21 Jul 2026, 02:30 PM"
+export const formatDateTime = (d) =>
+  d
+    ? `${formatDate(d)}, ${new Date(d).toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })}`
+    : '—';

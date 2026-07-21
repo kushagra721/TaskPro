@@ -6,8 +6,8 @@ export const fetchMessages = createAsyncThunk('messages/fetch', async ({ groupId
   return { groupId, messages: res.messages, nextCursor: res.nextCursor };
 });
 
-export const sendMessage = createAsyncThunk('messages/send', async ({ groupId, content }) => {
-  const res = await groupsApi.sendMessage(groupId, content);
+export const sendMessage = createAsyncThunk('messages/send', async ({ groupId, content, attachments }) => {
+  const res = await groupsApi.sendMessage(groupId, content, attachments);
   return { groupId, message: res.message };
 });
 
