@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { uploadsApi } from '../api/client.js';
 import { PaperclipIcon, VideoIcon, XIcon } from './icons.jsx';
 import DocIcon from './DocIcon.jsx';
+import { prettySize } from '../utils/fileSize.js';
 
 const LIMITS = { image: 3, video: 10, document: 10 }; // MB, matches the backend
 
@@ -9,12 +10,6 @@ const kindOf = (mimeType = '') => {
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';
   return 'document';
-};
-
-const prettySize = (bytes) => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
 /**

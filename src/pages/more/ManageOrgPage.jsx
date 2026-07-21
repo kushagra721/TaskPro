@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice.js';
 import {
@@ -17,6 +18,7 @@ import { BuildingIcon, PlusIcon, XIcon } from '../../components/icons.jsx';
 
 export default function ManageOrgPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const user = useSelector(selectUser);
   const org = useSelector(selectCurrentOrg);
   const orgId = useSelector(selectCurrentOrgId);
@@ -33,6 +35,7 @@ export default function ManageOrgPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null); // invitation being confirmed for cancel
 
   const loadInvites = useCallback(async () => {
     if (!orgId || !isAdmin) return;
@@ -63,9 +66,11 @@ export default function ManageOrgPage() {
     loadJoinRequests();
   }, [orgId, dispatch, loadInvites, loadJoinRequests]);
 
-  const cancelInvite = async (invitationId) => {
+  const cancelInvite = async () => {
+    if (!cancelTarget) return;
     try {
-      await organizationsApi.cancelInvitation(orgId, invitationId);
+      await organizationsApi.cancelInvitation(orgId, cancelTarget.id);
+      setCancelTarget(null);
       loadInvites();
     } catch (err) {
       setError(err.message || 'Could not cancel the invitation');
@@ -116,25 +121,6 @@ export default function ManageOrgPage() {
       setError(err.message || 'Could not send invitation');
     } finally {
       setBusy(false);
-    }
-  };
-
-  const changeRole = async (m) => {
-    const next = m.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
-    try {
-      await organizationsApi.changeRole(orgId, m.id, next);
-      dispatch(fetchMembers(orgId));
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const remove = async (m) => {
-    try {
-      await organizationsApi.removeMember(orgId, m.id);
-      dispatch(fetchMembers(orgId));
-    } catch (err) {
-      setError(err.message);
     }
   };
 
@@ -240,7 +226,7 @@ export default function ManageOrgPage() {
         </div>
         <ul className="member-list">
           {members.map((m) => (
-            <li key={m.id} className="member">
+            <li key={m.id} className="member member--link" onClick={() => navigate(`/more/members/${m.id}`)}>
               <Avatar name={m.name} email={m.email} size={38} />
               <div className="member__info">
                 <div className="member__name">
@@ -250,16 +236,6 @@ export default function ManageOrgPage() {
                 <div className="member__email">{m.email}</div>
               </div>
               <span className={`role-pill role-pill--${m.role.toLowerCase()}`}>{m.role}</span>
-              {isAdmin && m.id !== user?.id && (
-                <div className="member__actions">
-                  <button className="mini-btn" onClick={() => changeRole(m)}>
-                    {m.role === 'ADMIN' ? 'Make member' : 'Make admin'}
-                  </button>
-                  <button className="mini-btn mini-btn--danger" onClick={() => remove(m)}>
-                    Remove
-                  </button>
-                </div>
-              )}
             </li>
           ))}
         </ul>
@@ -279,20 +255,32 @@ export default function ManageOrgPage() {
                   <div className="member__email">Invited as {i.role.toLowerCase()}</div>
                 </div>
                 <span className="role-pill role-pill--pending">PENDING</span>
-                {isAdmin && (
-                  <button
-                    className="icon-btn icon-btn--danger"
-                    onClick={() => cancelInvite(i.id)}
-                    title="Cancel invitation"
-                    aria-label="Cancel invitation"
-                  >
-                    <XIcon size={14} />
-                  </button>
-                )}
+                <button
+                  className="icon-btn icon-btn--danger"
+                  onClick={() => setCancelTarget(i)}
+                  title="Cancel invitation"
+                  aria-label="Cancel invitation"
+                >
+                  <XIcon size={14} />
+                </button>
               </li>
             ))}
           </ul>
         </section>
+      )}
+
+      {cancelTarget && (
+        <Modal title="Cancel invitation" onClose={() => setCancelTarget(null)}>
+          <p className="modal__intro">
+            Cancel the invitation to <strong>{cancelTarget.email}</strong>? They won&apos;t be able to join with this invite anymore.
+          </p>
+          <div className="modal__actions">
+            <button className="btn btn--ghost" onClick={() => setCancelTarget(null)}>Keep invitation</button>
+            <button className="btn btn--danger" onClick={cancelInvite}>
+              <XIcon size={16} /> Cancel invitation
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

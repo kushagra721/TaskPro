@@ -74,9 +74,11 @@ export const organizationsApi = {
   update: (orgId, payload) => request(`/organizations/${orgId}`, { method: 'PATCH', body: payload }),
   dashboard: (orgId, params) => request(`/organizations/${orgId}/dashboard${qs(params)}`),
   members: (orgId, params) => request(`/organizations/${orgId}/members${qs(params)}`),
+  memberProfile: (orgId, userId) => request(`/organizations/${orgId}/members/${userId}`),
   myTasks: (orgId, params) => request(`/organizations/${orgId}/my-tasks${qs(params)}`),
   activities: (orgId, params) => request(`/organizations/${orgId}/activities${qs(params)}`),
   reports: (orgId, params) => request(`/organizations/${orgId}/reports${qs(params)}`),
+  storageReport: (orgId) => request(`/organizations/${orgId}/storage`),
   changeRole: (orgId, userId, role) =>
     request(`/organizations/${orgId}/members/${userId}/role`, { method: 'PATCH', body: { role } }),
   removeMember: (orgId, userId) =>
@@ -136,6 +138,7 @@ export const groupsApi = {
   create: (orgId, payload) => request(`/organizations/${orgId}/groups`, { method: 'POST', body: payload }),
   get: (groupId) => request(`/groups/${groupId}`),
   update: (groupId, payload) => request(`/groups/${groupId}`, { method: 'PATCH', body: payload }),
+  remove: (groupId) => request(`/groups/${groupId}`, { method: 'DELETE' }),
   addMember: (groupId, userId) =>
     request(`/groups/${groupId}/members`, { method: 'POST', body: { userId } }),
   removeMember: (groupId, userId) =>

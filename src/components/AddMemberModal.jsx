@@ -34,6 +34,7 @@ export default function AddMemberModal({ groupId, onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   // Only admins can read/create invitations.
   const loadInvites = () => {
@@ -58,10 +59,12 @@ export default function AddMemberModal({ groupId, onClose }) {
 
   const invitedEmails = new Set(invites.map((i) => i.email.toLowerCase()));
 
-  const revoke = async (invitationId) => {
+  const revoke = async () => {
+    if (!cancelTarget) return;
     setError('');
     try {
-      await organizationsApi.cancelInvitation(orgId, invitationId);
+      await organizationsApi.cancelInvitation(orgId, cancelTarget.id);
+      setCancelTarget(null);
       loadInvites();
     } catch (err) {
       setError(err.message || 'Could not cancel the invitation');
@@ -160,7 +163,7 @@ export default function AddMemberModal({ groupId, onClose }) {
                   <span className="tag">Invited</span>
                   <button
                     className="icon-btn icon-btn--danger"
-                    onClick={() => revoke(i.id)}
+                    onClick={() => setCancelTarget(i)}
                     title="Cancel invitation"
                     aria-label="Cancel invitation"
                   >
@@ -190,6 +193,20 @@ export default function AddMemberModal({ groupId, onClose }) {
             </button>
           </form>
         </>
+      )}
+
+      {cancelTarget && (
+        <Modal title="Cancel invitation" onClose={() => setCancelTarget(null)}>
+          <p className="modal__intro">
+            Cancel the invitation to <strong>{cancelTarget.email}</strong>? They won&apos;t be able to join with this invite anymore.
+          </p>
+          <div className="modal__actions">
+            <button className="btn btn--ghost" onClick={() => setCancelTarget(null)}>Keep invitation</button>
+            <button className="btn btn--danger" onClick={revoke}>
+              <XIcon size={16} /> Cancel invitation
+            </button>
+          </div>
+        </Modal>
       )}
     </Modal>
   );

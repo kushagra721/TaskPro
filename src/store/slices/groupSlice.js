@@ -33,6 +33,11 @@ export const removeGroupMember = createAsyncThunk('groups/removeMember', async (
   return { groupId, userId };
 });
 
+export const deleteGroup = createAsyncThunk('groups/delete', async (groupId) => {
+  await groupsApi.remove(groupId);
+  return groupId;
+});
+
 const groupSlice = createSlice({
   name: 'groups',
   initialState: { list: [], detail: null, loading: false },
@@ -85,6 +90,10 @@ const groupSlice = createSlice({
         if (state.detail && state.detail.id === action.payload.groupId) {
           state.detail.members = state.detail.members.filter((m) => m.id !== action.payload.userId);
         }
+      })
+      .addCase(deleteGroup.fulfilled, (state, action) => {
+        state.list = state.list.filter((g) => g.id !== action.payload);
+        if (state.detail?.id === action.payload) state.detail = null;
       })
       // Listen for messages (sent locally or arriving over the socket) by
       // literal action type — avoids a circular import with messageSlice —

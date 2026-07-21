@@ -1,16 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser, setUser } from '../../store/slices/authSlice.js';
-import { usersApi } from '../../api/client.js';
+import { selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlice.js';
+import { usersApi, organizationsApi } from '../../api/client.js';
 import Avatar from '../../components/Avatar.jsx';
+import { formatDate } from '../../utils/status.js';
+import { prettySize } from '../../utils/fileSize.js';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
+  const org = useSelector(selectCurrentOrg);
+  const orgId = useSelector(selectCurrentOrgId);
   const [name, setName] = useState(user?.name || '');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    if (!orgId || !user?.id) return;
+    organizationsApi
+      .memberProfile(orgId, user.id)
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, [orgId, user?.id]);
+  const member = profile?.member;
 
   const save = async (e) => {
     e.preventDefault();
@@ -37,6 +52,32 @@ export default function ProfilePage() {
           <div className="profile-head__email">{user?.email}</div>
         </div>
       </div>
+
+      {member && (
+        <>
+          <div className="user-profile__tags" style={{ marginTop: -8, marginBottom: 18 }}>
+            <span className={`role-pill role-pill--${member.role.toLowerCase()}`}>{member.role}</span>
+            <span className="user-profile__meta" style={{ marginTop: 0 }}>
+              Member of {org?.name} since {formatDate(member.joinedAt)}
+            </span>
+          </div>
+
+          <div className="stat-grid stat-grid--3">
+            <div className="stat-card stat-card--indigo">
+              <div className="stat-card__value">{member.groups.length}</div>
+              <div className="stat-card__label">Groups joined</div>
+            </div>
+            <div className="stat-card stat-card--violet">
+              <div className="stat-card__value">{member.taskCount}</div>
+              <div className="stat-card__label">Tasks assigned</div>
+            </div>
+            <div className="stat-card stat-card--amber">
+              <div className="stat-card__value">{prettySize(member.storage.totalBytes)}</div>
+              <div className="stat-card__label">Storage used ({member.storage.totalFiles} files)</div>
+            </div>
+          </div>
+        </>
+      )}
 
       <form className="card-form" onSubmit={save}>
         {message && <div className="alert alert--info">{message}</div>}

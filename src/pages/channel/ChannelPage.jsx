@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchGroup, updateGroup, selectGroupDetail } from '../../store/slices/groupSlice.js';
+import { fetchGroup, updateGroup, deleteGroup, selectGroupDetail } from '../../store/slices/groupSlice.js';
 import { fetchMembers, selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlice.js';
 import { selectUser } from '../../store/slices/authSlice.js';
 import { joinGroupRoom, leaveGroupRoom } from '../../realtime/socket.js';
@@ -12,7 +12,8 @@ import AddMemberModal from '../../components/AddMemberModal.jsx';
 import CreateTaskModal from '../../components/CreateTaskModal.jsx';
 import Modal from '../../components/Modal.jsx';
 import Fab from '../../components/Fab.jsx';
-import { PlusIcon, EditIcon } from '../../components/icons.jsx';
+import MoreMenu from '../../components/MoreMenu.jsx';
+import { PlusIcon, EditIcon, TrashIcon } from '../../components/icons.jsx';
 
 export default function ChannelPage() {
   const { groupId } = useParams();
@@ -26,6 +27,9 @@ export default function ChannelPage() {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [createTaskOpen, setCreateTaskOpen] = useState(false);
   const [editGroupOpen, setEditGroupOpen] = useState(false);
+  const [deleteGroupOpen, setDeleteGroupOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     dispatch(fetchGroup(groupId));
@@ -37,6 +41,18 @@ export default function ChannelPage() {
   const loaded = group && group.id === groupId;
   const canManage = org?.role === 'ADMIN' || group?.createdById === user?.id;
 
+  const doDeleteGroup = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await dispatch(deleteGroup(groupId)).unwrap();
+      navigate('/groups');
+    } catch (err) {
+      setDeleteError(err.message || 'Could not delete the channel');
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="channel">
       <div className="channel__header">
@@ -47,9 +63,12 @@ export default function ChannelPage() {
           <h1 className="channel__title">#{loaded ? group.name : '…'}</h1>
           {loaded && <span className="channel__members">{group.members?.length || 0} members</span>}
           {loaded && canManage && (
-            <button className="icon-btn" onClick={() => setEditGroupOpen(true)} title="Edit channel" aria-label="Edit channel">
-              <EditIcon size={15} />
-            </button>
+            <MoreMenu
+              items={[
+                { label: 'Edit group', icon: <EditIcon size={14} />, onClick: () => setEditGroupOpen(true) },
+                { label: 'Delete group', icon: <TrashIcon size={14} />, onClick: () => setDeleteGroupOpen(true), danger: true },
+              ]}
+            />
           )}
         </div>
         {loaded && group.description && <p className="channel__desc">{group.description}</p>}
@@ -103,6 +122,29 @@ export default function ChannelPage() {
           onSaved={() => setEditGroupOpen(false)}
         />
       )}
+
+      {deleteGroupOpen && (
+        <Modal title="Delete group" onClose={() => !deleting && setDeleteGroupOpen(false)}>
+          {deleteError && <div className="alert alert--error">{deleteError}</div>}
+          <p className="modal__intro">
+            Delete <strong>&ldquo;#{group?.name}&rdquo;</strong>? This permanently deletes:
+          </p>
+          <ul className="modal__list">
+            <li>All tasks under this channel</li>
+            <li>All chat messages in this channel</li>
+            <li>All timeline activity for those tasks</li>
+          </ul>
+          <p className="modal__intro">This can&apos;t be undone.</p>
+          <div className="modal__actions">
+            <button className="btn btn--ghost" onClick={() => setDeleteGroupOpen(false)} disabled={deleting}>
+              Cancel
+            </button>
+            <button className="btn btn--danger" onClick={doDeleteGroup} disabled={deleting}>
+              {deleting ? <span className="spinner" /> : (<><TrashIcon size={16} /> Delete group</>)}
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -131,7 +173,7 @@ function EditGroupModal({ group, onClose, onSaved }) {
   };
 
   return (
-    <Modal title="Edit channel" onClose={onClose}>
+    <Modal title="Edit group" onClose={onClose}>
       <form onSubmit={submit}>
         {error && <div className="alert alert--error">{error}</div>}
         <div className="field">

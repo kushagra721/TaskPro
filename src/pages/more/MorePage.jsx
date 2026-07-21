@@ -4,8 +4,8 @@ import {
   UserIcon,
   BuildingIcon,
   MailIcon,
-  FolderIcon,
   ActivityIcon,
+  DatabaseIcon,
   LogoutIcon,
   ChevronRightIcon,
 } from '../../components/icons.jsx';
@@ -34,16 +34,13 @@ export default function MorePage() {
       desc: 'Organizations you belong to',
       Icon: BuildingIcon,
     },
-    {
-      to: '/more/projects',
-      label: 'Manage Projects',
-      desc: 'Projects tasks can be grouped under',
-      Icon: FolderIcon,
-    },
     { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your organization', Icon: ActivityIcon },
     // Manage Members is admin-only.
     ...(isAdmin
-      ? [{ to: '/more/members', label: 'Manage Members', desc: 'Members, roles and invitations', Icon: UserIcon }]
+      ? [
+          { to: '/more/members', label: 'Manage Members', desc: 'Members, roles and invitations', Icon: UserIcon },
+          { to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon },
+        ]
       : []),
     {
       to: '/more/invitations',

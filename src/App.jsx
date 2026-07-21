@@ -13,6 +13,8 @@ import ReportsPage from './pages/ReportsPage.jsx';
 import MorePage from './pages/more/MorePage.jsx';
 import ProfilePage from './pages/more/ProfilePage.jsx';
 import ManageOrgPage from './pages/more/ManageOrgPage.jsx';
+import UserProfilePage from './pages/more/UserProfilePage.jsx';
+import StorageReportPage from './pages/more/StorageReportPage.jsx';
 import ManageOrganizationsPage from './pages/more/ManageOrganizationsPage.jsx';
 import ManageProjectsPage from './pages/more/ManageProjectsPage.jsx';
 import ManageTasksPage from './pages/more/ManageTasksPage.jsx';
@@ -65,6 +67,8 @@ export default function App() {
         <Route path="/more" element={<MorePage />} />
         <Route path="/more/profile" element={<ProfilePage />} />
         <Route path="/more/members" element={<ManageOrgPage />} />
+        <Route path="/more/members/:userId" element={<UserProfilePage />} />
+        <Route path="/more/storage" element={<StorageReportPage />} />
         <Route path="/more/organizations" element={<ManageOrganizationsPage />} />
         <Route path="/more/projects" element={<ManageProjectsPage />} />
         <Route path="/more/tasks" element={<RedirectToTasks />} />

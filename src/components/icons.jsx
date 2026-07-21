@@ -226,6 +226,21 @@ export const VideoIcon = ({ size, ...p }) => (
   </svg>
 );
 
+export const ShieldIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 3 4 6.5V11c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V6.5Z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+);
+
+export const DatabaseIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <ellipse cx="12" cy="5.5" rx="8" ry="3" />
+    <path d="M4 5.5V12c0 1.66 3.58 3 8 3s8-1.34 8-3V5.5" />
+    <path d="M4 12v6.5c0 1.66 3.58 3 8 3s8-1.34 8-3V12" />
+  </svg>
+);
+
 export const ActivityIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M3 12h4l3 8 4-16 3 8h4" />
