@@ -1,18 +1,27 @@
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { BoldIcon, ItalicIcon, UnderlineIcon, ListIcon, ListOrderedIcon, LinkIcon } from './icons.jsx';
 
 /**
- * Minimal contentEditable rich-text editor (bold/italic/underline/lists/link)
- * for the chat composer. Uses execCommand — deprecated but still supported by
- * every browser this app targets, and it avoids pulling in an editor library.
- * `onChange` fires with the current innerHTML; `onSubmitKey` fires on Enter
- * (without Shift) so the caller can send the message.
+ * Minimal contentEditable rich-text editor (bold/italic/underline/lists/link).
+ * Uses execCommand — deprecated but still supported by every browser this app
+ * targets, and it avoids pulling in an editor library. `onChange` fires with
+ * the current innerHTML. `onSubmitKey`, if passed, fires on Enter (without
+ * Shift) instead of inserting a newline — for a single-line send-on-Enter
+ * composer (chat); omit it for a multi-line field (task description) where
+ * Enter should just start a new line. `defaultValue` seeds initial HTML
+ * (edit forms) — the editor is otherwise uncontrolled after that.
  */
 const RichTextEditor = forwardRef(function RichTextEditor(
-  { onChange, onSubmitKey, placeholder = 'Message this group…' },
+  { onChange, onSubmitKey, defaultValue, placeholder = 'Message this group…' },
   ref
 ) {
   const editorRef = useRef(null);
+
+  useEffect(() => {
+    if (editorRef.current && defaultValue) editorRef.current.innerHTML = defaultValue;
+    // Mount-only — the editor is uncontrolled from then on.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useImperativeHandle(ref, () => ({
     clear() {
@@ -40,9 +49,9 @@ const RichTextEditor = forwardRef(function RichTextEditor(
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && onSubmitKey) {
       e.preventDefault();
-      onSubmitKey?.();
+      onSubmitKey();
     }
   };
 

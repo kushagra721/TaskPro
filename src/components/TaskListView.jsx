@@ -40,7 +40,6 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode }) {
               <tr key={t.id} className="clickable-row" onClick={() => onOpen(t.id)}>
                 <td>
                   <div className="task-table__name">{t.title}</div>
-                  {subtitle?.(t) && <div className="task-table__group">{subtitle(t)}</div>}
                 </td>
                 <td><span className={`prio prio--${t.priority.toLowerCase()}`}>{t.priority}</span></td>
                 <td className="nowrap">{relativeDay(t.createdAt)}</td>

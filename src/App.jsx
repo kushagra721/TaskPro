@@ -19,6 +19,7 @@ import ManageTasksPage from './pages/more/ManageTasksPage.jsx';
 import ActivitiesPage from './pages/more/ActivitiesPage.jsx';
 import InvitationsPage from './pages/more/InvitationsPage.jsx';
 import TaskDetailPage from './pages/TaskDetailPage.jsx';
+import ProjectDetailPage from './pages/ProjectDetailPage.jsx';
 
 // Manage Tasks moved from More to the main Tasks tab. Old links (and the
 // dashboard's deep-links) must keep their query string through the redirect.
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/groups/:groupId" element={<ChannelPage />} />
         <Route path="/tasks" element={<ManageTasksPage />} />
         <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+        <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/more/profile" element={<ProfilePage />} />

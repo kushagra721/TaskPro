@@ -101,6 +101,7 @@ export const projectsApi = {
   list: (orgId, params) => request(`/organizations/${orgId}/projects${qs(params)}`),
   // `all=1` returns every project unpaginated — used by the task form dropdowns.
   listAll: (orgId) => request(`/organizations/${orgId}/projects${qs({ all: 1 })}`),
+  get: (orgId, projectId) => request(`/organizations/${orgId}/projects/${projectId}`),
   create: (orgId, payload) => request(`/organizations/${orgId}/projects`, { method: 'POST', body: payload }),
   update: (orgId, projectId, payload) =>
     request(`/organizations/${orgId}/projects/${projectId}`, { method: 'PATCH', body: payload }),
@@ -186,4 +187,9 @@ export const tasksApi = {
   activities: (taskId) => request(`/tasks/${taskId}/activities`),
   addMessage: (taskId, message) =>
     request(`/tasks/${taskId}/activities`, { method: 'POST', body: { message } }),
+  // Attachments — add is open to any group member, remove is creator/admin only.
+  addAttachments: (taskId, attachments) =>
+    request(`/tasks/${taskId}/attachments`, { method: 'POST', body: { attachments } }),
+  removeAttachment: (taskId, attachmentId) =>
+    request(`/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 };

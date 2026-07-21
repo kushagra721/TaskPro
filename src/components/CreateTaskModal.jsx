@@ -4,10 +4,12 @@ import Modal from './Modal.jsx';
 import Select from './Select.jsx';
 import DateField from './DateField.jsx';
 import AttachmentPicker from './AttachmentPicker.jsx';
+import RichTextEditor from './RichTextEditor.jsx';
 import { createTask } from '../store/slices/taskSlice.js';
 import { selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
@@ -27,7 +29,14 @@ const tomorrow = () => {
  *   see people they share a group with — same scoping as the org roster/filters).
  * `onCreated` lets the caller refresh a list the slice can't update on its own.
  */
-export default function CreateTaskModal({ groupId, askGroup, members: askGroupMembers = [], onClose, onCreated }) {
+export default function CreateTaskModal({
+  groupId,
+  askGroup,
+  members: askGroupMembers = [],
+  defaultProjectId = '',
+  onClose,
+  onCreated,
+}) {
   const dispatch = useDispatch();
   const orgId = useSelector(selectCurrentOrgId);
   const detail = useSelector(selectGroupDetail);
@@ -38,7 +47,7 @@ export default function CreateTaskModal({ groupId, askGroup, members: askGroupMe
   const [form, setForm] = useState({
     title: '', description: '', priority: 'MEDIUM', assigneeId: '',
     // Due date defaults to tomorrow.
-    dueDate: tomorrow(), projectId: '',
+    dueDate: tomorrow(), projectId: defaultProjectId,
   });
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
@@ -69,7 +78,7 @@ export default function CreateTaskModal({ groupId, askGroup, members: askGroupMe
         createTask({
           groupId: pickedGroupId,
           title: form.title.trim(),
-          description: form.description,
+          description: htmlToText(form.description) ? sanitizeHtml(form.description) : '',
           priority: form.priority,
           assigneeId: form.assigneeId || null,
           projectId: form.projectId || null,
@@ -123,7 +132,7 @@ export default function CreateTaskModal({ groupId, askGroup, members: askGroupMe
 
         <div className="field">
           <label className="field__label">Description (optional)</label>
-          <input className="input" value={form.description} onChange={up('description')} />
+          <RichTextEditor onChange={set('description')} placeholder="Add more detail…" />
         </div>
 
         <div className="row2">

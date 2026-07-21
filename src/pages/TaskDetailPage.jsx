@@ -14,7 +14,11 @@ import { STATUS_META, formatDate, formatDateTime } from '../utils/status.js';
 import Select from '../components/Select.jsx';
 import DateField from '../components/DateField.jsx';
 import TaskStatusModal from '../components/TaskStatusModal.jsx';
-import { CheckIcon, XIcon, PlusIcon, EditIcon, TrashIcon, FileIcon, DownloadIcon } from '../components/icons.jsx';
+import RichTextEditor from '../components/RichTextEditor.jsx';
+import AttachmentPicker from '../components/AttachmentPicker.jsx';
+import { CheckIcon, XIcon, PlusIcon, EditIcon, TrashIcon, DownloadIcon } from '../components/icons.jsx';
+import DocIcon from '../components/DocIcon.jsx';
+import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
@@ -40,6 +44,8 @@ export default function TaskDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [tab, setTab] = useState('details');
+  const [editingAttachments, setEditingAttachments] = useState(false);
+  const [attachError, setAttachError] = useState('');
   // Only members of the task's group can be assigned. Guard against the initial
   // render where both are null (undefined === undefined would be truthy).
   const members = groupDetail && groupDetail.id === task?.groupId ? groupDetail.members || [] : [];
@@ -92,6 +98,27 @@ export default function TaskDetailPage() {
       groupId: task.groupId,
       dueDate: value ? new Date(value).toISOString() : null,
     }));
+  const setPriority = (priority) => dispatch(updateTask({ taskId: task.id, groupId: task.groupId, priority }));
+  const setProject = (projectId) =>
+    dispatch(updateTask({ taskId: task.id, groupId: task.groupId, projectId: projectId || null }));
+  const addAttachments = async (newFiles) => {
+    setAttachError('');
+    try {
+      await tasksApi.addAttachments(task.id, newFiles);
+      dispatch(fetchTaskDetail(task.id));
+    } catch (err) {
+      setAttachError(err.message || 'Could not add the attachment');
+    }
+  };
+  const removeAttachment = async (attachmentId) => {
+    setAttachError('');
+    try {
+      await tasksApi.removeAttachment(task.id, attachmentId);
+      dispatch(fetchTaskDetail(task.id));
+    } catch (err) {
+      setAttachError(err.message || 'Could not remove the attachment');
+    }
+  };
   // The status modal returns { status, remarks, dueDate? }; unwrap so it can
   // surface errors and only close on success.
   const applyStatus = async (payload) => {
@@ -124,7 +151,9 @@ export default function TaskDetailPage() {
         </div>
 
         <h1 className="task-detail__title">{task.title}</h1>
-        {task.description && <p className="task-detail__desc">{task.description}</p>}
+        {htmlToText(task.description) && (
+          <div className="task-detail__desc" dangerouslySetInnerHTML={{ __html: sanitizeHtml(task.description) }} />
+        )}
 
         {/* Same tab pattern as the channel page. */}
         <div className="channel__tabbar task-detail__tabbar">
@@ -177,39 +206,67 @@ export default function TaskDetailPage() {
           )}
         </div>
 
-        {task.attachments?.length > 0 && (
-          <div className="attach-view">
-            <span className="kv__k">Attachments ({task.attachments.length})</span>
+        <div className="attach-view">
+          <div className="attach-view__head">
+            <span className="kv__k">Attachments{task.attachments?.length ? ` (${task.attachments.length})` : ''}</span>
+            {canManage && task.attachments?.length > 0 && (
+              <button className="mini-btn" onClick={() => setEditingAttachments((v) => !v)}>
+                <EditIcon size={12} /> {editingAttachments ? 'Done' : 'Edit attachments'}
+              </button>
+            )}
+          </div>
+
+          {attachError && <div className="alert alert--error">{attachError}</div>}
+
+          {task.attachments?.length > 0 && (
             <div className="attach-view__grid">
               {task.attachments.map((a) => (
-                <a
-                  key={a.id}
-                  className="attach-view__item"
-                  href={a.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download={a.kind === 'document' ? a.fileName : undefined}
-                >
-                  {a.kind === 'image' ? (
-                    <img className="attach-view__thumb" src={a.url} alt={a.fileName} />
-                  ) : a.kind === 'video' ? (
-                    <video className="attach-view__thumb" src={a.url} muted />
-                  ) : (
-                    <span className="attach-view__icon">
-                      <FileIcon size={20} />
-                    </span>
+                <div key={a.id} className="attach-view__wrap">
+                  <a
+                    className="attach-view__item"
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    download={a.kind === 'document' ? a.fileName : undefined}
+                  >
+                    {a.kind === 'image' ? (
+                      <img className="attach-view__thumb" src={a.url} alt={a.fileName} />
+                    ) : a.kind === 'video' ? (
+                      <video className="attach-view__thumb" src={a.url} muted />
+                    ) : (
+                      <span className="attach-view__icon">
+                        <DocIcon fileName={a.fileName} mimeType={a.mimeType} />
+                      </span>
+                    )}
+                    <span className="attach-view__name">{a.fileName}</span>
+                    {a.kind === 'document' && <DownloadIcon size={14} />}
+                  </a>
+                  {editingAttachments && (
+                    <button
+                      type="button"
+                      className="attach-view__remove"
+                      onClick={() => removeAttachment(a.id)}
+                      aria-label="Remove attachment"
+                    >
+                      <XIcon size={12} />
+                    </button>
                   )}
-                  <span className="attach-view__name">{a.fileName}</span>
-                  {a.kind === 'document' && <DownloadIcon size={14} />}
-                </a>
+                </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Assignee / project / due date are editable only while the task is
-            open; once completed or cancelled they're read-only (shown above). */}
-        {task.status === 'OPEN' && (
+          {/* Any group member can add more attachments. */}
+          <div className="attach-view__add">
+            <AttachmentPicker value={[]} onChange={addAttachments} />
+          </div>
+        </div>
+
+        {/* Assignee/due date/priority/project are editable only while the task
+            is open, and only by the creator or an org admin — same rule as
+            editing the title/description. Everyone else just sees the
+            read-only values above. */}
+        {task.status === 'OPEN' && canManage && (
         <div className="task-detail__controls">
           <div className="field">
             <label className="field__label">Assignee</label>
@@ -232,6 +289,22 @@ export default function TaskDetailPage() {
               onChange={setDueDate}
             />
           </div>
+          <div className="field">
+            <label className="field__label">Priority</label>
+            <Select value={task.priority} onChange={setPriority} options={PRIORITY_OPTIONS} />
+          </div>
+          <div className="field">
+            <label className="field__label">Project</label>
+            <Select
+              value={task.project?.id || ''}
+              onChange={setProject}
+              placeholder="No project"
+              options={[
+                { value: '', label: 'No project' },
+                ...projects.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          </div>
         </div>
         )}
         </>
@@ -249,7 +322,6 @@ export default function TaskDetailPage() {
       {editOpen && (
         <EditTaskModal
           task={task}
-          projects={projects}
           onClose={() => setEditOpen(false)}
           onSaved={() => { setEditOpen(false); loadTimeline(); }}
         />
@@ -305,13 +377,12 @@ export default function TaskDetailPage() {
   );
 }
 
-/** Edit a task's title, description and project (creator/admin only). */
-function EditTaskModal({ task, projects, onClose, onSaved }) {
+/** Edit a task's title and description (creator/admin only). Priority and
+ *  project are edited inline on the page instead — see task-detail__controls. */
+function EditTaskModal({ task, onClose, onSaved }) {
   const dispatch = useDispatch();
   const [title, setTitle] = useState(task.title || '');
   const [description, setDescription] = useState(task.description || '');
-  const [projectId, setProjectId] = useState(task.project?.id || '');
-  const [priority, setPriority] = useState(task.priority || 'MEDIUM');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -325,9 +396,7 @@ function EditTaskModal({ task, projects, onClose, onSaved }) {
           taskId: task.id,
           groupId: task.groupId,
           title: title.trim(),
-          description: description.trim(),
-          projectId: projectId || null,
-          priority,
+          description: htmlToText(description) ? sanitizeHtml(description) : '',
         })
       ).unwrap();
       onSaved?.();
@@ -347,29 +416,7 @@ function EditTaskModal({ task, projects, onClose, onSaved }) {
         </div>
         <div className="field">
           <label className="field__label">Description</label>
-          <textarea
-            className="input textarea"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add more detail…"
-          />
-        </div>
-        <div className="field">
-          <label className="field__label">Project</label>
-          <Select
-            value={projectId}
-            onChange={setProjectId}
-            placeholder="No project"
-            options={[
-              { value: '', label: 'No project' },
-              ...projects.map((p) => ({ value: p.id, label: p.name })),
-            ]}
-          />
-        </div>
-        <div className="field">
-          <label className="field__label">Priority</label>
-          <Select value={priority} onChange={setPriority} options={PRIORITY_OPTIONS} />
+          <RichTextEditor defaultValue={description} onChange={setDescription} placeholder="Add more detail…" />
         </div>
         <div className="modal__actions">
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>

@@ -12,6 +12,7 @@ const descriptor = (a) => {
     return { label: 'REOPENED', tone: 'info', Icon: ActivityIcon };
   }
   if (a.type === 'task.created') return { label: 'ADDED', tone: 'info', Icon: PlusIcon };
+  if (a.type === 'task.updated') return { label: 'EDITED', tone: 'neutral', Icon: ActivityIcon };
   if (a.type === 'task.message') return { label: 'MESSAGE', tone: 'neutral', Icon: MailIcon };
   if (a.type.startsWith('project.')) return { label: 'PROJECT', tone: 'info', Icon: ActivityIcon };
   if (a.type.startsWith('group.')) return { label: 'GROUP', tone: 'info', Icon: ActivityIcon };

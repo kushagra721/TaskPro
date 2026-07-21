@@ -85,7 +85,22 @@ const groupSlice = createSlice({
         if (state.detail && state.detail.id === action.payload.groupId) {
           state.detail.members = state.detail.members.filter((m) => m.id !== action.payload.userId);
         }
-      });
+      })
+      // Listen for messages (sent locally or arriving over the socket) by
+      // literal action type — avoids a circular import with messageSlice —
+      // so the Chat tab's message count stays live instead of only updating
+      // on the next full group fetch.
+      .addMatcher(
+        (action) => action.type === 'messages/send/fulfilled' || action.type === 'messages/messageReceived',
+        (state, action) => {
+          const groupId = action.payload?.groupId;
+          if (state.detail?.id === groupId && typeof state.detail.messageCount === 'number') {
+            state.detail.messageCount += 1;
+          }
+          const g = state.list.find((x) => x.id === groupId);
+          if (g && typeof g.messageCount === 'number') g.messageCount += 1;
+        }
+      );
   },
 });
 

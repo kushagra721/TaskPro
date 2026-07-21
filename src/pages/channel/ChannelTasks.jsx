@@ -17,6 +17,7 @@ import { useTaskQuery } from '../../hooks/useTaskQuery.js';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { selectAllProjects } from '../../store/slices/projectSlice.js';
 import { STATUS_META } from '../../utils/status.js';
+import { htmlToText } from '../../utils/sanitizeHtml.js';
 
 export default function ChannelTasks({ groupId }) {
   const dispatch = useDispatch();
@@ -72,7 +73,7 @@ export default function ChannelTasks({ groupId }) {
           <TaskListView
             tasks={tasks}
             onOpen={(id) => navigate(`/tasks/${id}`)}
-            subtitle={(t) => t.description || null}
+            subtitle={(t) => htmlToText(t.description) || null}
             statusNode={statusNode}
           />
           <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />

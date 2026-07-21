@@ -17,6 +17,7 @@ const TITLES = [
   { match: '/groups', title: 'Groups' },
   { match: '/tasks/', title: 'Task Details' },
   { match: '/tasks', title: 'Tasks' },
+  { match: '/projects/', title: 'Project Details' },
   { match: '/reports', title: 'Reports' },
   { match: '/more/profile', title: 'My Profile' },
   { match: '/more/members', title: 'Manage Members' },

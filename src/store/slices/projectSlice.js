@@ -13,6 +13,12 @@ export const fetchAllProjects = createAsyncThunk('projects/fetchAll', async (org
   return res.projects;
 });
 
+/** Single project, for the Project Detail page. */
+export const fetchProject = createAsyncThunk('projects/fetchOne', async ({ orgId, projectId }) => {
+  const res = await projectsApi.get(orgId, projectId);
+  return res.project;
+});
+
 export const createProject = createAsyncThunk('projects/create', async ({ orgId, ...payload }) => {
   const res = await projectsApi.create(orgId, payload);
   return res.project;
@@ -33,6 +39,7 @@ const projectSlice = createSlice({
   initialState: {
     items: [],
     all: [],
+    detail: null,
     pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
     loading: false,
   },
@@ -77,6 +84,12 @@ const projectSlice = createSlice({
       .addCase(fetchAllProjects.fulfilled, (state, action) => {
         state.all = action.payload;
       })
+      .addCase(fetchProject.pending, (state) => {
+        state.detail = null;
+      })
+      .addCase(fetchProject.fulfilled, (state, action) => {
+        state.detail = action.payload;
+      })
       .addCase(createProject.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
         state.all.push(action.payload);
@@ -89,6 +102,7 @@ const projectSlice = createSlice({
         };
         apply(state.items);
         apply(state.all);
+        if (state.detail?.id === action.payload.id) state.detail = action.payload;
       })
       .addCase(deleteProject.fulfilled, (state, action) => {
         state.items = state.items.filter((p) => p.id !== action.payload);
@@ -103,5 +117,6 @@ export default projectSlice.reducer;
 
 export const selectProjects = (s) => s.projects.items;
 export const selectAllProjects = (s) => s.projects.all;
+export const selectProjectDetail = (s) => s.projects.detail;
 export const selectProjectsPagination = (s) => s.projects.pagination;
 export const selectProjectsLoading = (s) => s.projects.loading;

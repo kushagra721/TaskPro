@@ -91,7 +91,7 @@ export default function Verify() {
           </p>
 
           {error && <div className="alert alert--error">{error}</div>}
-          {info && <div className="alert alert--info">{info}</div>}
+          {/* {info && <div className="alert alert--info">{info}</div>} */}
 
           <OtpInput value={code} onChange={handleChange} length={OTP_LENGTH} disabled={loading} />
 

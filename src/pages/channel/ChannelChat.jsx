@@ -6,7 +6,8 @@ import { groupsApi } from '../../api/client.js';
 import Avatar from '../../components/Avatar.jsx';
 import RichTextEditor from '../../components/RichTextEditor.jsx';
 import AttachmentPicker from '../../components/AttachmentPicker.jsx';
-import { FileIcon, DownloadIcon } from '../../components/icons.jsx';
+import { DownloadIcon } from '../../components/icons.jsx';
+import DocIcon from '../../components/DocIcon.jsx';
 import { timeAgo } from '../../utils/time.js';
 import { sanitizeHtml, htmlToText } from '../../utils/sanitizeHtml.js';
 
@@ -77,7 +78,7 @@ export default function ChannelChat({ groupId }) {
                         <video className="attach-view__thumb" src={a.url} muted />
                       ) : (
                         <span className="attach-view__icon">
-                          <FileIcon size={20} />
+                          <DocIcon fileName={a.fileName} mimeType={a.mimeType} />
                         </span>
                       )}
                       <span className="attach-view__name">{a.fileName}</span>

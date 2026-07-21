@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadsApi } from '../api/client.js';
-import { PaperclipIcon, FileIcon, VideoIcon, XIcon } from './icons.jsx';
+import { PaperclipIcon, VideoIcon, XIcon } from './icons.jsx';
+import DocIcon from './DocIcon.jsx';
 
 const LIMITS = { image: 3, video: 10, document: 10 }; // MB, matches the backend
 
@@ -63,6 +64,7 @@ export default function AttachmentPicker({ value = [], onChange }) {
       >
         {busy ? <span className="spinner" /> : (<><PaperclipIcon size={14} /> Attach files</>)}
       </button>
+      <p className="field__hint">Images up to {LIMITS.image}MB · Videos &amp; docs up to {LIMITS.video}MB each</p>
       <input
         ref={inputRef}
         type="file"
@@ -80,7 +82,7 @@ export default function AttachmentPicker({ value = [], onChange }) {
                 <img className="attach-item__thumb" src={a.url} alt={a.fileName} />
               ) : (
                 <span className="attach-item__icon">
-                  {a.kind === 'video' ? <VideoIcon size={16} /> : <FileIcon size={16} />}
+                  {a.kind === 'video' ? <VideoIcon size={16} /> : <DocIcon fileName={a.fileName} mimeType={a.mimeType} />}
                 </span>
               )}
               <div className="attach-item__info">

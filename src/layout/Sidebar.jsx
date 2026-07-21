@@ -10,7 +10,7 @@ import { useNavGate } from '../hooks/useNavGate.js';
 
 const NAV = [
   { to: '/dashboard', label: 'Home', Icon: HomeIcon },
-  { to: '/groups', label: 'Groups', Icon: GroupsIcon },
+  { to: '/groups', label: 'Hub', Icon: GroupsIcon },
   { to: '/tasks', label: 'Tasks', Icon: TaskIcon },
   { to: '/reports', label: 'Reports', Icon: ReportsIcon },
   { to: '/more', label: 'More', Icon: MoreIcon },
