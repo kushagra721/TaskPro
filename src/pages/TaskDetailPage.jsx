@@ -6,6 +6,7 @@ import { fetchTaskDetail, updateTask, deleteTask, selectTaskDetail } from '../st
 import { tasksApi } from '../api/client.js';
 import Timeline from '../components/Timeline.jsx';
 import Modal from '../components/Modal.jsx';
+import ProjectFormModal from '../components/ProjectFormModal.jsx';
 import { fetchGroup, selectGroupDetail } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
@@ -46,6 +47,7 @@ export default function TaskDetailPage() {
   const [tab, setTab] = useState('details');
   const [editingAttachments, setEditingAttachments] = useState(false);
   const [attachError, setAttachError] = useState('');
+  const [newProjectName, setNewProjectName] = useState(null);
   // Only members of the task's group can be assigned. Guard against the initial
   // render where both are null (undefined === undefined would be truthy).
   const members = groupDetail && groupDetail.id === task?.groupId ? groupDetail.members || [] : [];
@@ -303,6 +305,7 @@ export default function TaskDetailPage() {
                 { value: '', label: 'No project' },
                 ...projects.map((p) => ({ value: p.id, label: p.name })),
               ]}
+              onCreateNew={(query) => setNewProjectName(query)}
             />
           </div>
         </div>
@@ -324,6 +327,18 @@ export default function TaskDetailPage() {
           task={task}
           onClose={() => setEditOpen(false)}
           onSaved={() => { setEditOpen(false); loadTimeline(); }}
+        />
+      )}
+
+      {newProjectName !== null && (
+        <ProjectFormModal
+          orgId={orgId}
+          initialName={newProjectName}
+          onClose={() => setNewProjectName(null)}
+          onSaved={(project) => {
+            setProject(project.id);
+            setNewProjectName(null);
+          }}
         />
       )}
 

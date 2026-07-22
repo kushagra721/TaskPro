@@ -5,10 +5,10 @@ import { createGroup } from '../store/slices/groupSlice.js';
 import { selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { joinGroupRoom } from '../realtime/socket.js';
 
-export default function CreateChannelModal({ onClose, onCreated }) {
+export default function CreateChannelModal({ onClose, onCreated, initialName = '' }) {
   const dispatch = useDispatch();
   const orgId = useSelector(selectCurrentOrgId);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(initialName);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

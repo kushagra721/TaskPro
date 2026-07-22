@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDownIcon, CheckIcon, SearchIcon } from './icons.jsx';
+import { ChevronDownIcon, CheckIcon, SearchIcon, PlusIcon } from './icons.jsx';
 
 /**
  * Themed custom dropdown (replaces native <select> so the option list matches
@@ -8,8 +8,20 @@ import { ChevronDownIcon, CheckIcon, SearchIcon } from './icons.jsx';
  * - options: [{ value, label }]
  * - placeholder
  * - searchable: show the search box (default true)
+ * - onCreateNew(query): when provided, a search that matches nothing shows an
+ *   "+ Add <query>" row instead of just "No matches" (e.g. Project/Group
+ *   fields on the task form — search for something that doesn't exist yet,
+ *   then create it without leaving the dropdown).
  */
-export default function Select({ value, onChange, options, placeholder = 'Select…', disabled, searchable = true }) {
+export default function Select({
+  value,
+  onChange,
+  options,
+  placeholder = 'Select…',
+  disabled,
+  searchable = true,
+  onCreateNew,
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const ref = useRef(null);
@@ -53,6 +65,13 @@ export default function Select({ value, onChange, options, placeholder = 'Select
     setOpen(false);
   };
 
+  const createNew = () => {
+    const q = query.trim();
+    if (!q) return;
+    onCreateNew(q);
+    setOpen(false);
+  };
+
   return (
     <div className={`sel ${disabled ? 'sel--disabled' : ''}`} ref={ref}>
       <button
@@ -83,7 +102,14 @@ export default function Select({ value, onChange, options, placeholder = 'Select
           )}
           <div className="sel__list">
             {filtered.length === 0 ? (
-              <div className="sel__empty">No matches</div>
+              <div className="sel__empty">
+                No matches
+                {onCreateNew && query.trim() && (
+                  <button type="button" className="sel__create" onClick={createNew}>
+                    <PlusIcon size={13} /> Add &ldquo;{query.trim()}&rdquo;
+                  </button>
+                )}
+              </div>
             ) : (
               filtered.map((o) => (
                 <button

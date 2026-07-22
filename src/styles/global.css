@@ -3589,6 +3589,27 @@ a.btn {
   text-align: center;
   color: var(--text-faint);
   font-size: 13px;
+  display: grid;
+  gap: 8px;
+}
+
+.sel__create {
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: var(--surface-2);
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.sel__create:hover {
+  background: var(--primary-glow);
 }
 
 .sel__option {

@@ -17,7 +17,6 @@ import ChannelPage from './pages/channel/ChannelPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import MorePage from './pages/more/MorePage.jsx';
 import ProfilePage from './pages/more/ProfilePage.jsx';
-import ManageOrgPage from './pages/more/ManageOrgPage.jsx';
 import UserProfilePage from './pages/more/UserProfilePage.jsx';
 import StorageReportPage from './pages/more/StorageReportPage.jsx';
 import ManageOrganizationsPage from './pages/more/ManageOrganizationsPage.jsx';
@@ -76,7 +75,8 @@ export default function App() {
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/more/profile" element={<ProfilePage />} />
-        <Route path="/more/members" element={<ManageOrgPage />} />
+        {/* Manage Members moved into the Groups page's Members tab (admin-only). */}
+        <Route path="/more/members" element={<Navigate to="/groups" replace />} />
         <Route path="/more/members/:userId" element={<UserProfilePage />} />
         <Route path="/more/storage" element={<StorageReportPage />} />
         <Route path="/more/organizations" element={<ManageOrganizationsPage />} />

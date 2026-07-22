@@ -35,12 +35,10 @@ export default function MorePage() {
       Icon: BuildingIcon,
     },
     { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your organization', Icon: ActivityIcon },
-    // Manage Members is admin-only.
+    // Storage report is admin-only. Member management moved to the Groups
+    // page's Members tab (also admin-only).
     ...(isAdmin
-      ? [
-          { to: '/more/members', label: 'Manage Members', desc: 'Members, roles and invitations', Icon: UserIcon },
-          { to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon },
-        ]
+      ? [{ to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon }]
       : []),
     {
       to: '/more/invitations',

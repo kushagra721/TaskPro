@@ -3,10 +3,13 @@ import { useDispatch } from 'react-redux';
 import Modal from './Modal.jsx';
 import { createProject, updateProject } from '../store/slices/projectSlice.js';
 
-/** Create/edit form — the same fields either way. Pass `project` to edit, omit to create. */
-export default function ProjectFormModal({ orgId, project, onClose, onSaved }) {
+/** Create/edit form — the same fields either way. Pass `project` to edit, omit
+ *  to create (optionally with `initialName` to prefill, e.g. from a search
+ *  query that didn't match any existing project). `onSaved` receives the
+ *  created/updated project. */
+export default function ProjectFormModal({ orgId, project, initialName = '', onClose, onSaved }) {
   const dispatch = useDispatch();
-  const [name, setName] = useState(project?.name || '');
+  const [name, setName] = useState(project?.name || initialName);
   const [description, setDescription] = useState(project?.description || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -17,9 +20,10 @@ export default function ProjectFormModal({ orgId, project, onClose, onSaved }) {
     setBusy(true);
     try {
       const payload = { name: name.trim(), description: description.trim() };
-      if (project) await dispatch(updateProject({ orgId, projectId: project.id, ...payload })).unwrap();
-      else await dispatch(createProject({ orgId, ...payload })).unwrap();
-      onSaved?.();
+      const saved = project
+        ? await dispatch(updateProject({ orgId, projectId: project.id, ...payload })).unwrap()
+        : await dispatch(createProject({ orgId, ...payload })).unwrap();
+      onSaved?.(saved);
       onClose();
     } catch (err) {
       setError(err.message || 'Could not save the project');

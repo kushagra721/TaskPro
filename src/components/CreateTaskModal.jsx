@@ -5,10 +5,12 @@ import Select from './Select.jsx';
 import DateField from './DateField.jsx';
 import AttachmentPicker from './AttachmentPicker.jsx';
 import RichTextEditor from './RichTextEditor.jsx';
+import ProjectFormModal from './ProjectFormModal.jsx';
+import CreateChannelModal from './CreateChannelModal.jsx';
 import { createTask } from '../store/slices/taskSlice.js';
 import { selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
-import { selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
@@ -39,6 +41,8 @@ export default function CreateTaskModal({
 }) {
   const dispatch = useDispatch();
   const orgId = useSelector(selectCurrentOrgId);
+  const org = useSelector(selectCurrentOrg);
+  const isAdmin = org?.role === 'ADMIN';
   const detail = useSelector(selectGroupDetail);
   const myGroups = useSelector(selectGroups);
   const projects = useSelector(selectAllProjects);
@@ -52,6 +56,9 @@ export default function CreateTaskModal({
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // "+ Add <query>" from the Project/Group dropdowns opens these inline.
+  const [newProjectName, setNewProjectName] = useState(null);
+  const [newGroupName, setNewGroupName] = useState(null);
 
   const up = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
@@ -113,6 +120,8 @@ export default function CreateTaskModal({
               onChange={setPickedGroupId}
               placeholder={myGroups.length ? 'Choose a group' : 'You are not in any group yet'}
               options={myGroups.map((g) => ({ value: g.id, label: `#${g.name}` }))}
+              // Only admins can create groups.
+              onCreateNew={isAdmin ? (query) => setNewGroupName(query) : undefined}
             />
           </div>
         )}
@@ -127,6 +136,7 @@ export default function CreateTaskModal({
               { value: '', label: 'No project' },
               ...projects.map((p) => ({ value: p.id, label: p.name })),
             ]}
+            onCreateNew={(query) => setNewProjectName(query)}
           />
         </div>
 
@@ -168,6 +178,29 @@ export default function CreateTaskModal({
           {loading ? <span className="spinner" /> : 'Create task'}
         </button>
       </form>
+
+      {newProjectName !== null && (
+        <ProjectFormModal
+          orgId={orgId}
+          initialName={newProjectName}
+          onClose={() => setNewProjectName(null)}
+          onSaved={(project) => {
+            set('projectId')(project.id);
+            setNewProjectName(null);
+          }}
+        />
+      )}
+
+      {newGroupName !== null && (
+        <CreateChannelModal
+          initialName={newGroupName}
+          onClose={() => setNewGroupName(null)}
+          onCreated={(group) => {
+            setPickedGroupId(group.id);
+            setNewGroupName(null);
+          }}
+        />
+      )}
     </Modal>
   );
 }

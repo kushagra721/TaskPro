@@ -15,6 +15,7 @@ import { organizationsApi } from '../api/client.js';
 import EmptyState from '../components/EmptyState.jsx';
 import Avatar from '../components/Avatar.jsx';
 import DateRangeControl from '../components/DateRangeControl.jsx';
+import ProgressRow from '../components/ProgressRow.jsx';
 import { ReportsIcon } from '../components/icons.jsx';
 import { STATUS_META } from '../utils/status.js';
 
@@ -25,28 +26,6 @@ const TOOLTIP_STYLE = {
   color: '#0f172a',
   boxShadow: '0 8px 24px -12px rgba(15,23,42,0.25)',
 };
-
-function ProgressRow({ label, sub, avatar, completed, total, rate }) {
-  return (
-    <li className="progress-row">
-      <div className="progress-row__head">
-        <div className="progress-row__label">
-          {avatar}
-          <div>
-            <div className="progress-row__name">{label}</div>
-            {sub && <div className="progress-row__sub">{sub}</div>}
-          </div>
-        </div>
-        <div className="progress-row__stat">
-          {completed}/{total} · {rate}%
-        </div>
-      </div>
-      <div className="progress-bar">
-        <span className="progress-bar__fill" style={{ width: `${rate}%` }} />
-      </div>
-    </li>
-  );
-}
 
 export default function ReportsPage() {
   const orgId = useSelector(selectCurrentOrgId);
@@ -182,9 +161,7 @@ export default function ReportsPage() {
                   key={m.id}
                   avatar={<Avatar name={m.name} email={m.email} size={30} />}
                   label={m.name || m.email}
-                  sub={`${m.open} open · ${m.cancelled} cancelled`}
-                  completed={m.completed}
-                  total={m.total}
+                  sub={`${m.open} open · ${m.completed} completed · ${m.cancelled} cancelled`}
                   rate={m.completionRate}
                 />
               ))}
@@ -204,8 +181,6 @@ export default function ReportsPage() {
                   avatar={<span className="org-badge sm">{g.name[0].toUpperCase()}</span>}
                   label={`#${g.name}`}
                   sub={`${g.open} open · ${g.completed} completed`}
-                  completed={g.completed}
-                  total={g.total}
                   rate={g.completionRate}
                 />
               ))}
