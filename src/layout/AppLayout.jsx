@@ -19,6 +19,7 @@ const TITLES = [
   { match: '/tasks/', title: 'Task Details' },
   { match: '/tasks', title: 'Tasks' },
   { match: '/projects/', title: 'Project Details' },
+  { match: '/clients/', title: 'Client Details' },
   { match: '/reports', title: 'Reports' },
   { match: '/more/profile', title: 'My Profile' },
   { match: '/more/members/', title: 'Member Details' },

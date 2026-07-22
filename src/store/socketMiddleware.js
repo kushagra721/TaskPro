@@ -7,6 +7,7 @@ import { groupReceived } from './slices/groupSlice.js';
 import { messageReceived, reactionUpdated } from './slices/messageSlice.js';
 import { taskReceived, taskUpdatedLive, taskRemovedLive } from './slices/taskSlice.js';
 import { projectChanged } from './slices/projectSlice.js';
+import { clientChanged } from './slices/clientSlice.js';
 
 /**
  * Bridges the Redux store and the Socket.io connection: connects on auth,
@@ -47,6 +48,8 @@ export const socketMiddleware = (store) => (next) => (action) => {
 
       // Projects (org-wide, so the task-form dropdown stays fresh)
       socket.on('project:changed', (project) => store.dispatch(projectChanged(project)));
+      // Clients (org-wide, so the task-form dropdown stays fresh)
+      socket.on('client:changed', (client) => store.dispatch(clientChanged(client)));
     }
   }
 

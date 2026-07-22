@@ -16,6 +16,7 @@ import Pagination from '../../components/Pagination.jsx';
 import { useTaskQuery } from '../../hooks/useTaskQuery.js';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { selectAllProjects } from '../../store/slices/projectSlice.js';
+import { selectAllClients } from '../../store/slices/clientSlice.js';
 import { STATUS_META } from '../../utils/status.js';
 import { htmlToText } from '../../utils/sanitizeHtml.js';
 
@@ -28,6 +29,7 @@ export default function ChannelTasks({ groupId }) {
   const detail = useSelector(selectGroupDetail);
   const members = detail?.id === groupId ? detail.members || [] : [];
   const projects = useSelector(selectAllProjects);
+  const clients = useSelector(selectAllClients);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { search, setSearch, filters, applyFilters, clearFilters, activeFilterCount, page, setPage, params } =
@@ -88,6 +90,7 @@ export default function ChannelTasks({ groupId }) {
         onClear={clearFilters}
         members={members}
         projects={projects}
+        clients={clients}
       />
     </div>
   );

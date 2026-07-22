@@ -72,6 +72,9 @@ export const organizationsApi = {
   create: (payload) => request('/organizations', { method: 'POST', body: payload }),
   get: (orgId) => request(`/organizations/${orgId}`),
   update: (orgId, payload) => request(`/organizations/${orgId}`, { method: 'PATCH', body: payload }),
+  remove: (orgId, confirmName) => request(`/organizations/${orgId}`, { method: 'DELETE', body: { confirmName } }),
+  leave: (orgId, confirmName) =>
+    request(`/organizations/${orgId}/leave`, { method: 'POST', body: { confirmName } }),
   dashboard: (orgId, params) => request(`/organizations/${orgId}/dashboard${qs(params)}`),
   members: (orgId, params) => request(`/organizations/${orgId}/members${qs(params)}`),
   memberProfile: (orgId, userId) => request(`/organizations/${orgId}/members/${userId}`),
@@ -107,8 +110,21 @@ export const projectsApi = {
   create: (orgId, payload) => request(`/organizations/${orgId}/projects`, { method: 'POST', body: payload }),
   update: (orgId, projectId, payload) =>
     request(`/organizations/${orgId}/projects/${projectId}`, { method: 'PATCH', body: payload }),
-  remove: (orgId, projectId) =>
-    request(`/organizations/${orgId}/projects/${projectId}`, { method: 'DELETE' }),
+  remove: (orgId, projectId, confirmName) =>
+    request(`/organizations/${orgId}/projects/${projectId}`, { method: 'DELETE', body: { confirmName } }),
+};
+
+// ---- Clients ----
+export const clientsApi = {
+  list: (orgId, params) => request(`/organizations/${orgId}/clients${qs(params)}`),
+  // `all=1` returns every client unpaginated — used by the task form dropdowns.
+  listAll: (orgId) => request(`/organizations/${orgId}/clients${qs({ all: 1 })}`),
+  get: (orgId, clientId) => request(`/organizations/${orgId}/clients/${clientId}`),
+  create: (orgId, payload) => request(`/organizations/${orgId}/clients`, { method: 'POST', body: payload }),
+  update: (orgId, clientId, payload) =>
+    request(`/organizations/${orgId}/clients/${clientId}`, { method: 'PATCH', body: payload }),
+  remove: (orgId, clientId, confirmName) =>
+    request(`/organizations/${orgId}/clients/${clientId}`, { method: 'DELETE', body: { confirmName } }),
 };
 
 // ---- Invitations (invitee side) ----
@@ -118,6 +134,7 @@ export const invitationsApi = {
   decline: (id) => request(`/invitations/${id}/decline`, { method: 'POST' }),
   declineByToken: (token) =>
     request(`/invitations/public/${token}/decline`, { method: 'POST', auth: false }),
+  statusByToken: (token) => request(`/invitations/public/${token}`, { auth: false }),
 };
 
 // ---- Join requests (admin side, for the bell) ----
@@ -140,7 +157,7 @@ export const groupsApi = {
   create: (orgId, payload) => request(`/organizations/${orgId}/groups`, { method: 'POST', body: payload }),
   get: (groupId) => request(`/groups/${groupId}`),
   update: (groupId, payload) => request(`/groups/${groupId}`, { method: 'PATCH', body: payload }),
-  remove: (groupId) => request(`/groups/${groupId}`, { method: 'DELETE' }),
+  remove: (groupId, confirmName) => request(`/groups/${groupId}`, { method: 'DELETE', body: { confirmName } }),
   addMember: (groupId, userId) =>
     request(`/groups/${groupId}/members`, { method: 'POST', body: { userId } }),
   removeMember: (groupId, userId) =>

@@ -7,8 +7,10 @@ import { tasksApi } from '../api/client.js';
 import Timeline from '../components/Timeline.jsx';
 import Modal from '../components/Modal.jsx';
 import ProjectFormModal from '../components/ProjectFormModal.jsx';
+import ClientFormModal from '../components/ClientFormModal.jsx';
 import { fetchGroup, selectGroupDetail } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
+import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { selectUser } from '../store/slices/authSlice.js';
 import { STATUS_META, formatDate, formatDateTime } from '../utils/status.js';
@@ -33,6 +35,7 @@ export default function TaskDetailPage() {
   const org = useSelector(selectCurrentOrg);
   const user = useSelector(selectUser);
   const projects = useSelector(selectAllProjects);
+  const clients = useSelector(selectAllClients);
   // Editing/deleting is limited to the task's creator or an org admin.
   const canManage = task && (org?.role === 'ADMIN' || task.createdBy?.id === user?.id);
   // Which status-change confirmation modal is open ('complete'|'cancel'|'reopen').
@@ -48,6 +51,7 @@ export default function TaskDetailPage() {
   const [editingAttachments, setEditingAttachments] = useState(false);
   const [attachError, setAttachError] = useState('');
   const [newProjectName, setNewProjectName] = useState(null);
+  const [newClientName, setNewClientName] = useState(null);
   // Only members of the task's group can be assigned. Guard against the initial
   // render where both are null (undefined === undefined would be truthy).
   const members = groupDetail && groupDetail.id === task?.groupId ? groupDetail.members || [] : [];
@@ -63,6 +67,10 @@ export default function TaskDetailPage() {
 
   useEffect(() => {
     if (orgId) dispatch(fetchAllProjects(orgId));
+  }, [orgId, dispatch]);
+
+  useEffect(() => {
+    if (orgId) dispatch(fetchAllClients(orgId));
   }, [orgId, dispatch]);
 
   // The timeline is local state (not Redux) — it's only ever shown here.
@@ -103,6 +111,8 @@ export default function TaskDetailPage() {
   const setPriority = (priority) => dispatch(updateTask({ taskId: task.id, groupId: task.groupId, priority }));
   const setProject = (projectId) =>
     dispatch(updateTask({ taskId: task.id, groupId: task.groupId, projectId: projectId || null }));
+  const setClient = (clientId) =>
+    dispatch(updateTask({ taskId: task.id, groupId: task.groupId, clientId: clientId || null }));
   const addAttachments = async (newFiles) => {
     setAttachError('');
     try {
@@ -196,6 +206,7 @@ export default function TaskDetailPage() {
         <div className="task-detail__grid">
           <div className="kv"><span className="kv__k">Group</span><span className="kv__v">#{task.group?.name}</span></div>
           <div className="kv"><span className="kv__k">Project</span><span className="kv__v">{task.project?.name || 'No project'}</span></div>
+          <div className="kv"><span className="kv__k">Client</span><span className="kv__v">{task.client?.name || 'No client'}</span></div>
           <div className="kv"><span className="kv__k">Assigned to</span><span className="kv__v">{task.assignee ? task.assignee.name || task.assignee.email : 'Unassigned'}</span></div>
           <div className="kv"><span className="kv__k">Created by</span><span className="kv__v">{task.createdBy ? task.createdBy.name || task.createdBy.email : '—'}</span></div>
           <div className="kv"><span className="kv__k">Created</span><span className="kv__v">{formatDateTime(task.createdAt)}</span></div>
@@ -308,6 +319,19 @@ export default function TaskDetailPage() {
               onCreateNew={(query) => setNewProjectName(query)}
             />
           </div>
+          <div className="field">
+            <label className="field__label">Client</label>
+            <Select
+              value={task.client?.id || ''}
+              onChange={setClient}
+              placeholder="No client"
+              options={[
+                { value: '', label: 'No client' },
+                ...clients.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+              onCreateNew={(query) => setNewClientName(query)}
+            />
+          </div>
         </div>
         )}
         </>
@@ -338,6 +362,18 @@ export default function TaskDetailPage() {
           onSaved={(project) => {
             setProject(project.id);
             setNewProjectName(null);
+          }}
+        />
+      )}
+
+      {newClientName !== null && (
+        <ClientFormModal
+          orgId={orgId}
+          initialName={newClientName}
+          onClose={() => setNewClientName(null)}
+          onSaved={(client) => {
+            setClient(client.id);
+            setNewClientName(null);
           }}
         />
       )}

@@ -29,8 +29,8 @@ export const updateProject = createAsyncThunk('projects/update', async ({ orgId,
   return res.project;
 });
 
-export const deleteProject = createAsyncThunk('projects/delete', async ({ orgId, projectId }) => {
-  await projectsApi.remove(orgId, projectId);
+export const deleteProject = createAsyncThunk('projects/delete', async ({ orgId, projectId, confirmName }) => {
+  await projectsApi.remove(orgId, projectId, confirmName);
   return projectId;
 });
 

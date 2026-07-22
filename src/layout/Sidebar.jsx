@@ -6,6 +6,7 @@ import Avatar from '../components/Avatar.jsx';
 import { selectUser, logout } from '../store/slices/authSlice.js';
 import { resetOrgs, selectCurrentOrg } from '../store/slices/orgSlice.js';
 import { resetProjects } from '../store/slices/projectSlice.js';
+import { resetClients } from '../store/slices/clientSlice.js';
 import { useNavGate } from '../hooks/useNavGate.js';
 
 const NAV = [
@@ -26,6 +27,7 @@ export default function Sidebar({ onCreateOrg }) {
     dispatch(logout());
     dispatch(resetOrgs());
     dispatch(resetProjects());
+    dispatch(resetClients());
   };
 
   return (
@@ -58,7 +60,7 @@ export default function Sidebar({ onCreateOrg }) {
 
       <div className="sidebar__foot">
         <div className="sidebar__user">
-          <Avatar name={user?.name} email={user?.email} size={34} />
+          <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={34} />
           <div className="sidebar__user-info">
             <div className="sidebar__user-name">{user?.name || 'You'}</div>
             <div className="sidebar__user-email">{user?.email}</div>

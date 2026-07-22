@@ -25,6 +25,18 @@ export const fetchMembers = createAsyncThunk('orgs/fetchMembers', async (arg) =>
   return res.members;
 });
 
+/** Admin-only, permanent — cascades to everything in the org. */
+export const deleteOrg = createAsyncThunk('orgs/delete', async ({ orgId, confirmName }) => {
+  await organizationsApi.remove(orgId, confirmName);
+  return orgId;
+});
+
+/** Any member (including an admin) may leave; the backend reassigns admin/deletes the org as needed. */
+export const leaveOrg = createAsyncThunk('orgs/leave', async ({ orgId, confirmName }) => {
+  await organizationsApi.leave(orgId, confirmName);
+  return orgId;
+});
+
 const orgSlice = createSlice({
   name: 'orgs',
   initialState: {
@@ -57,12 +69,14 @@ const orgSlice = createSlice({
         ].slice(0, 15);
       }
     },
+    // Logout only clears the in-session data — `currentId` (and its localStorage
+    // mirror) is deliberately left alone so the same org is still selected on
+    // the next login. `fetchMyOrgs.fulfilled` already falls back to the first
+    // org if this id turns out invalid for whoever logs in next.
     resetOrgs: (state) => {
       state.list = [];
-      state.currentId = null;
       state.members = [];
       state.dashboard = null;
-      localStorage.removeItem(CURRENT_ORG_KEY);
     },
   },
   extraReducers: (builder) => {
@@ -95,7 +109,21 @@ const orgSlice = createSlice({
       })
       .addCase(fetchMembers.fulfilled, (state, action) => {
         state.members = action.payload;
-      });
+      })
+      .addMatcher(
+        (action) => action.type === deleteOrg.fulfilled.type || action.type === leaveOrg.fulfilled.type,
+        (state, action) => {
+          const orgId = action.payload;
+          state.list = state.list.filter((o) => o.id !== orgId);
+          if (state.currentId === orgId) {
+            state.currentId = state.list[0]?.id || null;
+            state.dashboard = null;
+            state.members = [];
+            if (state.currentId) localStorage.setItem(CURRENT_ORG_KEY, state.currentId);
+            else localStorage.removeItem(CURRENT_ORG_KEY);
+          }
+        }
+      );
   },
 });
 

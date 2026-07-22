@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice.js';
@@ -14,9 +14,18 @@ import Avatar from '../../components/Avatar.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Select from '../../components/Select.jsx';
 import Modal from '../../components/Modal.jsx';
+import OrgBadge from '../../components/OrgBadge.jsx';
+import CardProgress from '../../components/CardProgress.jsx';
+import TaskSearchBar from '../../components/TaskSearchBar.jsx';
+import MemberFilterDrawer from '../../components/MemberFilterDrawer.jsx';
+import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { BuildingIcon, PlusIcon, XIcon } from '../../components/icons.jsx';
 
-export default function ManageOrgPage() {
+const EMPTY_FILTERS = { role: '' };
+
+/** `ref.current.openInvite()` lets the Groups page's mobile FAB (Members tab)
+ *  open the invite modal without lifting all of this page's state up. */
+const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectUser);
@@ -36,6 +45,12 @@ export default function ManageOrgPage() {
   const [message, setMessage] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null); // invitation being confirmed for cancel
+  const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [progress, setProgress] = useState([]);
+
+  useImperativeHandle(ref, () => ({ openInvite: () => setInviteOpen(true) }), []);
 
   const loadInvites = useCallback(async () => {
     if (!orgId || !isAdmin) return;
@@ -65,6 +80,29 @@ export default function ManageOrgPage() {
     loadInvites();
     loadJoinRequests();
   }, [orgId, dispatch, loadInvites, loadJoinRequests]);
+
+  // Per-member completion rate, shown inline under each row. `reports` already
+  // role-scopes this the same way the rest of the app does.
+  useEffect(() => {
+    if (!orgId) return;
+    organizationsApi
+      .reports(orgId)
+      .then((r) => setProgress(r.members))
+      .catch(() => setProgress([]));
+  }, [orgId]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const openFilters = useCallback(() => setDrawerOpen(true), []);
+  useRegisterHeaderActions({ search, onSearch: setSearch, onOpenFilters: openFilters, filterCount: activeFilterCount });
+
+  const visibleMembers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return members.filter((m) => {
+      if (filters.role && m.role !== filters.role) return false;
+      if (q && !(m.name || '').toLowerCase().includes(q) && !m.email.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [members, search, filters]);
 
   const cancelInvite = async () => {
     if (!cancelTarget) return;
@@ -128,7 +166,7 @@ export default function ManageOrgPage() {
     <div className="page">
       <div className="org-header org-header--row">
         <div className="org-header__left">
-          <span className="org-badge lg">{org.icon || org.name[0].toUpperCase()}</span>
+          <OrgBadge name={org.name} icon={org.icon} photoUrl={org.photoUrl} size="lg" />
           <div>
             <div className="org-header__name">{org.name}</div>
             <div className="org-header__meta">
@@ -220,26 +258,52 @@ export default function ManageOrgPage() {
         </section>
       )}
 
+      <div className="list-controls">
+        <TaskSearchBar
+          search={search}
+          onSearch={setSearch}
+          onOpenFilters={openFilters}
+          activeCount={activeFilterCount}
+          placeholder="Search members by name…"
+        />
+      </div>
+
       <section className="panel">
         <div className="panel__head">
           <h2 className="panel__title">Members</h2>
         </div>
-        <ul className="member-list">
-          {members.map((m) => (
-            <li key={m.id} className="member member--link" onClick={() => navigate(`/more/members/${m.id}`)}>
-              <Avatar name={m.name} email={m.email} size={38} />
-              <div className="member__info">
-                <div className="member__name">
-                  <span className="member__name-text">{m.name || m.email}</span>
-                  {m.id === user?.id && <span className="tag">You</span>}
-                </div>
-                <div className="member__email">{m.email}</div>
-              </div>
-              <span className={`role-pill role-pill--${m.role.toLowerCase()}`}>{m.role}</span>
-            </li>
-          ))}
-        </ul>
+        {visibleMembers.length === 0 ? (
+          <div className="panel__empty">Nothing matches your search or filters.</div>
+        ) : (
+          <ul className="member-list">
+            {visibleMembers.map((m) => {
+              const mp = progress.find((x) => x.id === m.id);
+              return (
+                <li key={m.id} className="member member--link" onClick={() => navigate(`/more/members/${m.id}`)}>
+                  <Avatar name={m.name} email={m.email} size={38} />
+                  <div className="member__info">
+                    <div className="member__name">
+                      <span className="member__name-text">{m.name || m.email}</span>
+                      {m.id === user?.id && <span className="tag">You</span>}
+                    </div>
+                    <div className="member__email">{m.email}</div>
+                    {mp && <CardProgress rate={mp.completionRate} />}
+                  </div>
+                  <span className={`role-pill role-pill--${m.role.toLowerCase()}`}>{m.role}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
+
+      <MemberFilterDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        value={filters}
+        onApply={setFilters}
+        onClear={() => setFilters(EMPTY_FILTERS)}
+      />
 
       {isAdmin && invites.length > 0 && (
         <section className="panel">
@@ -284,4 +348,6 @@ export default function ManageOrgPage() {
       )}
     </div>
   );
-}
+});
+
+export default ManageOrgPage;

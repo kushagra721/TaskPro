@@ -16,6 +16,7 @@ import CreateTaskModal from '../../components/CreateTaskModal.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import Fab from '../../components/Fab.jsx';
 import { fetchAllProjects, selectAllProjects } from '../../store/slices/projectSlice.js';
+import { fetchAllClients, selectAllClients } from '../../store/slices/clientSlice.js';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { TaskIcon, PlusIcon } from '../../components/icons.jsx';
@@ -32,6 +33,7 @@ export default function ManageTasksPage() {
   const groups = useSelector(selectGroups);
   const members = useSelector(selectMembers);
   const projects = useSelector(selectAllProjects);
+  const clients = useSelector(selectAllClients);
   const [urlParams] = useSearchParams();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -54,6 +56,7 @@ export default function ManageTasksPage() {
       dispatch(fetchGroups(orgId));
       dispatch(fetchMembers(orgId));
       dispatch(fetchAllProjects(orgId));
+      dispatch(fetchAllClients(orgId));
     }
   }, [orgId, dispatch]);
 
@@ -136,6 +139,7 @@ export default function ManageTasksPage() {
         groups={groups}
         members={members}
         projects={projects}
+        clients={clients}
       />
 
       {/* Manage Tasks is a root page — raise the FAB above the bottom nav. */}

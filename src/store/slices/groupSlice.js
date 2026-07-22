@@ -33,8 +33,8 @@ export const removeGroupMember = createAsyncThunk('groups/removeMember', async (
   return { groupId, userId };
 });
 
-export const deleteGroup = createAsyncThunk('groups/delete', async (groupId) => {
-  await groupsApi.remove(groupId);
+export const deleteGroup = createAsyncThunk('groups/delete', async ({ groupId, confirmName }) => {
+  await groupsApi.remove(groupId, confirmName);
   return groupId;
 });
 

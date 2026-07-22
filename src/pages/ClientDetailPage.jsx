@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  fetchProject,
-  deleteProject,
-  selectProjectDetail,
-} from '../store/slices/projectSlice.js';
+  fetchClient,
+  deleteClient,
+  selectClientDetail,
+} from '../store/slices/clientSlice.js';
 import { fetchMembers, selectCurrentOrg, selectCurrentOrgId, selectMembers } from '../store/slices/orgSlice.js';
 import { fetchGroups, selectGroups } from '../store/slices/groupSlice.js';
 import { tasksApi } from '../api/client.js';
@@ -13,7 +13,7 @@ import { useTaskQuery } from '../hooks/useTaskQuery.js';
 import { useRegisterHeaderActions } from '../layout/HeaderActions.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import ConfirmNameModal from '../components/ConfirmNameModal.jsx';
-import ProjectFormModal from '../components/ProjectFormModal.jsx';
+import ClientFormModal from '../components/ClientFormModal.jsx';
 import TaskListView from '../components/TaskListView.jsx';
 import TaskStatusTabs from '../components/TaskStatusTabs.jsx';
 import TaskSearchBar from '../components/TaskSearchBar.jsx';
@@ -23,17 +23,17 @@ import Pagination from '../components/Pagination.jsx';
 import Fab from '../components/Fab.jsx';
 import { relativeDay } from '../utils/time.js';
 import { STATUS_META } from '../utils/status.js';
-import { FolderIcon, PlusIcon, EditIcon, TrashIcon, TaskIcon } from '../components/icons.jsx';
+import { BuildingIcon, PlusIcon, EditIcon, TrashIcon, TaskIcon } from '../components/icons.jsx';
 
 const emptyCounts = { ALL: 0, OPEN: 0, COMPLETED: 0, CANCELLED: 0 };
 
-export default function ProjectDetailPage() {
-  const { projectId } = useParams();
+export default function ClientDetailPage() {
+  const { clientId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const orgId = useSelector(selectCurrentOrgId);
   const org = useSelector(selectCurrentOrg);
-  const project = useSelector(selectProjectDetail);
+  const client = useSelector(selectClientDetail);
   const groups = useSelector(selectGroups);
   const members = useSelector(selectMembers);
   const isAdmin = org?.role === 'ADMIN';
@@ -54,8 +54,8 @@ export default function ProjectDetailPage() {
   useRegisterHeaderActions({ search, onSearch: setSearch, onOpenFilters: openFilters, filterCount: activeFilterCount });
 
   useEffect(() => {
-    if (orgId && projectId) dispatch(fetchProject({ orgId, projectId }));
-  }, [orgId, projectId, dispatch]);
+    if (orgId && clientId) dispatch(fetchClient({ orgId, clientId }));
+  }, [orgId, clientId, dispatch]);
 
   useEffect(() => {
     if (orgId) {
@@ -64,19 +64,19 @@ export default function ProjectDetailPage() {
     }
   }, [orgId, dispatch]);
 
-  const loaded = project && project.id === projectId;
+  const loaded = client && client.id === clientId;
 
   const reload = useCallback(() => {
     if (!orgId || !loaded) return;
     tasksApi
-      .listForOrg(orgId, { ...params, projectId })
+      .listForOrg(orgId, { ...params, clientId })
       .then((r) => {
         setTasks(r.tasks);
         setPagination(r.pagination);
         setCounts(r.counts || emptyCounts);
       })
       .catch((err) => setError(err.message || 'Could not load tasks'));
-  }, [orgId, loaded, projectId, params]);
+  }, [orgId, loaded, clientId, params]);
 
   useEffect(() => {
     reload();
@@ -87,10 +87,10 @@ export default function ProjectDetailPage() {
 
   const doDelete = async () => {
     try {
-      await dispatch(deleteProject({ orgId, projectId, confirmName: project.name })).unwrap();
+      await dispatch(deleteClient({ orgId, clientId, confirmName: client.name })).unwrap();
       navigate('/groups');
     } catch (err) {
-      setError(err.message || 'Could not delete the project');
+      setError(err.message || 'Could not delete the client');
       setDeleteOpen(false);
     }
   };
@@ -98,7 +98,7 @@ export default function ProjectDetailPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<FolderIcon size={30} />} title="No organization selected" description="Pick an organization to see this project." />
+        <EmptyState icon={<BuildingIcon size={30} />} title="No organization selected" description="Pick an organization to see this client." />
       </div>
     );
   }
@@ -118,25 +118,25 @@ export default function ProjectDetailPage() {
           <div className="task-detail project-detail__card">
             <div className="task-detail__head">
               <span className="project-card__icon">
-                <FolderIcon size={18} />
+                <BuildingIcon size={18} />
               </span>
-              <h1 className="task-detail__title">{project.name}</h1>
+              <h1 className="task-detail__title">{client.name}</h1>
               <span className="channel__members">
-                {project.taskCount} task{project.taskCount === 1 ? '' : 's'}
+                {client.taskCount} task{client.taskCount === 1 ? '' : 's'}
               </span>
               {isAdmin && (
                 <div className="task-detail__actions">
-                  <button className="icon-btn" onClick={() => setEditOpen(true)} title="Edit project" aria-label="Edit project">
+                  <button className="icon-btn" onClick={() => setEditOpen(true)} title="Edit client" aria-label="Edit client">
                     <EditIcon size={15} />
                   </button>
-                  <button className="icon-btn icon-btn--danger" onClick={() => setDeleteOpen(true)} title="Delete project" aria-label="Delete project">
+                  <button className="icon-btn icon-btn--danger" onClick={() => setDeleteOpen(true)} title="Delete client" aria-label="Delete client">
                     <TrashIcon size={15} />
                   </button>
                 </div>
               )}
             </div>
             <p className="project-detail__meta">
-              Created by {project.createdBy?.name || project.createdBy?.email || 'someone'} · {relativeDay(project.createdAt)}
+              Created by {client.createdBy?.name || client.createdBy?.email || 'someone'} · {relativeDay(client.createdAt)}
             </p>
             <button className="btn btn--sm project-detail__new-task hide-mobile" onClick={() => setCreateOpen(true)}>
               <PlusIcon size={14} /> New task
@@ -185,26 +185,26 @@ export default function ProjectDetailPage() {
             <CreateTaskModal
               askGroup
               members={members}
-              defaultProjectId={projectId}
+              defaultClientId={clientId}
               onClose={() => setCreateOpen(false)}
               onCreated={reload}
             />
           )}
 
           {editOpen && (
-            <ProjectFormModal orgId={orgId} project={project} onClose={() => setEditOpen(false)} onSaved={() => setEditOpen(false)} />
+            <ClientFormModal orgId={orgId} client={client} onClose={() => setEditOpen(false)} onSaved={() => setEditOpen(false)} />
           )}
 
           {deleteOpen && (
             <ConfirmNameModal
-              title="Delete project"
-              entityName={project.name}
+              title="Delete client"
+              entityName={client.name}
               onConfirm={doDelete}
               onClose={() => setDeleteOpen(false)}
-              confirmLabel={<><TrashIcon size={16} /> Delete project</>}
+              confirmLabel={<><TrashIcon size={16} /> Delete client</>}
             >
               <p className="modal__intro">
-                Delete <strong>&ldquo;{project.name}&rdquo;</strong>? Its tasks stay, just unassigned from this project.
+                Delete <strong>&ldquo;{client.name}&rdquo;</strong>? Its tasks stay, just unassigned from this client.
               </p>
             </ConfirmNameModal>
           )}

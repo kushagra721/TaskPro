@@ -11,6 +11,7 @@ import { selectUser } from '../store/slices/authSlice.js';
 import { joinOrgRoom } from '../realtime/socket.js';
 import NotificationsBell from './NotificationsBell.jsx';
 import Avatar from '../components/Avatar.jsx';
+import OrgBadge from '../components/OrgBadge.jsx';
 import { useHeaderActions } from './HeaderActions.jsx';
 import {
   ChevronDownIcon,
@@ -82,7 +83,7 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
                 {orgs.length === 0 && <div className="dropdown__empty">None yet</div>}
                 {orgs.map((o) => (
                   <button key={o.id} className="dropdown__item" onClick={() => pick(o.id)}>
-                    <span className="org-badge sm">{o.icon || o.name[0].toUpperCase()}</span>
+                    <OrgBadge name={o.name} icon={o.icon} photoUrl={o.photoUrl} size="sm" />
                     <span className="dropdown__item-text">{o.name}</span>
                     {o.id === currentId && <CheckIcon size={16} />}
                   </button>
@@ -151,7 +152,7 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
       ) : (
         !isRoot && (
           <div className="topbar__userstrip">
-            <Avatar name={user?.name} email={user?.email} size={22} />
+            <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={22} />
             <span className="topbar__user-name">{user?.name || user?.email || 'You'}</span>
             {org?.role && <span className={`role-pill role-pill--${org.role.toLowerCase()}`}>{org.role}</span>}
           </div>

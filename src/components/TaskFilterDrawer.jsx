@@ -15,8 +15,9 @@ const TODAY = new Date().toISOString().slice(0, 10);
  * - groups: optional [{id,name}] (omit inside a single group)
  * - members: [{id,name,email}]
  * - projects: optional [{id,name}]
+ * - clients: optional [{id,name}]
  */
-export default function TaskFilterDrawer({ open, onClose, value, onApply, onClear, groups, members, projects }) {
+export default function TaskFilterDrawer({ open, onClose, value, onApply, onClear, groups, members, projects, clients }) {
   const [draft, setDraft] = useState(value);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
   const clear = () => {
     // Keep status (controlled by the tabs); clear everything else.
     const empty = {
-      priority: '', groupId: '', assigneeId: '', projectId: '', createdById: '',
+      priority: '', groupId: '', assigneeId: '', projectId: '', clientId: '', createdById: '',
       createdFrom: '', createdTo: '', dueFrom: '', dueTo: '',
     };
     setDraft((d) => ({ ...d, ...empty }));
@@ -120,6 +121,22 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
                   { value: '', label: 'All projects' },
                   { value: 'none', label: 'No project' },
                   ...projects.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+              />
+            </div>
+          )}
+
+          {clients && (
+            <div className="field">
+              <label className="field__label">Client</label>
+              <Select
+                value={draft.clientId || ''}
+                onChange={setVal('clientId')}
+                placeholder="All clients"
+                options={[
+                  { value: '', label: 'All clients' },
+                  { value: 'none', label: 'No client' },
+                  ...clients.map((c) => ({ value: c.id, label: c.name })),
                 ]}
               />
             </div>

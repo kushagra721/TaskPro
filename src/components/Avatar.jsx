@@ -16,7 +16,18 @@ const colorFor = (key = '') => {
   return COLORS[Math.abs(hash) % COLORS.length];
 };
 
-export default function Avatar({ name, email, size = 36 }) {
+export default function Avatar({ name, email, size = 36, src }) {
+  if (src) {
+    return (
+      <img
+        className="avatar avatar--img"
+        style={{ width: size, height: size }}
+        src={src}
+        alt={name || email || 'Avatar'}
+        title={name || email}
+      />
+    );
+  }
   const bg = colorFor(email || name || '');
   return (
     <span

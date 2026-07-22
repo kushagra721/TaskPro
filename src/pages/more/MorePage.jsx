@@ -13,6 +13,7 @@ import { selectInvitationCount } from '../../store/slices/invitationSlice.js';
 import { selectCurrentOrg, resetOrgs } from '../../store/slices/orgSlice.js';
 import { logout } from '../../store/slices/authSlice.js';
 import { resetProjects } from '../../store/slices/projectSlice.js';
+import { resetClients } from '../../store/slices/clientSlice.js';
 
 export default function MorePage() {
   const dispatch = useDispatch();
@@ -24,6 +25,7 @@ export default function MorePage() {
     dispatch(logout());
     dispatch(resetOrgs());
     dispatch(resetProjects());
+    dispatch(resetClients());
   };
 
   const items = [

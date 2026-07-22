@@ -11,8 +11,8 @@ import ChannelMembers from './ChannelMembers.jsx';
 import AddMemberModal from '../../components/AddMemberModal.jsx';
 import CreateTaskModal from '../../components/CreateTaskModal.jsx';
 import Modal from '../../components/Modal.jsx';
+import ConfirmNameModal from '../../components/ConfirmNameModal.jsx';
 import Fab from '../../components/Fab.jsx';
-import MoreMenu from '../../components/MoreMenu.jsx';
 import { PlusIcon, EditIcon, TrashIcon } from '../../components/icons.jsx';
 
 export default function ChannelPage() {
@@ -45,7 +45,7 @@ export default function ChannelPage() {
     setDeleting(true);
     setDeleteError('');
     try {
-      await dispatch(deleteGroup(groupId)).unwrap();
+      await dispatch(deleteGroup({ groupId, confirmName: group.name })).unwrap();
       navigate('/groups');
     } catch (err) {
       setDeleteError(err.message || 'Could not delete the channel');
@@ -55,23 +55,24 @@ export default function ChannelPage() {
 
   return (
     <div className="channel">
+      {/* Hidden on mobile (the header already shows the org, and the bottom
+          nav is gone on this drill-down). */}
+      <button className="link-btn channel__back" onClick={() => navigate('/groups')}>← Groups</button>
       <div className="channel__header">
-        {/* Back link + description are hidden on mobile (the header already
-            shows the org, and the bottom nav is gone on this drill-down). */}
-        <button className="link-btn channel__back" onClick={() => navigate('/groups')}>← Groups</button>
         <div className="channel__title-row">
           <h1 className="channel__title">#{loaded ? group.name : '…'}</h1>
           {loaded && <span className="channel__members">{group.members?.length || 0} members</span>}
           {loaded && canManage && (
-            <MoreMenu
-              items={[
-                { label: 'Edit group', icon: <EditIcon size={14} />, onClick: () => setEditGroupOpen(true) },
-                { label: 'Delete group', icon: <TrashIcon size={14} />, onClick: () => setDeleteGroupOpen(true), danger: true },
-              ]}
-            />
+            <div className="task-detail__actions">
+              <button className="icon-btn" onClick={() => setEditGroupOpen(true)} title="Edit group" aria-label="Edit group">
+                <EditIcon size={15} />
+              </button>
+              <button className="icon-btn icon-btn--danger" onClick={() => setDeleteGroupOpen(true)} title="Delete group" aria-label="Delete group">
+                <TrashIcon size={15} />
+              </button>
+            </div>
           )}
         </div>
-        {loaded && group.description && <p className="channel__desc">{group.description}</p>}
 
         <div className="channel__tabbar">
           <div className="channel__tabs">
@@ -82,12 +83,13 @@ export default function ChannelPage() {
             </button>
           </div>
           <div className="channel__actions">
-            {/* New task is inline on desktop; on mobile it's the FAB below. */}
-            <button className="btn btn--sm hide-mobile" onClick={() => setCreateTaskOpen(true)}>
+            {/* New task/Add member are inline on desktop; on mobile the FAB
+                below does whichever action fits the selected tab. */}
+            <button className="btn btn--sm channel__new-task hide-mobile" onClick={() => setCreateTaskOpen(true)}>
               <PlusIcon size={14} /> New task
             </button>
             {canManage && (
-              <button className="btn btn--ghost btn--sm" onClick={() => setAddMemberOpen(true)}>
+              <button className="btn btn--ghost btn--sm hide-mobile" onClick={() => setAddMemberOpen(true)}>
                 <PlusIcon size={14} /> Add member
               </button>
             )}
@@ -107,10 +109,14 @@ export default function ChannelPage() {
         <ChannelMembers group={group} orgId={orgId} canManage={canManage} onAddMember={() => setAddMemberOpen(true)} />
       )}
 
-      {/* Mobile: floating New task. Hidden on the chat tab so it never covers
-          the message composer. */}
-      {loaded && tab !== 'chat' && (
+      {/* Mobile: the floating button does whichever action fits the selected
+          tab (New task / Add member) — hidden entirely on the chat tab so it
+          never covers the message composer. */}
+      {loaded && tab === 'tasks' && (
         <Fab label="New task" onClick={() => setCreateTaskOpen(true)} />
+      )}
+      {loaded && tab === 'members' && canManage && (
+        <Fab label="Add member" onClick={() => setAddMemberOpen(true)} />
       )}
 
       {addMemberOpen && <AddMemberModal groupId={groupId} onClose={() => setAddMemberOpen(false)} />}
@@ -124,8 +130,15 @@ export default function ChannelPage() {
       )}
 
       {deleteGroupOpen && (
-        <Modal title="Delete group" onClose={() => !deleting && setDeleteGroupOpen(false)}>
-          {deleteError && <div className="alert alert--error">{deleteError}</div>}
+        <ConfirmNameModal
+          title="Delete group"
+          entityName={group?.name}
+          busy={deleting}
+          error={deleteError}
+          onConfirm={doDeleteGroup}
+          onClose={() => !deleting && setDeleteGroupOpen(false)}
+          confirmLabel={<><TrashIcon size={16} /> Delete group</>}
+        >
           <p className="modal__intro">
             Delete <strong>&ldquo;#{group?.name}&rdquo;</strong>? This permanently deletes:
           </p>
@@ -135,15 +148,7 @@ export default function ChannelPage() {
             <li>All timeline activity for those tasks</li>
           </ul>
           <p className="modal__intro">This can&apos;t be undone.</p>
-          <div className="modal__actions">
-            <button className="btn btn--ghost" onClick={() => setDeleteGroupOpen(false)} disabled={deleting}>
-              Cancel
-            </button>
-            <button className="btn btn--danger" onClick={doDeleteGroup} disabled={deleting}>
-              {deleting ? <span className="spinner" /> : (<><TrashIcon size={16} /> Delete group</>)}
-            </button>
-          </div>
-        </Modal>
+        </ConfirmNameModal>
       )}
     </div>
   );

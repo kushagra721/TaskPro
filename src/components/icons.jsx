@@ -246,3 +246,10 @@ export const ActivityIcon = ({ size, ...p }) => (
     <path d="M3 12h4l3 8 4-16 3 8h4" />
   </svg>
 );
+
+export const CameraIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4 8a2 2 0 0 1 2-2h1.5l1-1.5h7l1 1.5H18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" />
+    <circle cx="12" cy="13" r="3.5" />
+  </svg>
+);

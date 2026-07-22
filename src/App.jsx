@@ -11,6 +11,7 @@ import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Verify from './pages/Verify.jsx';
 import DeclineInvitePage from './pages/DeclineInvitePage.jsx';
+import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 import DashboardHome from './pages/DashboardHome.jsx';
 import GroupsPage from './pages/GroupsPage.jsx';
 import ChannelPage from './pages/channel/ChannelPage.jsx';
@@ -26,6 +27,7 @@ import ActivitiesPage from './pages/more/ActivitiesPage.jsx';
 import InvitationsPage from './pages/more/InvitationsPage.jsx';
 import TaskDetailPage from './pages/TaskDetailPage.jsx';
 import ProjectDetailPage from './pages/ProjectDetailPage.jsx';
+import ClientDetailPage from './pages/ClientDetailPage.jsx';
 
 // Manage Tasks moved from More to the main Tasks tab. Old links (and the
 // dashboard's deep-links) must keep their query string through the redirect.
@@ -58,6 +60,7 @@ export default function App() {
       <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
       <Route path="/verify" element={<Verify />} />
       <Route path="/invite/decline/:token" element={<DeclineInvitePage />} />
+      <Route path="/invite/accept/:token" element={<AcceptInvitePage />} />
 
       <Route
         element={
@@ -72,6 +75,7 @@ export default function App() {
         <Route path="/tasks" element={<ManageTasksPage />} />
         <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+        <Route path="/clients/:clientId" element={<ClientDetailPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/more/profile" element={<ProfilePage />} />

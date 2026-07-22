@@ -4,6 +4,7 @@ import { selectUser, setUser } from '../../store/slices/authSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlice.js';
 import { usersApi, organizationsApi } from '../../api/client.js';
 import Avatar from '../../components/Avatar.jsx';
+import PhotoPicker from '../../components/PhotoPicker.jsx';
 import { formatDate } from '../../utils/status.js';
 import { prettySize } from '../../utils/fileSize.js';
 
@@ -17,6 +18,7 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
+  const [photoError, setPhotoError] = useState('');
 
   useEffect(() => {
     if (!orgId || !user?.id) return;
@@ -26,6 +28,16 @@ export default function ProfilePage() {
       .catch(() => setProfile(null));
   }, [orgId, user?.id]);
   const member = profile?.member;
+
+  const saveAvatar = async (avatarUrl) => {
+    setPhotoError('');
+    try {
+      const res = await usersApi.updateMe({ avatarUrl });
+      dispatch(setUser({ ...user, avatarUrl: res.user.avatarUrl }));
+    } catch (err) {
+      setPhotoError(err.message || 'Could not update your photo');
+    }
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -46,12 +58,15 @@ export default function ProfilePage() {
   return (
     <div className="page page--narrow">
       <div className="profile-head">
-        <Avatar name={user?.name} email={user?.email} size={64} />
+        <PhotoPicker onUploaded={saveAvatar}>
+          <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={64} />
+        </PhotoPicker>
         <div>
           <div className="profile-head__name">{user?.name || 'You'}</div>
           <div className="profile-head__email">{user?.email}</div>
         </div>
       </div>
+      {photoError && <div className="alert alert--error">{photoError}</div>}
 
       {member && (
         <>

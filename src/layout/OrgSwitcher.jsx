@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { selectOrgs, selectCurrentOrg, setCurrentOrg } from '../store/slices/orgSlice.js';
 import { joinOrgRoom } from '../realtime/socket.js';
 import { ChevronDownIcon, PlusIcon, CheckIcon } from '../components/icons.jsx';
+import OrgBadge from '../components/OrgBadge.jsx';
 
 export default function OrgSwitcher({ onCreate }) {
   const dispatch = useDispatch();
@@ -19,7 +20,7 @@ export default function OrgSwitcher({ onCreate }) {
   return (
     <div className="org-switcher">
       <button className="org-switcher__btn" onClick={() => setOpen((o) => !o)}>
-        <span className="org-badge">{current?.icon || (current?.name || 'T')[0].toUpperCase()}</span>
+        <OrgBadge name={current?.name || 'T'} icon={current?.icon} photoUrl={current?.photoUrl} />
         <span className="org-switcher__name">{current?.name || 'No organization'}</span>
         <ChevronDownIcon size={16} />
       </button>
@@ -32,7 +33,7 @@ export default function OrgSwitcher({ onCreate }) {
             {orgs.length === 0 && <div className="dropdown__empty">None yet</div>}
             {orgs.map((o) => (
               <button key={o.id} className="dropdown__item" onClick={() => pick(o.id)}>
-                <span className="org-badge sm">{o.icon || o.name[0].toUpperCase()}</span>
+                <OrgBadge name={o.name} icon={o.icon} photoUrl={o.photoUrl} size="sm" />
                 <span className="dropdown__item-text">{o.name}</span>
                 {o.id === current?.id && <CheckIcon size={16} />}
               </button>

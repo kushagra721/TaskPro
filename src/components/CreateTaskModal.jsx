@@ -6,10 +6,12 @@ import DateField from './DateField.jsx';
 import AttachmentPicker from './AttachmentPicker.jsx';
 import RichTextEditor from './RichTextEditor.jsx';
 import ProjectFormModal from './ProjectFormModal.jsx';
+import ClientFormModal from './ClientFormModal.jsx';
 import CreateChannelModal from './CreateChannelModal.jsx';
 import { createTask } from '../store/slices/taskSlice.js';
 import { selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
+import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 
@@ -36,6 +38,7 @@ export default function CreateTaskModal({
   askGroup,
   members: askGroupMembers = [],
   defaultProjectId = '',
+  defaultClientId = '',
   onClose,
   onCreated,
 }) {
@@ -46,18 +49,20 @@ export default function CreateTaskModal({
   const detail = useSelector(selectGroupDetail);
   const myGroups = useSelector(selectGroups);
   const projects = useSelector(selectAllProjects);
+  const clients = useSelector(selectAllClients);
 
   const [pickedGroupId, setPickedGroupId] = useState(groupId || '');
   const [form, setForm] = useState({
     title: '', description: '', priority: 'MEDIUM', assigneeId: '',
     // Due date defaults to tomorrow.
-    dueDate: tomorrow(), projectId: defaultProjectId,
+    dueDate: tomorrow(), projectId: defaultProjectId, clientId: defaultClientId,
   });
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  // "+ Add <query>" from the Project/Group dropdowns opens these inline.
+  // "+ Add <query>" from the Project/Client/Group dropdowns opens these inline.
   const [newProjectName, setNewProjectName] = useState(null);
+  const [newClientName, setNewClientName] = useState(null);
   const [newGroupName, setNewGroupName] = useState(null);
 
   const up = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -65,10 +70,14 @@ export default function CreateTaskModal({
   // A due date can't be in the past.
   const today = new Date().toISOString().slice(0, 10);
 
-  // The project list is org-wide; make sure it's loaded when opened directly.
+  // The project/client lists are org-wide; make sure they're loaded when opened directly.
   useEffect(() => {
     if (orgId && projects.length === 0) dispatch(fetchAllProjects(orgId));
   }, [orgId, projects.length, dispatch]);
+
+  useEffect(() => {
+    if (orgId && clients.length === 0) dispatch(fetchAllClients(orgId));
+  }, [orgId, clients.length, dispatch]);
 
   const members = askGroup ? askGroupMembers : (detail?.id === groupId ? detail.members || [] : []);
 
@@ -89,6 +98,7 @@ export default function CreateTaskModal({
           priority: form.priority,
           assigneeId: form.assigneeId || null,
           projectId: form.projectId || null,
+          clientId: form.clientId || null,
           dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
           attachments,
         })
@@ -126,18 +136,34 @@ export default function CreateTaskModal({
           </div>
         )}
 
-        <div className="field">
-          <label className="field__label">Project</label>
-          <Select
-            value={form.projectId}
-            onChange={set('projectId')}
-            placeholder={projects.length ? 'No project' : 'No projects yet'}
-            options={[
-              { value: '', label: 'No project' },
-              ...projects.map((p) => ({ value: p.id, label: p.name })),
-            ]}
-            onCreateNew={(query) => setNewProjectName(query)}
-          />
+        <div className="row2">
+          <div className="field">
+            <label className="field__label">Project</label>
+            <Select
+              value={form.projectId}
+              onChange={set('projectId')}
+              placeholder={projects.length ? 'No project' : 'No projects yet'}
+              options={[
+                { value: '', label: 'No project' },
+                ...projects.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+              onCreateNew={(query) => setNewProjectName(query)}
+            />
+          </div>
+
+          <div className="field">
+            <label className="field__label">Client (optional)</label>
+            <Select
+              value={form.clientId}
+              onChange={set('clientId')}
+              placeholder={clients.length ? 'No client' : 'No clients yet'}
+              options={[
+                { value: '', label: 'No client' },
+                ...clients.map((c) => ({ value: c.id, label: c.name })),
+              ]}
+              onCreateNew={(query) => setNewClientName(query)}
+            />
+          </div>
         </div>
 
         <div className="field">
@@ -187,6 +213,18 @@ export default function CreateTaskModal({
           onSaved={(project) => {
             set('projectId')(project.id);
             setNewProjectName(null);
+          }}
+        />
+      )}
+
+      {newClientName !== null && (
+        <ClientFormModal
+          orgId={orgId}
+          initialName={newClientName}
+          onClose={() => setNewClientName(null)}
+          onSaved={(client) => {
+            set('clientId')(client.id);
+            setNewClientName(null);
           }}
         />
       )}
