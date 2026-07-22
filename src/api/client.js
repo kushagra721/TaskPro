@@ -116,6 +116,8 @@ export const invitationsApi = {
   mine: () => request('/invitations'),
   accept: (id) => request(`/invitations/${id}/accept`, { method: 'POST' }),
   decline: (id) => request(`/invitations/${id}/decline`, { method: 'POST' }),
+  declineByToken: (token) =>
+    request(`/invitations/public/${token}/decline`, { method: 'POST', auth: false }),
 };
 
 // ---- Join requests (admin side, for the bell) ----

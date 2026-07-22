@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import BrandPanel from '../components/BrandPanel.jsx';
 import { authApi } from '../api/client.js';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '' });
+  const location = useLocation();
+  const [form, setForm] = useState({ name: '', email: location.state?.email || '' });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,9 @@ export default function Signup() {
           <p className="auth__subtitle">Start organising your work in minutes.</p>
 
           {error && <div className="alert alert--error">{error}</div>}
+          {!error && location.state?.email && (
+            <div className="alert alert--info">No account found for that email — finish signing up below.</div>
+          )}
 
           <div className="field">
             <label className="field__label" htmlFor="name">Full name</label>

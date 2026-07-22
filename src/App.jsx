@@ -3,9 +3,11 @@ import { useSelector } from 'react-redux';
 import { selectAuth } from './store/slices/authSlice.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AppLayout from './layout/AppLayout.jsx';
+import HomeLanding from './pages/HomeLanding.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Verify from './pages/Verify.jsx';
+import DeclineInvitePage from './pages/DeclineInvitePage.jsx';
 import DashboardHome from './pages/DashboardHome.jsx';
 import GroupsPage from './pages/GroupsPage.jsx';
 import ChannelPage from './pages/channel/ChannelPage.jsx';
@@ -46,9 +48,11 @@ function PublicOnly({ children }) {
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<HomeLanding />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
       <Route path="/verify" element={<Verify />} />
+      <Route path="/invite/decline/:token" element={<DeclineInvitePage />} />
 
       <Route
         element={
@@ -76,7 +80,6 @@ export default function App() {
         <Route path="/more/invitations" element={<InvitationsPage />} />
       </Route>
 
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );

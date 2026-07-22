@@ -25,6 +25,10 @@ export default function Login() {
         state: { email: res.email, purpose: 'login', devCode: res.devCode },
       });
     } catch (err) {
+      if (err.status === 404) {
+        navigate('/signup', { state: { email: form.email } });
+        return;
+      }
       if (err.fields) {
         const map = {};
         err.fields.forEach((f) => (map[f.field] = f.message));
