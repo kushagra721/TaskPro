@@ -4,6 +4,9 @@ import { selectAuth } from './store/slices/authSlice.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AppLayout from './layout/AppLayout.jsx';
 import HomeLanding from './pages/HomeLanding.jsx';
+import AboutPage from './pages/AboutPage.jsx';
+import ProductPage from './pages/ProductPage.jsx';
+import PricingPage from './pages/PricingPage.jsx';
 import Login from './pages/Login.jsx';
 import Signup from './pages/Signup.jsx';
 import Verify from './pages/Verify.jsx';
@@ -49,6 +52,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomeLanding />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/product" element={<ProductPage />} />
+      <Route path="/pricing" element={<PricingPage />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
       <Route path="/verify" element={<Verify />} />

@@ -1,14 +1,15 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../store/slices/authSlice.js';
-import { CheckIcon, GroupsIcon, ReportsIcon, MailIcon, MoreIcon, XIcon } from '../components/icons.jsx';
+import { CheckIcon, GroupsIcon, ReportsIcon, MailIcon } from '../components/icons.jsx';
+import LandingHeader from '../components/landing/LandingHeader.jsx';
+import LandingFooter from '../components/landing/LandingFooter.jsx';
 
 const FEATURES = [
   {
     Icon: GroupsIcon,
-    title: 'Channels & chat',
-    desc: 'Organize every team into channels with real-time chat, reactions and file sharing.',
+    title: 'Groups & chat',
+    desc: 'Organize every team into groups with real-time chat, reactions and file sharing.',
   },
   {
     Icon: CheckIcon,
@@ -25,51 +26,20 @@ const FEATURES = [
 export default function HomeLanding() {
   const navigate = useNavigate();
   const user = useSelector(selectUser);
-  const [navOpen, setNavOpen] = useState(false);
-
   const primaryTo = user ? '/dashboard' : '/login';
-  const primaryLabel = user ? 'My Workspace' : 'Login';
 
   return (
     <div className="landing">
-      <header className="landing__header">
-        <div className="landing__header-inner">
-          <div className="landing__logo">
-            <span className="brand__logo-mark" style={{ width: 34, height: 34 }}>✓</span>
-            Task&nbsp;Pro
-          </div>
-
-          <nav className={`landing__nav ${navOpen ? 'landing__nav--open' : ''}`}>
-            <a href="#top" className="landing__nav-link landing__nav-link--active" onClick={() => setNavOpen(false)}>Home</a>
-            <a href="#about" className="landing__nav-link" onClick={() => setNavOpen(false)}>About</a>
-            <a href="#product" className="landing__nav-link" onClick={() => setNavOpen(false)}>Product</a>
-            <a href="#pricing" className="landing__nav-link" onClick={() => setNavOpen(false)}>Pricing</a>
-            <Link to={primaryTo} className="btn landing__nav-cta hide-desktop" onClick={() => setNavOpen(false)}>
-              {primaryLabel}
-            </Link>
-          </nav>
-
-          <div className="landing__header-actions">
-            <Link to={primaryTo} className="btn landing__login-btn hide-mobile">{primaryLabel}</Link>
-            <button
-              className="icon-btn landing__burger hide-desktop"
-              aria-label="Toggle menu"
-              onClick={() => setNavOpen((v) => !v)}
-            >
-              {navOpen ? <XIcon size={22} /> : <MoreIcon size={22} />}
-            </button>
-          </div>
-        </div>
-      </header>
+      <LandingHeader active="home" />
 
       <main>
-        <section id="top" className="landing__hero">
+        <section className="landing__hero">
           <div className="landing__hero-text">
             <h1>
-              Task <span>Manager</span>
+              Task <span>Pro</span>
             </h1>
             <p>
-              Task Pro brings organizations, channels, chat and tasks into one place — invite your
+              Task Pro brings organizations, groups, chat and tasks into one place — invite your
               team, assign work, and watch it move in real time.
             </p>
             <div className="landing__hero-actions">
@@ -100,7 +70,7 @@ export default function HomeLanding() {
           </div>
         </section>
 
-        <section id="product" className="landing__section">
+        <section className="landing__section">
           <h2 className="landing__section-title">Why teams pick Task Pro</h2>
           <p className="landing__section-sub">Everything a fast-moving team needs, without the clutter.</p>
           <div className="landing__features">
@@ -112,37 +82,33 @@ export default function HomeLanding() {
               </div>
             ))}
           </div>
+          <Link to="/product" className="landing__more-link">See the full product tour →</Link>
         </section>
 
-        <section id="about" className="landing__section landing__about">
+        <section className="landing__section landing__about">
           <h2 className="landing__section-title">Built for seamless team workflow</h2>
           <p className="landing__section-sub">
             No passwords to remember — sign in securely with a one-time code sent to your inbox.
             Create an organization, invite your team, and get to work in minutes.
           </p>
+          <Link to="/about" className="landing__more-link">More about Task Pro →</Link>
         </section>
 
-        <section id="pricing" className="landing__section landing__pricing">
+        <section className="landing__section landing__pricing">
           <h2 className="landing__section-title">Simple, free to start</h2>
           <p className="landing__section-sub">
             Task Pro is free to use for your organization today — create one and invite your team.
           </p>
-          <button className="btn landing__cta" onClick={() => navigate(primaryTo)}>
-            {user ? 'Go to my workspace' : 'Create your account'}
-          </button>
+          <div className="landing__hero-actions" style={{ justifyContent: 'center' }}>
+            <button className="btn landing__cta" onClick={() => navigate(primaryTo)}>
+              {user ? 'Go to my workspace' : 'Create your account'}
+            </button>
+            <Link to="/pricing" className="btn btn--ghost landing__cta">See pricing details</Link>
+          </div>
         </section>
       </main>
 
-      <footer className="landing__footer">
-        <div className="landing__footer-inner">
-          <div className="landing__logo">
-            <span className="brand__logo-mark" style={{ width: 30, height: 30 }}>✓</span>
-            Task&nbsp;Pro
-          </div>
-          <p className="landing__footer-tag">Team tasks, chat &amp; collaboration.</p>
-          <p className="landing__footer-copy">&copy; {new Date().getFullYear()} Task Pro. All rights reserved.</p>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   );
 }
