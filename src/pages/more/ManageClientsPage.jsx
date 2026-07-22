@@ -3,11 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentOrg, selectCurrentOrgId, selectMembers, fetchMembers } from '../../store/slices/orgSlice.js';
 import { fetchClients, selectClients, selectClientsPagination } from '../../store/slices/clientSlice.js';
+import { organizationsApi } from '../../api/client.js';
 import EmptyState from '../../components/EmptyState.jsx';
 import Pagination from '../../components/Pagination.jsx';
 import TaskSearchBar from '../../components/TaskSearchBar.jsx';
 import ClientFilterDrawer from '../../components/ClientFilterDrawer.jsx';
 import ClientFormModal from '../../components/ClientFormModal.jsx';
+import CardProgress from '../../components/CardProgress.jsx';
 import Fab from '../../components/Fab.jsx';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
@@ -37,7 +39,19 @@ export default function ManageClientsPage({ raiseFab = false, embedded = false }
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [progress, setProgress] = useState([]);
   const isMobile = useIsMobile();
+
+  // Per-client completion rate, shown as a bar under each card. `reports`
+  // already role-scopes client stats to what the caller can see (their
+  // tasks' visibility), same as everywhere else.
+  useEffect(() => {
+    if (!orgId) return;
+    organizationsApi
+      .reports(orgId)
+      .then((r) => setProgress(r.clients))
+      .catch(() => setProgress([]));
+  }, [orgId]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
@@ -124,20 +138,24 @@ export default function ManageClientsPage({ raiseFab = false, embedded = false }
         />
       ) : (
         <>
-          <div className="project-list">
-            {clients.map((c) => (
-              <button key={c.id} className="project-card project-card--link" onClick={() => navigate(`/clients/${c.id}`)}>
-                <span className="project-card__icon">
-                  <BuildingIcon size={18} />
-                </span>
-                <div className="project-card__body">
-                  <div className="project-card__name">{c.name}</div>
-                  <div className="project-card__meta">
-                    {c.taskCount} task{c.taskCount === 1 ? '' : 's'} · {relativeDay(c.createdAt)}
+          <div className="channel-grid">
+            {clients.map((c) => {
+              const cp = progress.find((x) => x.id === c.id);
+              return (
+                <button key={c.id} className="channel-card" onClick={() => navigate(`/clients/${c.id}`)}>
+                  <div className="channel-card__hash">
+                    <BuildingIcon size={20} />
                   </div>
-                </div>
-              </button>
-            ))}
+                  <div className="channel-card__body">
+                    <div className="channel-card__name">{c.name}</div>
+                    <div className="channel-card__meta">
+                      {c.taskCount} task{c.taskCount === 1 ? '' : 's'} · {relativeDay(c.createdAt)}
+                    </div>
+                    {cp && <CardProgress rate={cp.completionRate} />}
+                  </div>
+                </button>
+              );
+            })}
           </div>
           <Pagination
             page={pagination.page}

@@ -275,25 +275,27 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
         {visibleMembers.length === 0 ? (
           <div className="panel__empty">Nothing matches your search or filters.</div>
         ) : (
-          <ul className="member-list">
+          <div className="channel-grid">
             {visibleMembers.map((m) => {
               const mp = progress.find((x) => x.id === m.id);
               return (
-                <li key={m.id} className="member member--link" onClick={() => navigate(`/more/members/${m.id}`)}>
-                  <Avatar name={m.name} email={m.email} size={38} />
-                  <div className="member__info">
-                    <div className="member__name">
-                      <span className="member__name-text">{m.name || m.email}</span>
-                      {m.id === user?.id && <span className="tag">You</span>}
+                <button key={m.id} className="channel-card" onClick={() => navigate(`/more/members/${m.id}`)}>
+                  <Avatar name={m.name} email={m.email} size={42} />
+                  <div className="channel-card__body">
+                    <div className="channel-card__name">
+                      {m.name || m.email} {m.id === user?.id && <span className="tag">You</span>}
                     </div>
-                    <div className="member__email">{m.email}</div>
+                    <div className="channel-card__meta">
+                      {mp?.groupCount ?? 0} group{mp?.groupCount === 1 ? '' : 's'} ·{' '}
+                      {mp?.open ?? 0} open task{mp?.open === 1 ? '' : 's'}
+                    </div>
                     {mp && <CardProgress rate={mp.completionRate} />}
                   </div>
                   <span className={`role-pill role-pill--${m.role.toLowerCase()}`}>{m.role}</span>
-                </li>
+                </button>
               );
             })}
-          </ul>
+          </div>
         )}
       </section>
 

@@ -1447,39 +1447,10 @@ a.btn {
   color: var(--text-muted);
 }
 
-/* ---------- Projects list (Manage Projects) ---------- */
-.project-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.project-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 14px 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.project-card--link {
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.project-card--link:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-}
-
+/* ---------- Project/Client detail header icon ---------- */
+/* Manage Projects/Clients/Members now use the shared .channel-grid/.channel-card
+   layout (see "Channel grid" below) — this is the one survivor, still used by
+   the Project/Client Detail page headers. */
 .project-card__icon {
   display: grid;
   place-items: center;
@@ -1488,40 +1459,6 @@ a.btn {
   border-radius: 11px;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.16));
   color: #4f46e5;
-  flex-shrink: 0;
-}
-
-.project-card__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.project-card__name {
-  font-weight: 600;
-  font-size: 15px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-card__desc,
-.project-card__meta {
-  color: var(--text-muted);
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-card__meta {
-  font-size: 12.5px;
-  color: var(--text-faint);
-  margin-top: 2px;
-}
-
-.project-card__actions {
-  display: flex;
-  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -2019,6 +1956,20 @@ a.btn {
   color: #4f46e5;
   font-size: 20px;
   font-weight: 700;
+  flex-shrink: 0;
+}
+
+.channel-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* `.channel-card` is a flex row; a plain <span> badge (e.g. the Members
+   grid's role-pill) is still a flex item and stretches to the card's full
+   height by default (`align-items: stretch`), rendering as an oversized
+   rounded box instead of a small pill. Pin it to its natural size instead. */
+.channel-card > .role-pill {
+  align-self: flex-start;
   flex-shrink: 0;
 }
 

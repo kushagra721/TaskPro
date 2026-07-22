@@ -133,17 +133,17 @@ export default function ManageProjectsPage({ raiseFab = false, embedded = false 
         />
       ) : (
         <>
-          <div className="project-list">
+          <div className="channel-grid">
             {projects.map((p) => {
               const pp = progress.find((x) => x.id === p.id);
               return (
-                <button key={p.id} className="project-card project-card--link" onClick={() => navigate(`/projects/${p.id}`)}>
-                  <span className="project-card__icon">
-                    <FolderIcon size={18} />
-                  </span>
-                  <div className="project-card__body">
-                    <div className="project-card__name">{p.name}</div>
-                    <div className="project-card__meta">
+                <button key={p.id} className="channel-card" onClick={() => navigate(`/projects/${p.id}`)}>
+                  <div className="channel-card__hash">
+                    <FolderIcon size={20} />
+                  </div>
+                  <div className="channel-card__body">
+                    <div className="channel-card__name">{p.name}</div>
+                    <div className="channel-card__meta">
                       {p.taskCount} task{p.taskCount === 1 ? '' : 's'} · {relativeDay(p.createdAt)}
                     </div>
                     {pp && <CardProgress rate={pp.completionRate} />}
