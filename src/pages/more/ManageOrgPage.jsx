@@ -280,7 +280,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
               const mp = progress.find((x) => x.id === m.id);
               return (
                 <button key={m.id} className="channel-card" onClick={() => navigate(`/more/members/${m.id}`)}>
-                  <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={42} />
+                  <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={42} viewable />
                   <div className="channel-card__body">
                     <div className="channel-card__name">
                       {m.name || m.email} {m.id === user?.id && <span className="tag">You</span>}

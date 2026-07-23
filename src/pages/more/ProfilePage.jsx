@@ -110,7 +110,7 @@ export default function ProfilePage() {
     <div className="page page--narrow">
       <div className="profile-head">
         <PhotoPicker onUploaded={saveAvatar}>
-          <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={64} />
+          <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={64} viewable />
         </PhotoPicker>
         <div>
           <div className="profile-head__name">{user?.name || 'You'}</div>

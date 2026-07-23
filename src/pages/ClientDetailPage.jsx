@@ -157,6 +157,7 @@ export default function ClientDetailPage() {
             <EmptyState icon={<TaskIcon size={30} />} title="No tasks found" description="Nothing matches your search or filters." />
           ) : (
             <>
+              <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
               <TaskListView
                 tasks={tasks}
                 onOpen={(id) => navigate(`/tasks/${id}`)}
@@ -164,7 +165,6 @@ export default function ClientDetailPage() {
                   <span className={`status-pill status-pill--${t.status.toLowerCase()}`}>{STATUS_META[t.status].label}</span>
                 )}
               />
-              <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
             </>
           )}
 

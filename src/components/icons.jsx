@@ -253,3 +253,37 @@ export const CameraIcon = ({ size, ...p }) => (
     <circle cx="12" cy="13" r="3.5" />
   </svg>
 );
+
+export const RotateIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M3 12a9 9 0 1 1 3 6.7" />
+    <path d="M3 21v-5h5" />
+  </svg>
+);
+
+export const CropIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M6 2v14a2 2 0 0 0 2 2h14" />
+    <path d="M18 22V8a2 2 0 0 0-2-2H2" />
+  </svg>
+);
+
+export const PencilIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M12 19 3 20l1-9 12-12 8 8Z" />
+    <path d="M14 6.5 17.5 10" />
+  </svg>
+);
+
+export const TypeIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M4 6h16M12 6v14" />
+  </svg>
+);
+
+export const UndoIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M3 10h11a5 5 0 0 1 0 10H9" />
+    <path d="m3 10 5-5M3 10l5 5" />
+  </svg>
+);

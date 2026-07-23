@@ -1,25 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchMessages, sendMessage, selectMessages } from '../../store/slices/messageSlice.js';
+import { fetchMessages, sendMessage, deleteMessage, selectMessages } from '../../store/slices/messageSlice.js';
 import { selectUser } from '../../store/slices/authSlice.js';
 import { groupsApi } from '../../api/client.js';
 import Avatar from '../../components/Avatar.jsx';
 import RichTextEditor from '../../components/RichTextEditor.jsx';
 import AttachmentPicker from '../../components/AttachmentPicker.jsx';
-import { DownloadIcon } from '../../components/icons.jsx';
+import Modal from '../../components/Modal.jsx';
+import { DownloadIcon, TrashIcon } from '../../components/icons.jsx';
 import DocIcon from '../../components/DocIcon.jsx';
 import { timeAgo } from '../../utils/time.js';
 import { sanitizeHtml, htmlToText } from '../../utils/sanitizeHtml.js';
 
 const EMOJIS = ['👍', '❤️', '😂', '🎉', '👀', '✅'];
 
-export default function ChannelChat({ groupId }) {
+export default function ChannelChat({ groupId, canManage }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const messages = useSelector(selectMessages(groupId));
   const [html, setHtml] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [pickerFor, setPickerFor] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const endRef = useRef(null);
   const editorRef = useRef(null);
 
@@ -46,6 +48,12 @@ export default function ChannelChat({ groupId }) {
     groupsApi.react(groupId, messageId, emoji).catch(() => {});
   };
 
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    dispatch(deleteMessage({ groupId, messageId: deleteTarget }));
+    setDeleteTarget(null);
+  };
+
   return (
     <div className="chat">
       <div className="chat__messages">
@@ -57,6 +65,17 @@ export default function ChannelChat({ groupId }) {
               <div className="msg__head">
                 <span className="msg__author">{m.author.name || m.author.email}</span>
                 <span className="msg__time">{timeAgo(m.createdAt)}</span>
+                {(canManage || m.author.id === user?.id) && (
+                  <button
+                    type="button"
+                    className="icon-btn icon-btn--danger msg__delete"
+                    onClick={() => setDeleteTarget(m.id)}
+                    aria-label="Delete message"
+                    title="Delete message"
+                  >
+                    <TrashIcon size={14} />
+                  </button>
+                )}
               </div>
               {m.content && (
                 <div className="msg__content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(m.content) }} />
@@ -136,6 +155,18 @@ export default function ChannelChat({ groupId }) {
           </button>
         </div>
       </form>
+
+      {deleteTarget && (
+        <Modal title="Delete message" onClose={() => setDeleteTarget(null)}>
+          <p className="modal__intro">This message will be permanently deleted. This can&apos;t be undone.</p>
+          <div className="modal__actions">
+            <button className="btn btn--ghost" onClick={() => setDeleteTarget(null)}>Cancel</button>
+            <button className="btn btn--danger" onClick={confirmDelete}>
+              <TrashIcon size={16} /> Delete
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

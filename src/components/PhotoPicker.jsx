@@ -1,20 +1,24 @@
 import { useRef, useState } from 'react';
 import { uploadsApi } from '../api/client.js';
 import { CameraIcon } from './icons.jsx';
+import ImageEditorModal from './ImageEditorModal.jsx';
 
 const LIMIT_MB = 3; // matches the shared /uploads image limit
 
 /**
  * Wraps an avatar/badge with a small camera button that uploads a single
  * image (via the common /uploads endpoint, which also logs it to storage)
- * and reports the resulting URL back through `onUploaded`.
+ * and reports the resulting URL back through `onUploaded`. The picked photo
+ * is always routed through `ImageEditorModal` first (crop/rotate/draw/text),
+ * same as chat/task attachments.
  */
 export default function PhotoPicker({ children, onUploaded, disabled }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [editing, setEditing] = useState(null);
 
-  const pick = async (e) => {
+  const pick = (e) => {
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
@@ -27,9 +31,14 @@ export default function PhotoPicker({ children, onUploaded, disabled }) {
       return;
     }
     setError('');
+    setEditing(file);
+  };
+
+  const upload = async (editedFile) => {
+    setEditing(null);
     setBusy(true);
     try {
-      const res = await uploadsApi.upload([file]);
+      const res = await uploadsApi.upload([editedFile]);
       onUploaded(res.files[0].url);
     } catch (err) {
       setError(err.message || 'Upload failed');
@@ -55,6 +64,10 @@ export default function PhotoPicker({ children, onUploaded, disabled }) {
         <input ref={inputRef} type="file" accept="image/*" hidden onChange={pick} />
       </div>
       {error && <div className="field__error">{error}</div>}
+
+      {editing && (
+        <ImageEditorModal file={editing} label="Edit photo" onCancel={() => setEditing(null)} onSave={upload} />
+      )}
     </div>
   );
 }

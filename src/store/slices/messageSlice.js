@@ -11,6 +11,11 @@ export const sendMessage = createAsyncThunk('messages/send', async ({ groupId, c
   return { groupId, message: res.message };
 });
 
+export const deleteMessage = createAsyncThunk('messages/delete', async ({ groupId, messageId }) => {
+  await groupsApi.deleteMessage(groupId, messageId);
+  return { groupId, messageId };
+});
+
 const ensure = (state, groupId) => {
   if (!state.byGroup[groupId]) state.byGroup[groupId] = { items: [], nextCursor: null, loading: false };
   return state.byGroup[groupId];
@@ -34,6 +39,12 @@ const messageSlice = createSlice({
       const msg = bucket.items.find((m) => m.id === messageId);
       if (msg) msg.reactions = reactions;
     },
+    messageDeleted: (state, action) => {
+      const { groupId, id } = action.payload;
+      const bucket = state.byGroup[groupId];
+      if (!bucket) return;
+      bucket.items = bucket.items.filter((m) => m.id !== id);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -51,11 +62,15 @@ const messageSlice = createSlice({
         if (!bucket.items.find((m) => m.id === action.payload.message.id)) {
           bucket.items.push(action.payload.message);
         }
+      })
+      .addCase(deleteMessage.fulfilled, (state, action) => {
+        const bucket = state.byGroup[action.payload.groupId];
+        if (bucket) bucket.items = bucket.items.filter((m) => m.id !== action.payload.messageId);
       });
   },
 });
 
-export const { messageReceived, reactionUpdated } = messageSlice.actions;
+export const { messageReceived, reactionUpdated, messageDeleted } = messageSlice.actions;
 export default messageSlice.reducer;
 
 export const selectMessages = (groupId) => (s) => s.messages.byGroup[groupId]?.items || [];

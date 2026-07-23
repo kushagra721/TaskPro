@@ -74,7 +74,7 @@ export default function ChannelMembers({ group, orgId, canManage, onAddMember })
           <ul className="member-list">
             {visibleMembers.map((m) => (
               <li key={m.id} className="member">
-                <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={38} />
+                <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={38} viewable />
                 <div className="member__info">
                   <div className="member__name">
                     <span className="member__name-text">{m.name || m.email}</span>

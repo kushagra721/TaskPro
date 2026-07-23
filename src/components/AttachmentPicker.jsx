@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { uploadsApi } from '../api/client.js';
 import { PaperclipIcon, VideoIcon, XIcon } from './icons.jsx';
 import DocIcon from './DocIcon.jsx';
+import ImageEditorModal from './ImageEditorModal.jsx';
 import { prettySize } from '../utils/fileSize.js';
 
 const LIMITS = { image: 3, video: 10, document: 10 }; // MB, matches the backend
@@ -16,13 +17,41 @@ const kindOf = (mimeType = '') => {
  * Multi-file picker for images/videos/docs. Uploads immediately on selection
  * (via the common /uploads endpoint) and reports the accumulated attachment
  * list up through `onChange` — callers just send that array with the task.
+ * Any selected images are routed through `ImageEditorModal` first, one at a
+ * time (crop/rotate/draw/text) — videos/docs upload as-is.
  */
 export default function AttachmentPicker({ value = [], onChange }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [queue, setQueue] = useState(null); // { images, index, others, edited }
 
-  const pick = async (e) => {
+  const finalizeUpload = async (files) => {
+    if (!files.length) return;
+    setBusy(true);
+    try {
+      const res = await uploadsApi.upload(files);
+      onChange([...value, ...res.files]);
+    } catch (err) {
+      setError(err.message || 'Upload failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const advanceQueue = (edited) => {
+    if (!queue) return;
+    const nextEdited = edited ? [...queue.edited, edited] : queue.edited;
+    const nextIndex = queue.index + 1;
+    if (nextIndex >= queue.images.length) {
+      setQueue(null);
+      finalizeUpload([...nextEdited, ...queue.others]);
+    } else {
+      setQueue({ ...queue, index: nextIndex, edited: nextEdited });
+    }
+  };
+
+  const pick = (e) => {
     const files = [...e.target.files];
     e.target.value = ''; // allow picking the same file again later
     if (!files.length) return;
@@ -34,15 +63,13 @@ export default function AttachmentPicker({ value = [], onChange }) {
     }
 
     setError('');
-    setBusy(true);
-    try {
-      const res = await uploadsApi.upload(files);
-      onChange([...value, ...res.files]);
-    } catch (err) {
-      setError(err.message || 'Upload failed');
-    } finally {
-      setBusy(false);
+    const images = files.filter((f) => kindOf(f.type) === 'image');
+    const others = files.filter((f) => kindOf(f.type) !== 'image');
+    if (images.length === 0) {
+      finalizeUpload(others);
+      return;
     }
+    setQueue({ images, index: 0, others, edited: [] });
   };
 
   const remove = (i) => onChange(value.filter((_, idx) => idx !== i));
@@ -90,6 +117,15 @@ export default function AttachmentPicker({ value = [], onChange }) {
             </li>
           ))}
         </ul>
+      )}
+
+      {queue && (
+        <ImageEditorModal
+          file={queue.images[queue.index]}
+          label={queue.images.length > 1 ? `Edit photo ${queue.index + 1} of ${queue.images.length}` : 'Edit photo'}
+          onCancel={() => advanceQueue(null)}
+          onSave={advanceQueue}
+        />
       )}
     </div>
   );

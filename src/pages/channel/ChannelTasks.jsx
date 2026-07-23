@@ -72,13 +72,13 @@ export default function ChannelTasks({ groupId }) {
         </div>
       ) : (
         <>
+          <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
           <TaskListView
             tasks={tasks}
             onOpen={(id) => navigate(`/tasks/${id}`)}
             subtitle={(t) => htmlToText(t.description) || null}
             statusNode={statusNode}
           />
-          <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
         </>
       )}
 

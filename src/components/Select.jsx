@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDownIcon, CheckIcon, SearchIcon, PlusIcon } from './icons.jsx';
 
 /**
@@ -24,13 +25,22 @@ export default function Select({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [menuPos, setMenuPos] = useState(null);
   const ref = useRef(null);
+  const btnRef = useRef(null);
+  const menuRef = useRef(null);
   const searchRef = useRef(null);
 
   useEffect(() => {
     if (!open) return undefined;
     const onDoc = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+      if (
+        ref.current &&
+        !ref.current.contains(e.target) &&
+        !(menuRef.current && menuRef.current.contains(e.target))
+      ) {
+        setOpen(false);
+      }
     };
     const onKey = (e) => e.key === 'Escape' && setOpen(false);
     document.addEventListener('mousedown', onDoc);
@@ -38,6 +48,27 @@ export default function Select({
     return () => {
       document.removeEventListener('mousedown', onDoc);
       document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  // The menu is portaled to <body> (see Select.jsx / task-actionbar note in
+  // CLAUDE.md: a fixed sibling elsewhere on the page can otherwise sit above
+  // an absolutely-positioned dropdown trapped inside a transformed `.page`
+  // ancestor's stacking context). Track the trigger button's screen position
+  // so the portaled menu can anchor under it, and keep it in sync on
+  // scroll/resize while open.
+  useEffect(() => {
+    if (!open) return undefined;
+    const reposition = () => {
+      const rect = btnRef.current?.getBoundingClientRect();
+      if (rect) setMenuPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
+    };
+    reposition();
+    window.addEventListener('resize', reposition);
+    window.addEventListener('scroll', reposition, true);
+    return () => {
+      window.removeEventListener('resize', reposition);
+      window.removeEventListener('scroll', reposition, true);
     };
   }, [open]);
 
@@ -75,6 +106,7 @@ export default function Select({
   return (
     <div className={`sel ${disabled ? 'sel--disabled' : ''}`} ref={ref}>
       <button
+        ref={btnRef}
         type="button"
         className={`sel__btn ${open ? 'sel__btn--open' : ''}`}
         onClick={() => !disabled && setOpen((o) => !o)}
@@ -86,8 +118,12 @@ export default function Select({
         <ChevronDownIcon size={16} />
       </button>
 
-      {open && (
-        <div className="sel__menu">
+      {open && menuPos && createPortal(
+        <div
+          ref={menuRef}
+          className="sel__menu"
+          style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
+        >
           {showSearch && (
             <div className="sel__search">
               <SearchIcon size={15} />
@@ -124,7 +160,8 @@ export default function Select({
               ))
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

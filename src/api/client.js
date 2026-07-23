@@ -171,6 +171,8 @@ export const groupsApi = {
     request(`/groups/${groupId}/messages`, { method: 'POST', body: { content, attachments } }),
   react: (groupId, messageId, emoji) =>
     request(`/groups/${groupId}/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } }),
+  deleteMessage: (groupId, messageId) =>
+    request(`/groups/${groupId}/messages/${messageId}`, { method: 'DELETE' }),
   tasks: (groupId, params) => request(`/groups/${groupId}/tasks${qs(params)}`),
   createTask: (groupId, payload) =>
     request(`/groups/${groupId}/tasks`, { method: 'POST', body: payload }),
