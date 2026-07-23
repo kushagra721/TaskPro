@@ -243,7 +243,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
           <ul className="member-list">
             {joinRequests.map((r) => (
               <li key={r.id} className="member">
-                <Avatar name={r.user.name} email={r.user.email} size={38} />
+                <Avatar name={r.user.name} email={r.user.email} src={r.user.avatarUrl} size={38} />
                 <div className="member__info">
                   <div className="member__name">{r.user.name || r.user.email}</div>
                   <div className="member__email">{r.user.email}</div>
@@ -280,7 +280,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
               const mp = progress.find((x) => x.id === m.id);
               return (
                 <button key={m.id} className="channel-card" onClick={() => navigate(`/more/members/${m.id}`)}>
-                  <Avatar name={m.name} email={m.email} size={42} />
+                  <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={42} />
                   <div className="channel-card__body">
                     <div className="channel-card__name">
                       {m.name || m.email} {m.id === user?.id && <span className="tag">You</span>}

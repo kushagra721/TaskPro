@@ -159,7 +159,7 @@ export default function ReportsPage() {
               {members.map((m) => (
                 <ProgressRow
                   key={m.id}
-                  avatar={<Avatar name={m.name} email={m.email} size={30} />}
+                  avatar={<Avatar name={m.name} email={m.email} src={m.avatarUrl} size={30} />}
                   label={m.name || m.email}
                   sub={`${m.open} open · ${m.completed} completed · ${m.cancelled} cancelled`}
                   rate={m.completionRate}

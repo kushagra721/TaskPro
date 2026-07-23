@@ -43,7 +43,7 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
     // Keep status (controlled by the tabs); clear everything else.
     const empty = {
       priority: '', groupId: '', assigneeId: '', projectId: '', clientId: '', createdById: '',
-      createdFrom: '', createdTo: '', dueFrom: '', dueTo: '',
+      createdFrom: '', createdTo: '', dueFrom: '', dueTo: '', sort: '',
     };
     setDraft((d) => ({ ...d, ...empty }));
     onClear();
@@ -61,6 +61,28 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
         </div>
 
         <div className="drawer__body">
+          <div className="field">
+            <label className="field__label">Sort by</label>
+            <div className="radio-group">
+              <button
+                type="button"
+                className={`radio-pill ${!draft.sort ? 'radio-pill--active' : ''}`}
+                onClick={() => setDraft((d) => ({ ...d, sort: '' }))}
+              >
+                <span className="radio-pill__dot" />
+                Created date
+              </button>
+              <button
+                type="button"
+                className={`radio-pill ${draft.sort === 'title_asc' ? 'radio-pill--active' : ''}`}
+                onClick={() => setDraft((d) => ({ ...d, sort: 'title_asc' }))}
+              >
+                <span className="radio-pill__dot" />
+                A-Z
+              </button>
+            </div>
+          </div>
+
           <div className="field">
             <label className="field__label">Priority</label>
             <Select

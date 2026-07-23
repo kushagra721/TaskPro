@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import BrandPanel from '../components/BrandPanel.jsx';
 import { authApi } from '../api/client.js';
+import { setCredentials } from '../store/slices/authSlice.js';
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '' });
+  const dispatch = useDispatch();
+  const [mode, setMode] = useState('password'); // 'password' | 'otp'
+  const [form, setForm] = useState({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,15 +19,34 @@ export default function Login() {
     setFieldErrors((fe) => ({ ...fe, [key]: undefined }));
   };
 
+  const switchMode = (next) => {
+    setMode(next);
+    setError('');
+    setFieldErrors({});
+  };
+
+  const goToVerify = (res, purpose) => {
+    navigate('/verify', { state: { email: res.email, purpose, devCode: res.devCode } });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await authApi.login(form);
-      navigate('/verify', {
-        state: { email: res.email, purpose: 'login', devCode: res.devCode },
-      });
+      if (mode === 'otp') {
+        const res = await authApi.login({ email: form.email });
+        goToVerify(res, 'login');
+        return;
+      }
+
+      const res = await authApi.loginWithPassword({ email: form.email, password: form.password });
+      if (res.requiresVerification) {
+        goToVerify(res, res.purpose);
+        return;
+      }
+      dispatch(setCredentials({ token: res.token, user: res.user }));
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       if (err.status === 404) {
         navigate('/signup', { state: { email: form.email } });
@@ -50,7 +73,11 @@ export default function Login() {
           </div>
 
           <h2 className="auth__title">Welcome back</h2>
-          <p className="auth__subtitle">Enter your email and we'll send you a login code.</p>
+          <p className="auth__subtitle">
+            {mode === 'password'
+              ? 'Enter your email and password to sign in.'
+              : "Enter your email and we'll send you a login code."}
+          </p>
 
           {error && <div className="alert alert--error">{error}</div>}
 
@@ -68,9 +95,37 @@ export default function Login() {
             {fieldErrors.email && <div className="field__error">{fieldErrors.email}</div>}
           </div>
 
+          {mode === 'password' && (
+            <div className="field">
+              <label className="field__label" htmlFor="password">Password</label>
+              <input
+                id="password"
+                className={`input ${fieldErrors.password ? 'input--error' : ''}`}
+                type="password"
+                placeholder="Your password"
+                autoComplete="current-password"
+                value={form.password}
+                onChange={update('password')}
+              />
+              {fieldErrors.password && <div className="field__error">{fieldErrors.password}</div>}
+            </div>
+          )}
+
           <button className="btn" type="submit" disabled={loading}>
             {loading ? <span className="spinner" /> : 'Continue'}
           </button>
+
+          <p className="auth__foot">
+            {mode === 'password' ? (
+              <button type="button" className="link-btn" onClick={() => switchMode('otp')}>
+                Login with OTP instead
+              </button>
+            ) : (
+              <button type="button" className="link-btn" onClick={() => switchMode('password')}>
+                Login with password instead
+              </button>
+            )}
+          </p>
 
           <p className="auth__foot">
             Don&apos;t have an account? <Link className="link" to="/signup">Sign up</Link>

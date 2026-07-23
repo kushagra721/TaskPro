@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import Modal from './Modal.jsx';
+import OrgBadge from './OrgBadge.jsx';
 import { createOrg } from '../store/slices/orgSlice.js';
 import { organizationsApi } from '../api/client.js';
 import { joinOrgRoom } from '../realtime/socket.js';
@@ -107,7 +108,7 @@ export default function OrgFinderModal({ onClose }) {
               const st = statusFor(o);
               return (
                 <div key={o.id} className="org-result">
-                  <span className="org-badge sm">{o.name[0].toUpperCase()}</span>
+                  <OrgBadge name={o.name} icon={o.icon} photoUrl={o.photoUrl} size="sm" />
                   <div className="org-result__info">
                     <div className="org-result__name">{o.name}</div>
                     <div className="org-result__meta">{o.memberCount} member{o.memberCount === 1 ? '' : 's'}</div>

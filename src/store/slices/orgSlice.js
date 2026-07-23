@@ -45,6 +45,7 @@ const orgSlice = createSlice({
     members: [],
     dashboard: null,
     loading: false,
+    loaded: false,
   },
   reducers: {
     setCurrentOrg: (state, action) => {
@@ -77,18 +78,23 @@ const orgSlice = createSlice({
       state.list = [];
       state.members = [];
       state.dashboard = null;
+      state.loaded = false;
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchMyOrgs.fulfilled, (state, action) => {
         state.list = action.payload;
+        state.loaded = true;
         // Ensure currentId points to a valid org.
         const ids = action.payload.map((o) => o.id);
         if (!state.currentId || !ids.includes(state.currentId)) {
           state.currentId = action.payload[0]?.id || null;
           if (state.currentId) localStorage.setItem(CURRENT_ORG_KEY, state.currentId);
         }
+      })
+      .addCase(fetchMyOrgs.rejected, (state) => {
+        state.loaded = true;
       })
       .addCase(createOrg.fulfilled, (state, action) => {
         state.list.push(action.payload);
@@ -135,3 +141,4 @@ export const selectCurrentOrgId = (s) => s.orgs.currentId;
 export const selectCurrentOrg = (s) => s.orgs.list.find((o) => o.id === s.orgs.currentId) || null;
 export const selectDashboard = (s) => s.orgs.dashboard;
 export const selectMembers = (s) => s.orgs.members;
+export const selectOrgsLoaded = (s) => s.orgs.loaded;

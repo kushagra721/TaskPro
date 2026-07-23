@@ -870,6 +870,14 @@ a.btn {
   display: none;
 }
 
+.topbar__mobile-brand--photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 6px 16px -6px var(--primary-glow);
+}
+
 .topbar__title {
   font-size: 18px;
   font-weight: 700;

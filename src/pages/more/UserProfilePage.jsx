@@ -91,7 +91,7 @@ export default function UserProfilePage() {
       ) : (
         <>
           <div className="user-profile__card">
-            <Avatar name={member.name} email={member.email} size={64} />
+            <Avatar name={member.name} email={member.email} src={member.avatarUrl} size={64} />
             <h1 className="user-profile__name">{member.name || member.email}</h1>
             <p className="user-profile__email">{member.email}</p>
             <div className="user-profile__tags">

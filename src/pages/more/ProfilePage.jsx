@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser, setUser } from '../../store/slices/authSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlice.js';
-import { usersApi, organizationsApi } from '../../api/client.js';
+import { usersApi, organizationsApi, authApi } from '../../api/client.js';
 import Avatar from '../../components/Avatar.jsx';
 import PhotoPicker from '../../components/PhotoPicker.jsx';
 import { formatDate } from '../../utils/status.js';
@@ -19,6 +19,57 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
   const [photoError, setPhotoError] = useState('');
+
+  // Set/update password — OTP-confirmed, no current-password step.
+  const [pwStage, setPwStage] = useState('idle'); // 'idle' | 'otp'
+  const [pwSending, setPwSending] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwMessage, setPwMessage] = useState('');
+  const [pwDevCode, setPwDevCode] = useState('');
+  const [pwForm, setPwForm] = useState({ code: '', newPassword: '', confirmNewPassword: '' });
+
+  const updatePwForm = (key) => (e) => setPwForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const requestPasswordOtp = async () => {
+    setPwError('');
+    setPwMessage('');
+    setPwSending(true);
+    try {
+      const res = await authApi.requestPasswordChange();
+      setPwDevCode(res.devCode || '');
+      setPwStage('otp');
+    } catch (err) {
+      setPwError(err.message || 'Could not send verification code');
+    } finally {
+      setPwSending(false);
+    }
+  };
+
+  const confirmPasswordChange = async (e) => {
+    e.preventDefault();
+    setPwError('');
+    setPwMessage('');
+    setPwSaving(true);
+    try {
+      await authApi.confirmPasswordChange(pwForm);
+      setPwMessage('Password updated successfully');
+      setPwStage('idle');
+      setPwForm({ code: '', newPassword: '', confirmNewPassword: '' });
+      setPwDevCode('');
+    } catch (err) {
+      setPwError(err.message || 'Could not update password');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
+  const cancelPasswordChange = () => {
+    setPwStage('idle');
+    setPwError('');
+    setPwForm({ code: '', newPassword: '', confirmNewPassword: '' });
+    setPwDevCode('');
+  };
 
   useEffect(() => {
     if (!orgId || !user?.id) return;
@@ -118,6 +169,90 @@ export default function ProfilePage() {
           {saving ? <span className="spinner" /> : 'Save changes'}
         </button>
       </form>
+
+      <div className="card-form" style={{ marginTop: 20 }}>
+        <h3 className="field__label" style={{ fontSize: 15, marginBottom: 4 }}>Password</h3>
+        <p className="field__hint" style={{ marginBottom: 16 }}>
+          {pwStage === 'idle'
+            ? "Set or update your password by verifying a code sent to your email."
+            : `Enter the code sent to ${user?.email} and choose a new password.`}
+        </p>
+
+        {pwMessage && <div className="alert alert--info">{pwMessage}</div>}
+        {pwError && <div className="alert alert--error">{pwError}</div>}
+
+        {pwStage === 'idle' ? (
+          <button className="btn btn--ghost" type="button" onClick={requestPasswordOtp} disabled={pwSending}>
+            {pwSending ? <span className="spinner" /> : 'Set / update password'}
+          </button>
+        ) : (
+          <form onSubmit={confirmPasswordChange}>
+            {pwDevCode && <div className="alert alert--info">Dev mode code: {pwDevCode}</div>}
+
+            <div className="field">
+              <label className="field__label" htmlFor="pw-code">Verification code</label>
+              <input
+                id="pw-code"
+                className="input"
+                inputMode="numeric"
+                placeholder="Enter the code"
+                autoFocus
+                value={pwForm.code}
+                onChange={updatePwForm('code')}
+              />
+            </div>
+
+            <div className="field">
+              <label className="field__label" htmlFor="pw-new">New password</label>
+              <input
+                id="pw-new"
+                className="input"
+                type="password"
+                placeholder="At least 6 characters"
+                autoComplete="new-password"
+                value={pwForm.newPassword}
+                onChange={updatePwForm('newPassword')}
+              />
+            </div>
+
+            <div className="field">
+              <label className="field__label" htmlFor="pw-confirm">Re-enter new password</label>
+              <input
+                id="pw-confirm"
+                className="input"
+                type="password"
+                placeholder="Re-enter your new password"
+                autoComplete="new-password"
+                value={pwForm.confirmNewPassword}
+                onChange={updatePwForm('confirmNewPassword')}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                className="btn"
+                type="submit"
+                disabled={pwSaving || !pwForm.code.trim() || pwForm.newPassword.length < 6}
+              >
+                {pwSaving ? <span className="spinner" /> : 'Update password'}
+              </button>
+              <button className="btn btn--ghost" type="button" onClick={cancelPasswordChange}>
+                Cancel
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="link-btn"
+              style={{ marginTop: 12 }}
+              onClick={requestPasswordOtp}
+              disabled={pwSending}
+            >
+              {pwSending ? 'Sending…' : 'Resend code'}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

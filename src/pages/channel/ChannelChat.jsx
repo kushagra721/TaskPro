@@ -52,7 +52,7 @@ export default function ChannelChat({ groupId }) {
         {messages.length === 0 && <div className="chat__empty">No messages yet — say hello 👋</div>}
         {messages.map((m) => (
           <div key={m.id} className="msg">
-            <Avatar name={m.author.name} email={m.author.email} size={38} />
+            <Avatar name={m.author.name} email={m.author.email} src={m.author.avatarUrl} size={38} />
             <div className="msg__body">
               <div className="msg__head">
                 <span className="msg__author">{m.author.name || m.author.email}</span>

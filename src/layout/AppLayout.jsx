@@ -5,7 +5,7 @@ import Sidebar from './Sidebar.jsx';
 import BottomNav from './BottomNav.jsx';
 import Topbar from './Topbar.jsx';
 import OrgFinderModal from '../components/OrgFinderModal.jsx';
-import PendingInvitesGate from '../components/PendingInvitesGate.jsx';
+import PostLoginPopups from '../components/PostLoginPopups.jsx';
 import { HeaderActionsProvider } from './HeaderActions.jsx';
 import { fetchMyOrgs, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { fetchGroups } from '../store/slices/groupSlice.js';
@@ -72,7 +72,7 @@ export default function AppLayout() {
         {isRoot && <BottomNav />}
         {createOpen && <OrgFinderModal onClose={() => setCreateOpen(false)} />}
       </div>
-      <PendingInvitesGate />
+      <PostLoginPopups />
     </HeaderActionsProvider>
   );
 }

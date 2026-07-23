@@ -126,7 +126,7 @@ export default function AddMemberModal({ groupId, onClose }) {
               const joined = groupMemberIds.has(m.id);
               return (
                 <li key={m.id} className="member">
-                  <Avatar name={m.name} email={m.email} size={36} />
+                  <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={36} />
                   <div className="member__info">
                     <div className="member__name">
                       <span className="member__name-text">{m.name || m.email}</span>

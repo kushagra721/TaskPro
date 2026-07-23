@@ -8,6 +8,7 @@ import {
 } from '../store/slices/invitationSlice.js';
 import { fetchMyOrgs, setCurrentOrg } from '../store/slices/orgSlice.js';
 import { joinOrgRoom } from '../realtime/socket.js';
+import OrgBadge from './OrgBadge.jsx';
 import { CheckIcon, XIcon } from './icons.jsx';
 import { timeAgo } from '../utils/time.js';
 
@@ -61,7 +62,7 @@ export default function PendingInvitesGate() {
           <ul className="invite-list">
             {invitations.map((inv) => (
               <li key={inv.id} className="invite-card">
-                <span className="org-badge lg">{inv.organization.name[0].toUpperCase()}</span>
+                <OrgBadge name={inv.organization.name} icon={inv.organization.icon} photoUrl={inv.organization.photoUrl} size="lg" />
                 <div className="invite-card__info">
                   <div className="invite-card__name">{inv.organization.name}</div>
                   <div className="invite-card__meta">

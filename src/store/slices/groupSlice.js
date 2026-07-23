@@ -40,7 +40,7 @@ export const deleteGroup = createAsyncThunk('groups/delete', async ({ groupId, c
 
 const groupSlice = createSlice({
   name: 'groups',
-  initialState: { list: [], detail: null, loading: false },
+  initialState: { list: [], detail: null, loading: false, loaded: false },
   reducers: {
     groupReceived: (state, action) => {
       if (!state.list.find((g) => g.id === action.payload.id)) {
@@ -50,6 +50,7 @@ const groupSlice = createSlice({
     clearGroups: (state) => {
       state.list = [];
       state.detail = null;
+      state.loaded = false;
     },
   },
   extraReducers: (builder) => {
@@ -59,10 +60,12 @@ const groupSlice = createSlice({
       })
       .addCase(fetchGroups.fulfilled, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.list = action.payload;
       })
       .addCase(fetchGroups.rejected, (state) => {
         state.loading = false;
+        state.loaded = true;
       })
       .addCase(createGroup.fulfilled, (state, action) => {
         if (!state.list.find((g) => g.id === action.payload.id)) state.list.push(action.payload);
@@ -118,3 +121,4 @@ export default groupSlice.reducer;
 
 export const selectGroups = (s) => s.groups.list;
 export const selectGroupDetail = (s) => s.groups.detail;
+export const selectGroupsLoaded = (s) => s.groups.loaded;

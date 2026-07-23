@@ -18,7 +18,7 @@ export const declineInvitation = createAsyncThunk('invitations/decline', async (
 
 const invitationSlice = createSlice({
   name: 'invitations',
-  initialState: { mine: [], loading: false },
+  initialState: { mine: [], loading: false, loaded: false },
   reducers: {},
   extraReducers: (builder) => {
     builder
@@ -27,10 +27,12 @@ const invitationSlice = createSlice({
       })
       .addCase(fetchMyInvitations.fulfilled, (state, action) => {
         state.loading = false;
+        state.loaded = true;
         state.mine = action.payload;
       })
       .addCase(fetchMyInvitations.rejected, (state) => {
         state.loading = false;
+        state.loaded = true;
       })
       .addCase(acceptInvitation.fulfilled, (state, action) => {
         state.mine = state.mine.filter((i) => i.id !== action.payload.id);
@@ -45,3 +47,4 @@ export default invitationSlice.reducer;
 
 export const selectInvitations = (s) => s.invitations.mine;
 export const selectInvitationCount = (s) => s.invitations.mine.length;
+export const selectInvitationsLoaded = (s) => s.invitations.loaded;

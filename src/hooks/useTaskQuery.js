@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 
 export const EMPTY_FILTERS = {
   status: '', priority: '', groupId: '', assigneeId: '', projectId: '', clientId: '', createdById: '',
-  createdFrom: '', createdTo: '', dueFrom: '', dueTo: '',
+  createdFrom: '', createdTo: '', dueFrom: '', dueTo: '', sort: '',
 };
 
 /**

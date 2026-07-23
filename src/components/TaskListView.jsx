@@ -5,7 +5,7 @@ import { formatDate } from '../utils/status.js';
 const AssigneeCell = ({ assignee }) =>
   assignee ? (
     <span className="cell-user">
-      <Avatar name={assignee.name} email={assignee.email} size={22} />
+      <Avatar name={assignee.name} email={assignee.email} src={assignee.avatarUrl} size={22} />
       {(assignee.name || assignee.email).split(' ')[0]}
     </span>
   ) : (

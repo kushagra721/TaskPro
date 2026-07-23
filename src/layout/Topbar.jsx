@@ -59,7 +59,15 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
               <ArrowLeftIcon size={20} />
             </button>
           )}
-          <span className="topbar__mobile-brand brand__logo-mark">✓</span>
+          {isRoot && user?.avatarUrl ? (
+            <img
+              className="topbar__mobile-brand topbar__mobile-brand--photo"
+              src={user.avatarUrl}
+              alt={user?.name || user?.email || 'Profile'}
+            />
+          ) : (
+            <span className="topbar__mobile-brand brand__logo-mark">✓</span>
+          )}
           <div className="topbar__titles">
             {/* Primary line: the page title (desktop + sub-pages) OR, on mobile
                 root pages, the logged-in user. CSS decides which shows. */}

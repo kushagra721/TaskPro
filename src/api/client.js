@@ -56,8 +56,11 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
 export const authApi = {
   signup: (payload) => request('/auth/signup', { method: 'POST', body: payload, auth: false }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload, auth: false }),
+  loginWithPassword: (payload) => request('/auth/login/password', { method: 'POST', body: payload, auth: false }),
   verify: (payload) => request('/auth/verify', { method: 'POST', body: payload, auth: false }),
   resend: (payload) => request('/auth/resend', { method: 'POST', body: payload, auth: false }),
+  requestPasswordChange: () => request('/auth/password/change/request', { method: 'POST' }),
+  confirmPasswordChange: (payload) => request('/auth/password/change/confirm', { method: 'POST', body: payload }),
 };
 
 // ---- Users ----

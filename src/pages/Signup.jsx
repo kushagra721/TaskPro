@@ -6,7 +6,12 @@ import { authApi } from '../api/client.js';
 export default function Signup() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [form, setForm] = useState({ name: '', email: location.state?.email || '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: location.state?.email || '',
+    password: '',
+    confirmPassword: '',
+  });
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -80,6 +85,34 @@ export default function Signup() {
               onChange={update('email')}
             />
             {fieldErrors.email && <div className="field__error">{fieldErrors.email}</div>}
+          </div>
+
+          <div className="field">
+            <label className="field__label" htmlFor="password">Password</label>
+            <input
+              id="password"
+              className={`input ${fieldErrors.password ? 'input--error' : ''}`}
+              type="password"
+              placeholder="At least 6 characters"
+              autoComplete="new-password"
+              value={form.password}
+              onChange={update('password')}
+            />
+            {fieldErrors.password && <div className="field__error">{fieldErrors.password}</div>}
+          </div>
+
+          <div className="field">
+            <label className="field__label" htmlFor="confirmPassword">Re-enter password</label>
+            <input
+              id="confirmPassword"
+              className={`input ${fieldErrors.confirmPassword ? 'input--error' : ''}`}
+              type="password"
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={update('confirmPassword')}
+            />
+            {fieldErrors.confirmPassword && <div className="field__error">{fieldErrors.confirmPassword}</div>}
           </div>
 
           <button className="btn" type="submit" disabled={loading}>

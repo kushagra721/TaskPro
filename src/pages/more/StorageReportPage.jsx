@@ -97,7 +97,7 @@ export default function StorageReportPage() {
             <ul className="member-list">
               {report.members.map((m) => (
                 <li key={m.id} className="member">
-                  <Avatar name={m.name} email={m.email} size={36} />
+                  <Avatar name={m.name} email={m.email} src={m.avatarUrl} size={36} />
                   <div className="member__info">
                     <div className="member__name-text">{m.name || m.email}</div>
                     <div className="member__email">{m.email}</div>
