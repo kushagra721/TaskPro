@@ -505,6 +505,132 @@ a.btn {
   place-items: center;
 }
 
+/* ---------- Public invite response pages (Accept/Decline) — mirrors the
+   branded emailed invitation's look: gradient header + white card body. ---------- */
+.invite-response {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.invite-response-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  animation: rise 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.invite-response__banner {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  padding: 36px 24px 28px;
+  text-align: center;
+  color: #fff;
+}
+
+.invite-response__logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.invite-response__brand {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.invite-response__tagline {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4px;
+}
+
+.invite-response__body {
+  padding: 32px 28px 30px;
+  text-align: center;
+}
+
+.invite-response__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+}
+
+.invite-response__icon--danger {
+  background: rgba(225, 29, 72, 0.12);
+  color: var(--danger);
+}
+
+.invite-response__icon--success {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--success);
+}
+
+.invite-response__icon--warn {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.invite-response__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.invite-response__text {
+  font-size: 14.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 26px;
+}
+
+.invite-response__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.invite-response__actions .btn {
+  width: auto;
+  padding: 0 22px;
+}
+
+.invite-response__redirect {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin-top: 18px;
+}
+
+@media (max-width: 480px) {
+  .invite-response__actions {
+    flex-direction: column;
+  }
+  .invite-response__actions .btn {
+    width: 100%;
+  }
+  .invite-response__banner {
+    padding: 30px 20px 24px;
+  }
+  .invite-response__body {
+    padding: 28px 20px 26px;
+  }
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 900px) {
   .auth {
@@ -1759,6 +1885,11 @@ a.btn {
 .role-pill--pending {
   background: rgba(245, 158, 11, 0.16);
   color: #b45309;
+}
+
+.role-pill--cancelled {
+  background: rgba(225, 29, 72, 0.12);
+  color: var(--danger);
 }
 
 .tag {
@@ -4626,207 +4757,20 @@ a.btn {
   min-height: 320px;
 }
 
-.landing__art-card {
+.landing__hero-img {
   width: 100%;
-  max-width: 360px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 22px 24px 26px;
-  display: grid;
-  gap: 18px;
+  max-width: 620px;
+  height: auto;
   animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Org header strip */
-.landing__art-orgrow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.landing__art-orgicon {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-}
-
-.landing__art-orgtext {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.landing__art-orgname {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.landing__art-orgrole {
-  font-size: 11.5px;
-  color: var(--text-muted);
-}
-
+/* Small green "live" dot — reused on the payoff panel's Live badge. */
 .landing__art-online {
-  margin-left: auto;
   width: 10px;
   height: 10px;
   border-radius: 999px;
   background: var(--success);
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18);
-}
-
-/* Chat preview */
-.landing__art-chat {
-  display: grid;
-  gap: 10px;
-}
-
-.landing__art-bubble-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.landing__art-bubble-row--out {
-  justify-content: flex-end;
-}
-
-.landing__art-avatar {
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-.landing__art-avatar--a {
-  background: linear-gradient(135deg, #f472b6, #ec4899);
-}
-
-.landing__art-avatar--b {
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-}
-
-.landing__art-bubble {
-  height: 26px;
-  width: 62%;
-  border-radius: 14px 14px 14px 4px;
-  background: var(--surface-2);
-}
-
-.landing__art-bubble--out {
-  width: 48%;
-  border-radius: 14px 14px 4px 14px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-}
-
-/* Task list preview */
-.landing__art-tasks {
-  display: grid;
-  gap: 10px;
-}
-
-.landing__art-task {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.landing__art-dot {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 999px;
-}
-
-.landing__art-dot--high {
-  background: var(--danger);
-}
-
-.landing__art-dot--med {
-  background: #f59e0b;
-}
-
-.landing__art-dot--low {
-  background: var(--success);
-}
-
-.landing__art-bar {
-  flex: 1;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--surface-2);
-}
-
-.landing__art-bar--sm {
-  max-width: 70%;
-}
-
-.landing__art-bar--md {
-  max-width: 85%;
-}
-
-.landing__art-status {
-  flex-shrink: 0;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 999px;
-}
-
-.landing__art-status--open {
-  color: var(--primary-2);
-  background: rgba(99, 102, 241, 0.12);
-}
-
-.landing__art-status--done {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  color: var(--success);
-  background: rgba(16, 185, 129, 0.14);
-}
-
-.landing__art-badge {
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  display: grid;
-  place-items: center;
-  color: var(--primary);
-}
-
-.landing__art-badge--1 {
-  top: 8%;
-  right: 6%;
-}
-
-.landing__art-badge--2 {
-  bottom: 10%;
-  left: 2%;
-}
-
-.landing__art-badge--3 {
-  top: 6%;
-  left: 4%;
-  color: var(--success);
 }
 
 .landing__section {
@@ -4960,6 +4904,292 @@ a.btn {
   grid-template-columns: repeat(3, 1fr);
 }
 
+/* Eyebrow badge pill (used above the hero h1 and centered above section titles). */
+.landing__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--primary-2);
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  border-radius: 999px;
+  padding: 6px 14px;
+  margin-bottom: 16px;
+}
+
+.landing__eyebrow--center {
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.landing__hero-trust {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.landing__hero-trust span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.landing__hero-trust svg {
+  color: var(--success);
+}
+
+/* "Built for" logo/category strip below the hero. */
+.landing__strip {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 24px 48px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  color: var(--text-faint);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.landing__strip-label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* How-it-works steps. */
+.landing__steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  text-align: left;
+}
+
+.landing__step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 22px;
+}
+
+.landing__step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--primary-2);
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.landing__step h3 {
+  font-size: 16.5px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.landing__step p {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+/* Payoff section: checklist + a live-activity preview panel. */
+.landing__payoff {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  text-align: left;
+}
+
+.landing__payoff-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+
+.landing__payoff-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+  color: var(--text);
+}
+
+.landing__payoff-check {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--success);
+  display: grid;
+  place-items: center;
+}
+
+.landing__payoff-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 8px;
+}
+
+.landing__payoff-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+
+.landing__payoff-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.landing__payoff-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.landing__payoff-row:last-child {
+  border-bottom: none;
+}
+
+.landing__payoff-row-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+}
+
+.landing__payoff-row-text {
+  flex: 1;
+  font-size: 13.5px;
+  color: var(--text);
+  min-width: 0;
+}
+
+.landing__payoff-row-time {
+  font-size: 12px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+/* FAQ accordion. */
+.landing__faq {
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.landing__faq-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 4px 4px;
+}
+
+.landing__faq-q {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.landing__faq-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.landing__faq-item--open .landing__faq-chevron {
+  transform: rotate(180deg);
+}
+
+.landing__faq-a {
+  padding: 0 16px 16px;
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Dark bottom CTA banner. */
+.landing__cta-banner {
+  max-width: 1160px;
+  margin: 0 auto 64px;
+  padding: 56px 40px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1e1b4b, #4338ca 55%, #6d28d9);
+  text-align: center;
+  color: #fff;
+}
+
+.landing__cta-banner h2 {
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+}
+
+.landing__cta-banner p {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 26px;
+}
+
+.landing__cta-banner-btn {
+  margin: 0 auto;
+  background: #fff;
+  color: var(--primary-2);
+}
+
+.landing__cta-banner-btn:hover {
+  filter: brightness(0.97);
+}
+
 .landing__pricing-card {
   max-width: 400px;
   margin: 0 auto;
@@ -5036,6 +5266,34 @@ a.btn {
   }
   .landing__features {
     grid-template-columns: 1fr;
+  }
+  .landing__eyebrow--center {
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .landing__hero-trust {
+    justify-content: center;
+  }
+  .landing__strip {
+    gap: 16px 22px;
+  }
+  .landing__steps {
+    grid-template-columns: 1fr;
+  }
+  .landing__payoff {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .landing__payoff-list {
+    justify-items: center;
+  }
+  .landing__payoff-list li {
+    text-align: left;
+  }
+  .landing__cta-banner {
+    margin-left: 16px;
+    margin-right: 16px;
+    padding: 40px 24px;
   }
 
   .landing__nav {

@@ -36,6 +36,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
   const isAdmin = org?.role === 'ADMIN';
 
   const [invites, setInvites] = useState([]);
+  const [cancelledInvites, setCancelledInvites] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('MEMBER');
@@ -57,6 +58,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
     try {
       const res = await organizationsApi.listInvitations(orgId);
       setInvites(res.invitations.filter((i) => i.status === 'PENDING'));
+      setCancelledInvites(res.invitations.filter((i) => i.status === 'CANCELLED'));
     } catch {
       /* ignore */
     }
@@ -329,6 +331,26 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
                 >
                   <XIcon size={14} />
                 </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {isAdmin && cancelledInvites.length > 0 && (
+        <section className="panel">
+          <div className="panel__head">
+            <h2 className="panel__title">Cancelled invitations</h2>
+          </div>
+          <ul className="member-list">
+            {cancelledInvites.map((i) => (
+              <li key={i.id} className="member">
+                <span className="org-badge sm ghost">@</span>
+                <div className="member__info">
+                  <div className="member__name">{i.email}</div>
+                  <div className="member__email">Invited as {i.role.toLowerCase()}</div>
+                </div>
+                <span className="role-pill role-pill--cancelled">CANCELLED</span>
               </li>
             ))}
           </ul>
