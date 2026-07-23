@@ -52,21 +52,50 @@ export default function HomeLanding() {
 
           <div className="landing__hero-art" aria-hidden="true">
             <div className="landing__art-card">
-              <div className="landing__art-row">
-                <span className="landing__art-chip landing__art-chip--pink" />
-                <span className="landing__art-chip landing__art-chip--indigo" />
+              {/* Org header strip */}
+              <div className="landing__art-orgrow">
+                <span className="landing__art-orgicon">✓</span>
+                <div className="landing__art-orgtext">
+                  <span className="landing__art-orgname">Dial ERP</span>
+                  <span className="landing__art-orgrole">Admin workspace</span>
+                </div>
+                <span className="landing__art-online" />
               </div>
-              <div className="landing__art-row">
-                <span className="landing__art-chip landing__art-chip--indigo" />
-                <span className="landing__art-chip landing__art-chip--pink" />
+
+              {/* Group chat preview */}
+              <div className="landing__art-chat">
+                <div className="landing__art-bubble-row">
+                  <span className="landing__art-avatar landing__art-avatar--a" />
+                  <span className="landing__art-bubble" />
+                </div>
+                <div className="landing__art-bubble-row landing__art-bubble-row--out">
+                  <span className="landing__art-bubble landing__art-bubble--out" />
+                  <span className="landing__art-avatar landing__art-avatar--b" />
+                </div>
               </div>
-              <div className="landing__art-row">
-                <span className="landing__art-chip landing__art-chip--check"><CheckIcon size={16} /></span>
-                <span className="landing__art-chip landing__art-chip--check"><CheckIcon size={16} /></span>
+
+              {/* Task list preview */}
+              <div className="landing__art-tasks">
+                <div className="landing__art-task">
+                  <span className="landing__art-dot landing__art-dot--high" />
+                  <span className="landing__art-bar" />
+                  <span className="landing__art-status landing__art-status--open">Open</span>
+                </div>
+                <div className="landing__art-task">
+                  <span className="landing__art-dot landing__art-dot--med" />
+                  <span className="landing__art-bar landing__art-bar--sm" />
+                  <span className="landing__art-status landing__art-status--done"><CheckIcon size={11} /></span>
+                </div>
+                <div className="landing__art-task">
+                  <span className="landing__art-dot landing__art-dot--low" />
+                  <span className="landing__art-bar landing__art-bar--md" />
+                  <span className="landing__art-status landing__art-status--done"><CheckIcon size={11} /></span>
+                </div>
               </div>
             </div>
             <div className="landing__art-badge landing__art-badge--1"><MailIcon size={18} /></div>
             <div className="landing__art-badge landing__art-badge--2"><GroupsIcon size={18} /></div>
+            <div className="landing__art-badge landing__art-badge--3"><CheckIcon size={18} /></div>
           </div>
         </section>
 
