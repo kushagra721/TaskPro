@@ -268,6 +268,16 @@ export const CropIcon = ({ size, ...p }) => (
   </svg>
 );
 
+export const StickerIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M8 4h8a4 4 0 0 1 4 4v6l-6 6H8a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4Z" />
+    <path d="M14 20v-4a2 2 0 0 1 2-2h4" />
+    <circle cx="9" cy="10" r="1" fill="currentColor" stroke="none" />
+    <circle cx="14" cy="10" r="1" fill="currentColor" stroke="none" />
+    <path d="M8.5 13.5a4 4 0 0 0 6 0" />
+  </svg>
+);
+
 export const PencilIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M12 19 3 20l1-9 12-12 8 8Z" />

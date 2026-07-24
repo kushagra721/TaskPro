@@ -261,6 +261,30 @@ input {
   color: var(--danger);
 }
 
+/* Wraps an <input> that shows a live checking-spinner / available-check icon
+   at its right edge (e.g. the create-workspace name field). */
+.field__input-status {
+  position: relative;
+}
+
+.field__input-spinner {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.field__input-check {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--success);
+}
+
 /* ---------- Button ---------- */
 .btn {
   width: 100%;
@@ -394,6 +418,26 @@ a.btn {
 
 .link-btn:hover {
   text-decoration: underline;
+}
+
+/* "Sign out instead" escape hatch on the non-dismissable post-login popups
+   (pending invites / create workspace / create group) — muted, centered,
+   clearly secondary to the popup's primary action. */
+.sign-out-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.sign-out-link:hover {
+  color: var(--text);
+  text-decoration: none;
 }
 
 /* ---------- OTP inputs ---------- */
@@ -672,8 +716,9 @@ a.btn {
 .layout {
   display: grid;
   grid-template-columns: 264px 1fr;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background:
     radial-gradient(900px 500px at 100% -10%, rgba(99, 102, 241, 0.14), transparent 60%),
     var(--bg);
@@ -683,6 +728,7 @@ a.btn {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .layout__content {
@@ -691,12 +737,16 @@ a.btn {
   overflow-y: auto;
 }
 
-/* Sidebar */
+/* Sidebar — fixed height of the viewport (via .layout's own height + overflow
+   hidden above), so only .layout__content scrolls; the nav/logout/switcher
+   never move out of view. */
 .sidebar {
   display: flex;
   flex-direction: column;
   gap: 18px;
   padding: 20px 16px;
+  height: 100%;
+  overflow-y: auto;
   border-right: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
@@ -749,51 +799,38 @@ a.btn {
   box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.28);
 }
 
-.sidebar__foot {
-  margin-top: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  border: 1px solid var(--border);
-}
-
-.sidebar__user {
+/* Desktop header user chip (moved here from the old sidebar footer) —
+   avatar + name/email + role pill + logout, at the far right of the Topbar. */
+.topbar__user {
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
-  flex: 1;
+  padding: 6px 8px 6px 6px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-left: 4px;
 }
 
-.sidebar__user-info {
+.topbar__user-info {
   min-width: 0;
+  max-width: 150px;
 }
 
-.sidebar__user-name {
-  font-size: 13.5px;
+.topbar__user-name-row {
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sidebar__user-email {
-  font-size: 12px;
+.topbar__user-email {
+  font-size: 11.5px;
   color: var(--text-faint);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.sidebar__user-role {
-  margin-top: 3px;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: var(--primary-2);
 }
 
 /* Org switcher */
@@ -1596,61 +1633,83 @@ a.btn {
   flex-shrink: 0;
 }
 
-/* ---------- Organizations list (Manage Organizations) ---------- */
-.org-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.org-row {
+/* Workspace detail card (Manage Workspaces) — mirrors the Project/Client
+   detail header for visual consistency, rather than a one-off style. */
+.org-detail-head {
   display: flex;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  padding: 14px 16px;
+}
+
+.org-detail-head__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.org-detail-head__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.org-detail-head__name {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* Icon-forward stat row. auto-fit collapses empty tracks, so 2 items (member
+   view) or 5 (admin/owner view) both fill the width sensibly without needing
+   separate layout classes. */
+.org-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.org-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
-.org-row--current {
-  border-color: var(--primary-2);
-}
-
-.org-row__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.org-row__name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 15px;
-  min-width: 0;
-}
-
-.org-row__name-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.org-row__name .tag {
+.org-stat__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
 }
 
-.org-row__meta {
-  margin-top: 4px;
+.org-stat__value {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
-.org-row__actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
+.org-stat__label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
 }
+
+.org-stat--indigo .org-stat__icon { background: rgba(99, 102, 241, 0.14); color: #4f46e5; }
+.org-stat--violet .org-stat__icon { background: rgba(139, 92, 246, 0.14); color: #7c3aed; }
+.org-stat--amber .org-stat__icon { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+.org-stat--emerald .org-stat__icon { background: rgba(16, 185, 129, 0.14); color: #047857; }
+.org-stat--sky .org-stat__icon { background: rgba(14, 165, 233, 0.14); color: #0369a1; }
 
 /* Emoji picker used when editing an organization. */
 .icon-picker {
@@ -1870,6 +1929,11 @@ a.btn {
   padding: 4px 9px;
   border-radius: 999px;
   text-transform: uppercase;
+}
+
+.role-pill--owner {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: #fff;
 }
 
 .role-pill--admin {
@@ -4266,9 +4330,8 @@ a.btn {
     flex-wrap: wrap;
   }
 
-  /* Project + organization rows: let the actions drop below the name */
-  .project-card__actions,
-  .org-row__actions {
+  /* Project rows: let the actions drop below the name */
+  .project-card__actions {
     flex-basis: 100%;
     justify-content: flex-end;
   }
@@ -5395,15 +5458,99 @@ a.btn {
   cursor: crosshair;
 }
 
-.image-editor__text-input {
+.image-editor__text-editor {
   position: fixed;
-  background: transparent;
-  border: 1px dashed rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: translate(-4px, -4px);
+  z-index: 1;
+}
+
+.image-editor__text-input {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
   outline: none;
   font-weight: 700;
   font-family: Arial, sans-serif;
-  padding: 2px 4px;
-  min-width: 40px;
+  padding: 2px 6px;
+  min-width: 60px;
+  max-width: 60vw;
+}
+
+.image-editor__text-confirm,
+.image-editor__text-cancel {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: none;
+  cursor: pointer;
+}
+
+.image-editor__text-confirm {
+  background: var(--success);
+  color: #fff;
+}
+
+.image-editor__text-cancel {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.image-editor__sticker-panel {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.image-editor__sticker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 16px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.image-editor__sticker-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 13.5px;
+}
+
+.image-editor__sticker-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.image-editor__sticker-empty {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px 0;
+}
+
+.image-editor__subrow--stickers {
+  flex-wrap: nowrap;
+}
+
+.image-editor__sticker-pick {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
 .image-editor__subrow {
@@ -5481,6 +5628,20 @@ a.btn {
 .image-editor__tool:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.image-editor__crop-hint {
+  align-self: center;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.image-editor__tool--cancel {
+  color: #fca5a5;
+}
+
+.image-editor__tool--apply {
+  color: var(--success);
 }
 
 .image-editor__tool--active {

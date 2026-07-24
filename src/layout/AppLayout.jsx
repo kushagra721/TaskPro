@@ -24,7 +24,7 @@ const TITLES = [
   { match: '/more/profile', title: 'My Profile' },
   { match: '/more/members/', title: 'Member Details' },
   { match: '/more/storage', title: 'Storage' },
-  { match: '/more/organizations', title: 'Manage Organizations' },
+  { match: '/more/organizations', title: 'Manage Workspaces' },
   { match: '/more/projects', title: 'Manage Projects' },
   { match: '/more/activities', title: 'All Activities' },
   { match: '/more/invitations', title: 'Invitation Requests' },

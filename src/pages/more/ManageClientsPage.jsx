@@ -90,8 +90,8 @@ export default function ManageClientsPage({ raiseFab = false, embedded = false }
       <div className="page">
         <EmptyState
           icon={<BuildingIcon size={30} />}
-          title="No organization selected"
-          description="Pick an organization to manage its clients."
+          title="No workspace selected"
+          description="Pick a workspace to manage its clients."
         />
       </div>
     );

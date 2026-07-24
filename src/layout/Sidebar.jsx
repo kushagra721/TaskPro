@@ -1,12 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { HomeIcon, GroupsIcon, TaskIcon, ReportsIcon, MoreIcon, LogoutIcon } from '../components/icons.jsx';
+import { HomeIcon, GroupsIcon, TaskIcon, ReportsIcon, MoreIcon } from '../components/icons.jsx';
 import OrgSwitcher from './OrgSwitcher.jsx';
-import Avatar from '../components/Avatar.jsx';
-import { selectUser, logout } from '../store/slices/authSlice.js';
-import { resetOrgs, selectCurrentOrg } from '../store/slices/orgSlice.js';
-import { resetProjects } from '../store/slices/projectSlice.js';
-import { resetClients } from '../store/slices/clientSlice.js';
 import { useNavGate } from '../hooks/useNavGate.js';
 
 const NAV = [
@@ -17,18 +11,11 @@ const NAV = [
   { to: '/more', label: 'More', Icon: MoreIcon },
 ];
 
+// The user-info + logout block that used to live at the bottom of the
+// sidebar now lives in Topbar.jsx's top-right corner (desktop only) —
+// see Topbar.jsx's `topbar__user` block.
 export default function Sidebar({ onCreateOrg }) {
-  const dispatch = useDispatch();
-  const user = useSelector(selectUser);
-  const org = useSelector(selectCurrentOrg);
   const { isLocked } = useNavGate();
-
-  const doLogout = () => {
-    dispatch(logout());
-    dispatch(resetOrgs());
-    dispatch(resetProjects());
-    dispatch(resetClients());
-  };
 
   return (
     <aside className="sidebar">
@@ -57,20 +44,6 @@ export default function Sidebar({ onCreateOrg }) {
           )
         )}
       </nav>
-
-      <div className="sidebar__foot">
-        <div className="sidebar__user">
-          <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={34} />
-          <div className="sidebar__user-info">
-            <div className="sidebar__user-name">{user?.name || 'You'}</div>
-            <div className="sidebar__user-email">{user?.email}</div>
-            {org && <div className="sidebar__user-role">{org.role}</div>}
-          </div>
-        </div>
-        <button className="icon-btn" onClick={doLogout} title="Log out" aria-label="Log out">
-          <LogoutIcon size={18} />
-        </button>
-      </div>
     </aside>
   );
 }

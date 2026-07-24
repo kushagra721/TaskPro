@@ -21,7 +21,7 @@ const STEPS = [
   {
     n: '1',
     title: 'Create',
-    desc: 'Spin up your organization in seconds — no setup, no sales call.',
+    desc: 'Spin up your workspace in seconds — no setup, no sales call.',
   },
   {
     n: '2',
@@ -38,7 +38,7 @@ const STEPS = [
 const FEATURES = [
   {
     Icon: BuildingIcon,
-    title: 'Organizations & roles',
+    title: 'Workspaces & roles',
     desc: 'One workspace per team, with admin/member roles and email invites.',
   },
   {
@@ -71,7 +71,7 @@ const FEATURES = [
 const FAQS = [
   {
     q: 'Do I need a credit card to start?',
-    a: 'No. Create an organization and invite your team — Task Pro is free to use today, no card required.',
+    a: 'No. Create a workspace and invite your team — Task Pro is free to use today, no card required.',
   },
   {
     q: 'How does sign-in work?',
@@ -79,11 +79,11 @@ const FAQS = [
   },
   {
     q: 'Can I invite teammates who don\'t have an account yet?',
-    a: 'Yes — invite by email from Manage Organization. If they don\'t have an account, they\'ll be guided to create one and are added automatically once they accept.',
+    a: 'Yes — invite by email from Manage Workspace. If they don\'t have an account, they\'ll be guided to create one and are added automatically once they accept.',
   },
   {
-    q: 'What happens to my data if I leave an organization?',
-    a: 'Leaving reassigns admin duties automatically if needed and never deletes your account — you keep access to every other organization you belong to.',
+    q: 'What happens to my data if I leave a workspace?',
+    a: 'Leaving reassigns admin duties automatically if needed and never deletes your account — you keep access to every other workspace you belong to.',
   },
   {
     q: 'Is chat really real-time?',
@@ -121,7 +121,7 @@ export default function HomeLanding() {
               Turn your team into a <span>task-crushing</span> workspace.
             </h1>
             <p>
-              Task Pro brings organizations, groups, chat and tasks into one place — invite your
+              Task Pro brings workspaces, groups, chat and tasks into one place — invite your
               team, assign work, and watch it move in real time.
             </p>
             <div className="landing__hero-actions">
@@ -191,7 +191,7 @@ export default function HomeLanding() {
             <h2 className="landing__section-title" style={{ marginTop: 6 }}>Nothing falls through the cracks.</h2>
             <p className="landing__section-sub" style={{ margin: '0 0 22px' }}>
               Every message, task and status change is logged the moment it happens — one shared
-              source of truth for the whole organization.
+              source of truth for the whole workspace.
             </p>
             <ul className="landing__payoff-list">
               <li><span className="landing__payoff-check"><CheckIcon size={13} /></span> Live activity feed, no refreshing</li>
@@ -231,7 +231,7 @@ export default function HomeLanding() {
 
         <section className="landing__cta-banner">
           <h2>Ready to organize your team's work?</h2>
-          <p>Create your organization and invite your team — it takes less than a minute.</p>
+          <p>Create your workspace and invite your team — it takes less than a minute.</p>
           <button className="btn landing__cta landing__cta-banner-btn" onClick={() => navigate(primaryTo)}>
             {user ? 'Go to my workspace' : 'Get started free'}
           </button>

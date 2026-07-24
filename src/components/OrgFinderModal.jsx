@@ -5,16 +5,17 @@ import OrgBadge from './OrgBadge.jsx';
 import { createOrg } from '../store/slices/orgSlice.js';
 import { organizationsApi } from '../api/client.js';
 import { joinOrgRoom } from '../realtime/socket.js';
-import { XIcon, PlusIcon } from './icons.jsx';
+import { useWorkspaceNameCheck } from '../hooks/useWorkspaceNameCheck.js';
+import { XIcon, PlusIcon, CheckIcon } from './icons.jsx';
 
 /**
- * Combined "find or create organization" popup:
- * - Search existing organizations and request to join.
- * - Or create a brand-new organization.
+ * Combined "find or create workspace" popup:
+ * - Create a brand-new workspace (default tab).
+ * - Or search existing workspaces and request to join.
  */
 export default function OrgFinderModal({ onClose }) {
   const dispatch = useDispatch();
-  const [tab, setTab] = useState('search'); // 'search' | 'create'
+  const [tab, setTab] = useState('create'); // 'create' | 'search'
 
   // Search state
   const [query, setQuery] = useState('');
@@ -26,6 +27,7 @@ export default function OrgFinderModal({ onClose }) {
   // Create state
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
+  const nameCheck = useWorkspaceNameCheck(name);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -58,7 +60,7 @@ export default function OrgFinderModal({ onClose }) {
       joinOrgRoom(org.id);
       onClose();
     } catch (err) {
-      setError(err.message || 'Could not create organization');
+      setError(err.message || 'Could not create workspace');
     } finally {
       setCreating(false);
     }
@@ -67,19 +69,46 @@ export default function OrgFinderModal({ onClose }) {
   const statusFor = (o) => statusMap[o.id] || o.status;
 
   return (
-    <Modal title="Organizations" onClose={onClose}>
+    <Modal title="Workspaces" onClose={onClose}>
       <div className="seg-tabs">
-        <button className={`seg-tab ${tab === 'search' ? 'seg-tab--active' : ''}`} onClick={() => setTab('search')}>
-          Search & join
-        </button>
         <button className={`seg-tab ${tab === 'create' ? 'seg-tab--active' : ''}`} onClick={() => setTab('create')}>
           Create new
+        </button>
+        <button className={`seg-tab ${tab === 'search' ? 'seg-tab--active' : ''}`} onClick={() => setTab('search')}>
+          Search & join
         </button>
       </div>
 
       {error && <div className="alert alert--error">{error}</div>}
 
-      {tab === 'search' ? (
+      {tab === 'create' ? (
+        <form onSubmit={create}>
+          <div className="field">
+            <label className="field__label" htmlFor="org-name">Workspace name</label>
+            <div className="field__input-status">
+              <input
+                id="org-name"
+                className={`input ${nameCheck.error ? 'input--error' : ''}`}
+                autoFocus
+                placeholder="Acme"
+                value={name}
+                // No spaces allowed — strip them as the user types.
+                onChange={(e) => setName(e.target.value.replace(/\s/g, ''))}
+              />
+              {nameCheck.checking && <span className="spinner field__input-spinner" />}
+              {!nameCheck.checking && nameCheck.available && <CheckIcon size={16} className="field__input-check" />}
+            </div>
+            {nameCheck.error ? (
+              <span className="field__error">{nameCheck.error}</span>
+            ) : (
+              <span className="field__hint">5-15 characters. Letters and numbers only, no spaces.</span>
+            )}
+          </div>
+          <button className="btn" type="submit" disabled={creating || !nameCheck.available}>
+            {creating ? <span className="spinner" /> : (<><PlusIcon size={16} /> Create workspace</>)}
+          </button>
+        </form>
+      ) : (
         <>
           <div className="search-box" style={{ width: '100%', marginBottom: 12 }}>
             <svg className="search-box__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -90,7 +119,7 @@ export default function OrgFinderModal({ onClose }) {
               className="search-box__input"
               style={{ width: '100%' }}
               autoFocus
-              placeholder="Search organizations by name…"
+              placeholder="Search workspaces by name…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -103,7 +132,7 @@ export default function OrgFinderModal({ onClose }) {
 
           <div className="org-results">
             {searching && <div className="dropdown__empty">Searching…</div>}
-            {!searching && results.length === 0 && <div className="dropdown__empty">No organizations found.</div>}
+            {!searching && results.length === 0 && <div className="dropdown__empty">No workspaces found.</div>}
             {results.map((o) => {
               const st = statusFor(o);
               return (
@@ -127,25 +156,6 @@ export default function OrgFinderModal({ onClose }) {
             })}
           </div>
         </>
-      ) : (
-        <form onSubmit={create}>
-          <div className="field">
-            <label className="field__label" htmlFor="org-name">Organization name</label>
-            <input
-              id="org-name"
-              className="input"
-              autoFocus
-              placeholder="Acme"
-              value={name}
-              // No spaces allowed — strip them as the user types.
-              onChange={(e) => setName(e.target.value.replace(/\s/g, ''))}
-            />
-            <span className="field__hint">No spaces. Must be unique.</span>
-          </div>
-          <button className="btn" type="submit" disabled={creating || name.trim().length < 2}>
-            {creating ? <span className="spinner" /> : (<><PlusIcon size={16} /> Create organization</>)}
-          </button>
-        </form>
       )}
     </Modal>
   );

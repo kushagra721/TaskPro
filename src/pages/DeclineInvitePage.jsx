@@ -6,7 +6,7 @@ import { CheckIcon, XIcon } from '../components/icons.jsx';
 const ALREADY_HANDLED_LABEL = {
   ACCEPTED: 'This invitation has already been accepted.',
   DECLINED: 'This invitation has already been cancelled.',
-  CANCELLED: 'This invitation was revoked by the organization.',
+  CANCELLED: 'This invitation was revoked by the workspace.',
 };
 
 const Banner = () => (

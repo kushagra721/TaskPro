@@ -31,9 +31,11 @@ export const deleteOrg = createAsyncThunk('orgs/delete', async ({ orgId, confirm
   return orgId;
 });
 
-/** Any member (including an admin) may leave; the backend reassigns admin/deletes the org as needed. */
-export const leaveOrg = createAsyncThunk('orgs/leave', async ({ orgId, confirmName }) => {
-  await organizationsApi.leave(orgId, confirmName);
+/** Any member (including the owner) may leave; the backend reassigns
+ *  admin/owner or deletes the org as needed. `newOwnerUserId` is only used
+ *  when the leaver is the owner and current admins exist to choose from. */
+export const leaveOrg = createAsyncThunk('orgs/leave', async ({ orgId, confirmName, newOwnerUserId }) => {
+  await organizationsApi.leave(orgId, confirmName, newOwnerUserId);
   return orgId;
 });
 

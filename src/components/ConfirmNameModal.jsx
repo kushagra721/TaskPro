@@ -15,6 +15,10 @@ export default function ConfirmNameModal({
   danger = true,
   busy = false,
   error = '',
+  // Extra gate on top of the exact-name match, for callers that need one more
+  // condition met before confirming (e.g. picking a successor before an
+  // owner can leave). Defaults to true — no effect on other callers.
+  extraValid = true,
   onConfirm,
   onClose,
   children,
@@ -24,7 +28,7 @@ export default function ConfirmNameModal({
 
   const submit = (e) => {
     e.preventDefault();
-    if (matches && !busy) onConfirm();
+    if (matches && extraValid && !busy) onConfirm();
   };
 
   return (
@@ -49,7 +53,7 @@ export default function ConfirmNameModal({
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>
             Cancel
           </button>
-          <button className={`btn ${danger ? 'btn--danger' : ''}`} type="submit" disabled={!matches || busy}>
+          <button className={`btn ${danger ? 'btn--danger' : ''}`} type="submit" disabled={!matches || !extraValid || busy}>
             {busy ? <span className="spinner" /> : confirmLabel}
           </button>
         </div>

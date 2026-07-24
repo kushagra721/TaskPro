@@ -16,12 +16,13 @@ import ManageOrgPage from './more/ManageOrgPage.jsx';
 import { useRegisterHeaderActions } from '../layout/HeaderActions.jsx';
 import { useIsMobile } from '../hooks/useIsMobile.js';
 import { GroupsIcon, PlusIcon } from '../components/icons.jsx';
+import { isAdminRole } from '../utils/role.js';
 
 const TAB_META = {
   groups: { title: 'Groups', subtitle: 'Chat and manage tasks with your team.' },
   projects: { title: 'Projects', subtitle: 'Organize tasks into projects. Anyone can add one.' },
   clients: { title: 'Clients', subtitle: 'Group tasks by client. Anyone can add one.' },
-  members: { title: 'Members', subtitle: 'Members, roles and invitations for this organization.' },
+  members: { title: 'Members', subtitle: 'Members, roles and invitations for this workspace.' },
 };
 
 const EMPTY_DATE_FILTERS = { createdFrom: '', createdTo: '' };
@@ -32,7 +33,7 @@ export default function GroupsPage() {
   const orgId = useSelector(selectCurrentOrgId);
   const org = useSelector(selectCurrentOrg);
   const groups = useSelector(selectGroups);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
   const [createOpen, setCreateOpen] = useState(false);
   // The selected tab lives in the URL (not local state) so it survives
   // navigating away to a group/project/client detail page and back — local
@@ -71,7 +72,7 @@ export default function GroupsPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<GroupsIcon size={30} />} title="No organization selected" description="Create or pick an organization to start adding groups." />
+        <EmptyState icon={<GroupsIcon size={30} />} title="No workspace selected" description="Create or pick a workspace to start adding groups." />
       </div>
     );
   }

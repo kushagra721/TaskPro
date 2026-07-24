@@ -29,7 +29,7 @@ export default function ActivitiesPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<ActivityIcon size={30} />} title="No organization selected" description="Pick an organization to see its activity." />
+        <EmptyState icon={<ActivityIcon size={30} />} title="No workspace selected" description="Pick a workspace to see its activity." />
       </div>
     );
   }
@@ -49,7 +49,7 @@ export default function ActivitiesPage() {
           <span className="spinner" />
         </div>
       ) : items.length === 0 ? (
-        <EmptyState icon={<ActivityIcon size={30} />} title="No activity yet" description="Actions in your organization will show up here." />
+        <EmptyState icon={<ActivityIcon size={30} />} title="No activity yet" description="Actions in your workspace will show up here." />
       ) : (
         <section className="panel timeline-panel">
           {/* Task entries get a "View" link straight to the task detail page. */}

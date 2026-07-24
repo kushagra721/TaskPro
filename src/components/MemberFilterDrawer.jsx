@@ -5,6 +5,7 @@ import Select from './Select.jsx';
 
 const ROLES = [
   { value: '', label: 'Anyone' },
+  { value: 'OWNER', label: 'Owner' },
   { value: 'ADMIN', label: 'Admin' },
   { value: 'MEMBER', label: 'Member' },
 ];

@@ -33,7 +33,7 @@ export default function InvitationsPage() {
         <EmptyState
           icon={<MailIcon size={30} />}
           title="No pending invitations"
-          description="When someone invites you to an organization, it'll show up here."
+          description="When someone invites you to a workspace, it'll show up here."
         />
       </div>
     );

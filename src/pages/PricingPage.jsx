@@ -6,7 +6,7 @@ import LandingHeader from '../components/landing/LandingHeader.jsx';
 import LandingFooter from '../components/landing/LandingFooter.jsx';
 
 const INCLUDED = [
-  'Unlimited organizations, groups and members',
+  'Unlimited workspaces, groups and members',
   'Real-time chat with reactions and attachments',
   'Unlimited tasks, projects and activity history',
   'Admin reports and storage usage tracking',
@@ -24,14 +24,14 @@ export default function PricingPage() {
       <main>
         <section className="landing__page-hero">
           <h1>Simple pricing</h1>
-          <p>Task Pro is free to use for your organization today.</p>
+          <p>Task Pro is free to use for your workspace today.</p>
         </section>
 
         <section className="landing__section">
           <div className="landing__pricing-card">
             <div className="landing__pricing-card-name">Free</div>
             <div className="landing__pricing-card-price">
-              $0 <span>/ organization</span>
+              $0 <span>/ workspace</span>
             </div>
             <ul className="landing__pricing-list">
               {INCLUDED.map((item) => (

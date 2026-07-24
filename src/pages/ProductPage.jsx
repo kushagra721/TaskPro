@@ -15,8 +15,8 @@ import LandingFooter from '../components/landing/LandingFooter.jsx';
 const MODULES = [
   {
     Icon: BuildingIcon,
-    title: 'Organizations & members',
-    desc: 'Create an organization, invite members by email, and manage roles — admins and members see exactly the data they should.',
+    title: 'Workspaces & members',
+    desc: 'Create a workspace, invite members by email, and manage roles — admins and members see exactly the data they should.',
   },
   {
     Icon: GroupsIcon,
@@ -36,7 +36,7 @@ const MODULES = [
   {
     Icon: ActivityIcon,
     title: 'Activity timeline & reports',
-    desc: 'Every task edit, status change and group event is logged — searchable per task and across the whole organization.',
+    desc: 'Every task edit, status change and group event is logged — searchable per task and across the whole workspace.',
   },
   {
     Icon: DatabaseIcon,
@@ -57,8 +57,8 @@ export default function ProductPage() {
         <section className="landing__page-hero">
           <h1>The Task Pro product</h1>
           <p>
-            Everything your team needs to organize, communicate and get work done — in a single
-            workspace built around your organization.
+            Everything your team needs to organize, communicate and get work done — all in a
+            single workspace built around your team.
           </p>
         </section>
 
@@ -86,7 +86,7 @@ export default function ProductPage() {
 
         <section className="landing__section landing__pricing">
           <h2 className="landing__section-title">See it in action</h2>
-          <p className="landing__section-sub">Create an organization and try every module for free.</p>
+          <p className="landing__section-sub">Create a workspace and try every module for free.</p>
           <button className="btn landing__cta" onClick={() => navigate(user ? '/dashboard' : '/login')}>
             {user ? 'Go to my workspace' : 'Get started'}
           </button>

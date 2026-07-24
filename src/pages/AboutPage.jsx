@@ -14,7 +14,7 @@ const VALUES = [
   {
     Icon: GroupsIcon,
     title: 'Built for teams',
-    desc: 'Every organization, groups and task is designed around collaborating with people, not just tracking work.',
+    desc: 'Every workspace, groups and task is designed around collaborating with people, not just tracking work.',
   },
   {
     Icon: ActivityIcon,
@@ -35,7 +35,7 @@ export default function AboutPage() {
         <section className="landing__page-hero">
           <h1>About Task Pro</h1>
           <p>
-            Task Pro is a multi-tenant, Slack-style workspace for teams who want organizations,
+            Task Pro is a multi-tenant, Slack-style platform for teams who want workspaces,
             groups, chat and task management in one connected place — instead of stitched
             together across four different tools.
           </p>
@@ -45,7 +45,7 @@ export default function AboutPage() {
           <h2 className="landing__section-title">Why we built it</h2>
           <p className="landing__section-sub">
             Most teams end up juggling a chat app, a task tracker, a file store and a reporting
-            dashboard that never quite agree with each other. Task Pro keeps organizations,
+            dashboard that never quite agree with each other. Task Pro keeps workspaces,
             groups, conversations, tasks and activity history under one roof, so context never
             gets lost moving between tools.
           </p>
@@ -67,7 +67,7 @@ export default function AboutPage() {
 
         <section className="landing__section landing__pricing">
           <h2 className="landing__section-title">Ready to get organized?</h2>
-          <p className="landing__section-sub">Create your organization and invite your team in minutes.</p>
+          <p className="landing__section-sub">Create your workspace and invite your team in minutes.</p>
           <button className="btn landing__cta" onClick={() => navigate(user ? '/dashboard' : '/login')}>
             {user ? 'Go to my workspace' : 'Get started'}
           </button>

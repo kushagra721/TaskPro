@@ -13,6 +13,7 @@ import { selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { isAdminRole } from '../utils/role.js';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
@@ -45,7 +46,7 @@ export default function CreateTaskModal({
   const dispatch = useDispatch();
   const orgId = useSelector(selectCurrentOrgId);
   const org = useSelector(selectCurrentOrg);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
   const detail = useSelector(selectGroupDetail);
   const myGroups = useSelector(selectGroups);
   const projects = useSelector(selectAllProjects);

@@ -14,12 +14,13 @@ import { selectCurrentOrg, resetOrgs } from '../../store/slices/orgSlice.js';
 import { logout } from '../../store/slices/authSlice.js';
 import { resetProjects } from '../../store/slices/projectSlice.js';
 import { resetClients } from '../../store/slices/clientSlice.js';
+import { isAdminRole } from '../../utils/role.js';
 
 export default function MorePage() {
   const dispatch = useDispatch();
   const invitationCount = useSelector(selectInvitationCount);
   const org = useSelector(selectCurrentOrg);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
 
   const doLogout = () => {
     dispatch(logout());
@@ -32,11 +33,11 @@ export default function MorePage() {
     { to: '/more/profile', label: 'My Profile', desc: 'Your name and account', Icon: UserIcon },
     {
       to: '/more/organizations',
-      label: 'Manage Organizations',
-      desc: 'Organizations you belong to',
+      label: 'Workspace',
+      desc: 'Details & settings for your current workspace',
       Icon: BuildingIcon,
     },
-    { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your organization', Icon: ActivityIcon },
+    { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your workspace', Icon: ActivityIcon },
     // Storage report is admin-only. Member management moved to the Groups
     // page's Members tab (also admin-only).
     ...(isAdmin

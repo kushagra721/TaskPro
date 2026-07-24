@@ -85,8 +85,8 @@ export default function ManageProjectsPage({ raiseFab = false, embedded = false 
       <div className="page">
         <EmptyState
           icon={<FolderIcon size={30} />}
-          title="No organization selected"
-          description="Pick an organization to manage its projects."
+          title="No workspace selected"
+          description="Pick a workspace to manage its projects."
         />
       </div>
     );

@@ -4,7 +4,7 @@
 export default function OrgBadge({ name, icon, photoUrl, size = '' }) {
   const cls = `org-badge ${size}`.trim();
   if (photoUrl) {
-    return <img className={`${cls} org-badge--img`} src={photoUrl} alt={name || 'Organization'} />;
+    return <img className={`${cls} org-badge--img`} src={photoUrl} alt={name || 'Workspace'} />;
   }
   return <span className={cls}>{icon || (name || '?')[0].toUpperCase()}</span>;
 }

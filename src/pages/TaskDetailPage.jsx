@@ -22,6 +22,7 @@ import AttachmentPicker from '../components/AttachmentPicker.jsx';
 import { CheckIcon, XIcon, PlusIcon, EditIcon, TrashIcon, DownloadIcon } from '../components/icons.jsx';
 import DocIcon from '../components/DocIcon.jsx';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
+import { isAdminRole } from '../utils/role.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
@@ -37,7 +38,7 @@ export default function TaskDetailPage() {
   const projects = useSelector(selectAllProjects);
   const clients = useSelector(selectAllClients);
   // Editing/deleting is limited to the task's creator or an org admin.
-  const canManage = task && (org?.role === 'ADMIN' || task.createdBy?.id === user?.id);
+  const canManage = task && (isAdminRole(org?.role) || task.createdBy?.id === user?.id);
   // Which status-change confirmation modal is open ('complete'|'cancel'|'reopen').
   const [statusAction, setStatusAction] = useState(null);
   const [timeline, setTimeline] = useState([]);

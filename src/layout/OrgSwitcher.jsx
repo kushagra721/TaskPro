@@ -21,7 +21,7 @@ export default function OrgSwitcher({ onCreate }) {
     <div className="org-switcher">
       <button className="org-switcher__btn" onClick={() => setOpen((o) => !o)}>
         <OrgBadge name={current?.name || 'T'} icon={current?.icon} photoUrl={current?.photoUrl} />
-        <span className="org-switcher__name">{current?.name || 'No organization'}</span>
+        <span className="org-switcher__name">{current?.name || 'No workspace'}</span>
         <ChevronDownIcon size={16} />
       </button>
 
@@ -29,7 +29,7 @@ export default function OrgSwitcher({ onCreate }) {
         <>
           <div className="dropdown-backdrop" onClick={() => setOpen(false)} />
           <div className="dropdown org-switcher__menu">
-            <div className="dropdown__label">Your organizations</div>
+            <div className="dropdown__label">Your workspaces</div>
             {orgs.length === 0 && <div className="dropdown__empty">None yet</div>}
             {orgs.map((o) => (
               <button key={o.id} className="dropdown__item" onClick={() => pick(o.id)}>
@@ -49,7 +49,7 @@ export default function OrgSwitcher({ onCreate }) {
               <span className="org-badge sm ghost">
                 <PlusIcon size={14} />
               </span>
-              <span className="dropdown__item-text">Create / search organizations</span>
+              <span className="dropdown__item-text">Create / search workspaces</span>
             </button>
           </div>
         </>

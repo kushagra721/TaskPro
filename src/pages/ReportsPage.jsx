@@ -47,7 +47,7 @@ export default function ReportsPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<ReportsIcon size={30} />} title="No organization selected" description="Pick an organization to see its reports." />
+        <EmptyState icon={<ReportsIcon size={30} />} title="No workspace selected" description="Pick a workspace to see its reports." />
       </div>
     );
   }

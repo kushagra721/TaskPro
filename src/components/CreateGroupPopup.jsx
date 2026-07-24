@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createGroup } from '../store/slices/groupSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { joinGroupRoom } from '../realtime/socket.js';
+import SignOutLink from './SignOutLink.jsx';
 import { PlusIcon } from './icons.jsx';
 
 /**
@@ -62,6 +63,7 @@ export default function CreateGroupPopup() {
               {creating ? <span className="spinner" /> : (<><PlusIcon size={16} /> Create group</>)}
             </button>
           </form>
+          <SignOutLink />
         </div>
       </div>
     </div>,

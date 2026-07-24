@@ -5,6 +5,7 @@ import { selectGroups, selectGroupsLoaded } from '../store/slices/groupSlice.js'
 import PendingInvitesGate from './PendingInvitesGate.jsx';
 import CreateOrgPopup from './CreateOrgPopup.jsx';
 import CreateGroupPopup from './CreateGroupPopup.jsx';
+import { isAdminRole } from '../utils/role.js';
 
 /**
  * Sequences the three post-login blocking popups so at most one is ever shown
@@ -30,7 +31,7 @@ export default function PostLoginPopups() {
 
   if (orgs.length === 0) return <CreateOrgPopup />;
 
-  if (currentOrg?.role === 'ADMIN' && groupsLoaded && groups.length === 0) {
+  if (isAdminRole(currentOrg?.role) && groupsLoaded && groups.length === 0) {
     return <CreateGroupPopup />;
   }
 

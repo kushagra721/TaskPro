@@ -9,11 +9,12 @@ import Avatar from '../../components/Avatar.jsx';
 import { prettySize } from '../../utils/fileSize.js';
 import { formatDateTime } from '../../utils/status.js';
 import { SearchIcon, VideoIcon, DownloadIcon, BuildingIcon } from '../../components/icons.jsx';
+import { isAdminRole } from '../../utils/role.js';
 
 export default function StorageReportPage() {
   const org = useSelector(selectCurrentOrg);
   const orgId = useSelector(selectCurrentOrgId);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
 
   const [report, setReport] = useState(null);
   const [error, setError] = useState('');
@@ -47,7 +48,7 @@ export default function StorageReportPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<BuildingIcon size={30} />} title="No organization selected" description="Pick an organization to see its storage usage." />
+        <EmptyState icon={<BuildingIcon size={30} />} title="No workspace selected" description="Pick a workspace to see its storage usage." />
       </div>
     );
   }
@@ -55,7 +56,7 @@ export default function StorageReportPage() {
   if (!isAdmin) {
     return (
       <div className="page">
-        <EmptyState icon={<BuildingIcon size={30} />} title="Admins only" description="Only an organization admin can view the storage report." />
+        <EmptyState icon={<BuildingIcon size={30} />} title="Admins only" description="Only a workspace admin can view the storage report." />
       </div>
     );
   }

@@ -9,6 +9,7 @@ import {
 import { fetchMyOrgs, setCurrentOrg } from '../store/slices/orgSlice.js';
 import { joinOrgRoom } from '../realtime/socket.js';
 import OrgBadge from './OrgBadge.jsx';
+import SignOutLink from './SignOutLink.jsx';
 import { CheckIcon, XIcon } from './icons.jsx';
 import { timeAgo } from '../utils/time.js';
 
@@ -91,6 +92,7 @@ export default function PendingInvitesGate() {
               </li>
             ))}
           </ul>
+          <SignOutLink />
         </div>
       </div>
     </div>,

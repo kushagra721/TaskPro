@@ -14,6 +14,7 @@ import Modal from '../../components/Modal.jsx';
 import ConfirmNameModal from '../../components/ConfirmNameModal.jsx';
 import Fab from '../../components/Fab.jsx';
 import { PlusIcon, EditIcon, TrashIcon } from '../../components/icons.jsx';
+import { isAdminRole } from '../../utils/role.js';
 
 export default function ChannelPage() {
   const { groupId } = useParams();
@@ -39,7 +40,7 @@ export default function ChannelPage() {
   }, [groupId, orgId, dispatch]);
 
   const loaded = group && group.id === groupId;
-  const canManage = org?.role === 'ADMIN' || group?.createdById === user?.id;
+  const canManage = isAdminRole(org?.role) || group?.createdById === user?.id;
 
   const doDeleteGroup = async () => {
     setDeleting(true);

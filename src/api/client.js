@@ -73,11 +73,12 @@ export const usersApi = {
 export const organizationsApi = {
   list: () => request('/organizations'),
   create: (payload) => request('/organizations', { method: 'POST', body: payload }),
+  checkName: (name) => request(`/organizations/check-name?name=${encodeURIComponent(name)}`),
   get: (orgId) => request(`/organizations/${orgId}`),
   update: (orgId, payload) => request(`/organizations/${orgId}`, { method: 'PATCH', body: payload }),
   remove: (orgId, confirmName) => request(`/organizations/${orgId}`, { method: 'DELETE', body: { confirmName } }),
-  leave: (orgId, confirmName) =>
-    request(`/organizations/${orgId}/leave`, { method: 'POST', body: { confirmName } }),
+  leave: (orgId, confirmName, newOwnerUserId) =>
+    request(`/organizations/${orgId}/leave`, { method: 'POST', body: { confirmName, newOwnerUserId } }),
   dashboard: (orgId, params) => request(`/organizations/${orgId}/dashboard${qs(params)}`),
   members: (orgId, params) => request(`/organizations/${orgId}/members${qs(params)}`),
   memberProfile: (orgId, userId) => request(`/organizations/${orgId}/members/${userId}`),

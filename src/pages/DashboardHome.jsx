@@ -61,11 +61,11 @@ export default function DashboardHome() {
     return (
       <EmptyState
         icon={<BuildingIcon size={30} />}
-        title="Create your first organization"
-        description="Organizations are your workspaces. Create one to start inviting members, opening groups and tracking tasks."
+        title="Create your first workspace"
+        description="Workspaces are where your team collaborates. Create one to start inviting members, opening groups and tracking tasks."
         action={
           <button className="btn" style={{ width: 'auto', padding: '0 20px' }} onClick={openCreateOrg}>
-            <PlusIcon size={16} /> New organization
+            <PlusIcon size={16} /> New workspace
           </button>
         }
       />

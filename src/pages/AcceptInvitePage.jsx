@@ -6,7 +6,7 @@ import { CheckIcon, XIcon } from '../components/icons.jsx';
 const NOT_PENDING_LABEL = {
   ACCEPTED: 'This invitation has already been accepted.',
   DECLINED: 'This invitation has expired — it was already cancelled.',
-  CANCELLED: 'This invitation has expired — it was revoked by the organization.',
+  CANCELLED: 'This invitation has expired — it was revoked by the workspace.',
 };
 
 const Banner = () => (

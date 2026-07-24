@@ -7,7 +7,10 @@ import {
   selectOrgs,
   setCurrentOrg,
 } from '../store/slices/orgSlice.js';
-import { selectUser } from '../store/slices/authSlice.js';
+import { selectUser, logout } from '../store/slices/authSlice.js';
+import { resetOrgs } from '../store/slices/orgSlice.js';
+import { resetProjects } from '../store/slices/projectSlice.js';
+import { resetClients } from '../store/slices/clientSlice.js';
 import { joinOrgRoom } from '../realtime/socket.js';
 import NotificationsBell from './NotificationsBell.jsx';
 import Avatar from '../components/Avatar.jsx';
@@ -21,6 +24,7 @@ import {
   FilterIcon,
   XIcon,
   ArrowLeftIcon,
+  LogoutIcon,
 } from '../components/icons.jsx';
 
 export default function Topbar({ title, isRoot, onCreateOrg }) {
@@ -32,6 +36,13 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
   const currentId = useSelector(selectCurrentOrgId);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  const doLogout = () => {
+    dispatch(logout());
+    dispatch(resetOrgs());
+    dispatch(resetProjects());
+    dispatch(resetClients());
+  };
 
   // Search/filter handlers published by the current page (mobile header only).
   const actions = useHeaderActions();
@@ -78,7 +89,7 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
             </div>
             {/* Secondary line: the organisation (a switcher button on mobile). */}
             <button className="topbar__org topbar__org--btn" onClick={() => setOpen((o) => !o)}>
-              <span className="topbar__org-name">{org?.name || 'No organization'}</span>
+              <span className="topbar__org-name">{org?.name || 'No workspace'}</span>
               <ChevronDownIcon size={14} />
             </button>
           </div>
@@ -87,7 +98,7 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
             <>
               <div className="dropdown-backdrop" onClick={() => setOpen(false)} />
               <div className="dropdown topbar__org-menu">
-                <div className="dropdown__label">Your organizations</div>
+                <div className="dropdown__label">Your workspaces</div>
                 {orgs.length === 0 && <div className="dropdown__empty">None yet</div>}
                 {orgs.map((o) => (
                   <button key={o.id} className="dropdown__item" onClick={() => pick(o.id)}>
@@ -107,7 +118,7 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
                   <span className="org-badge sm ghost">
                     <PlusIcon size={14} />
                   </span>
-                  <span className="dropdown__item-text">Create / search organizations</span>
+                  <span className="dropdown__item-text">Create / search workspaces</span>
                 </button>
               </div>
             </>
@@ -135,6 +146,19 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
             </button>
           )}
           <NotificationsBell />
+
+          {/* Desktop only — mirrors the old sidebar-footer user block. */}
+          <div className="topbar__user hide-mobile">
+            <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={32} />
+            <div className="topbar__user-info">
+              <div className="topbar__user-name-row">{user?.name || 'You'}</div>
+              <div className="topbar__user-email">{user?.email}</div>
+            </div>
+            {org?.role && <span className={`role-pill role-pill--${org.role.toLowerCase()}`}>{org.role}</span>}
+            <button className="icon-btn" onClick={doLogout} title="Log out" aria-label="Log out">
+              <LogoutIcon size={16} />
+            </button>
+          </div>
         </div>
       </div>
 

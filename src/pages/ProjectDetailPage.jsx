@@ -24,6 +24,7 @@ import Fab from '../components/Fab.jsx';
 import { relativeDay } from '../utils/time.js';
 import { STATUS_META } from '../utils/status.js';
 import { FolderIcon, PlusIcon, EditIcon, TrashIcon, TaskIcon } from '../components/icons.jsx';
+import { isAdminRole } from '../utils/role.js';
 
 const emptyCounts = { ALL: 0, OPEN: 0, COMPLETED: 0, CANCELLED: 0 };
 
@@ -36,7 +37,7 @@ export default function ProjectDetailPage() {
   const project = useSelector(selectProjectDetail);
   const groups = useSelector(selectGroups);
   const members = useSelector(selectMembers);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
 
   const [tasks, setTasks] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
@@ -98,7 +99,7 @@ export default function ProjectDetailPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<FolderIcon size={30} />} title="No organization selected" description="Pick an organization to see this project." />
+        <EmptyState icon={<FolderIcon size={30} />} title="No workspace selected" description="Pick a workspace to see this project." />
       </div>
     );
   }

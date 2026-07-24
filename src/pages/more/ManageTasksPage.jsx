@@ -83,7 +83,7 @@ export default function ManageTasksPage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<TaskIcon size={30} />} title="No organization selected" description="Pick an organization to see its tasks." />
+        <EmptyState icon={<TaskIcon size={30} />} title="No workspace selected" description="Pick a workspace to see its tasks." />
       </div>
     );
   }

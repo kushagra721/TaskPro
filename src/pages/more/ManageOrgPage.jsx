@@ -20,6 +20,7 @@ import TaskSearchBar from '../../components/TaskSearchBar.jsx';
 import MemberFilterDrawer from '../../components/MemberFilterDrawer.jsx';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { BuildingIcon, PlusIcon, XIcon } from '../../components/icons.jsx';
+import { isAdminRole } from '../../utils/role.js';
 
 const EMPTY_FILTERS = { role: '' };
 
@@ -33,7 +34,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
   const orgId = useSelector(selectCurrentOrgId);
   const members = useSelector(selectMembers);
   const groups = useSelector(selectGroups);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
 
   const [invites, setInvites] = useState([]);
   const [cancelledInvites, setCancelledInvites] = useState([]);
@@ -133,8 +134,8 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
       <div className="page">
         <EmptyState
           icon={<BuildingIcon size={30} />}
-          title="No organization selected"
-          description="Create or select an organization to manage its members."
+          title="No workspace selected"
+          description="Create or select a workspace to manage its members."
         />
       </div>
     );

@@ -10,6 +10,7 @@ import Modal from '../../components/Modal.jsx';
 import { formatDate } from '../../utils/status.js';
 import { prettySize } from '../../utils/fileSize.js';
 import { BuildingIcon, ShieldIcon, TrashIcon } from '../../components/icons.jsx';
+import { isAdminRole } from '../../utils/role.js';
 
 export default function UserProfilePage() {
   const { userId } = useParams();
@@ -18,7 +19,7 @@ export default function UserProfilePage() {
   const me = useSelector(selectUser);
   const org = useSelector(selectCurrentOrg);
   const orgId = useSelector(selectCurrentOrgId);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
   const isSelf = userId === me?.id;
 
   const [member, setMember] = useState(null);
@@ -73,7 +74,7 @@ export default function UserProfilePage() {
   if (!org) {
     return (
       <div className="page">
-        <EmptyState icon={<BuildingIcon size={30} />} title="No organization selected" description="Pick an organization to see this member." />
+        <EmptyState icon={<BuildingIcon size={30} />} title="No workspace selected" description="Pick a workspace to see this member." />
       </div>
     );
   }
@@ -136,7 +137,7 @@ export default function UserProfilePage() {
             )}
           </section>
 
-          {isAdmin && !isSelf && (
+          {isAdmin && !isSelf && member.role !== 'OWNER' && (
             <section className="panel">
               <div className="panel__head">
                 <h2 className="panel__title">Admin actions</h2>
@@ -149,7 +150,7 @@ export default function UserProfilePage() {
                   <ShieldIcon size={15} /> {member.role === 'ADMIN' ? 'Make member' : 'Make admin'}
                 </button>
                 <button className="btn btn--danger" onClick={() => setRemoveOpen(true)}>
-                  <TrashIcon size={15} /> Remove from organization
+                  <TrashIcon size={15} /> Remove from workspace
                 </button>
               </div>
             </section>

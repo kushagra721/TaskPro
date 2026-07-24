@@ -5,6 +5,7 @@ import Avatar from './Avatar.jsx';
 import { selectMembers, selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { selectGroupDetail, addGroupMember } from '../store/slices/groupSlice.js';
 import { organizationsApi } from '../api/client.js';
+import { isAdminRole } from '../utils/role.js';
 import { SearchIcon, PlusIcon, MailIcon, XIcon } from './icons.jsx';
 
 /**
@@ -20,7 +21,7 @@ export default function AddMemberModal({ groupId, onClose }) {
   const orgId = useSelector(selectCurrentOrgId);
   const orgMembers = useSelector(selectMembers);
   const detail = useSelector(selectGroupDetail);
-  const isAdmin = org?.role === 'ADMIN';
+  const isAdmin = isAdminRole(org?.role);
   const [tab, setTab] = useState('search'); // 'search' | 'invite'
 
   const groupMemberIds = useMemo(
