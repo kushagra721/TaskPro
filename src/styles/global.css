@@ -1247,6 +1247,31 @@ a.btn {
   display: none;
 }
 
+/* Unread-count badge on a nav icon (Sidebar + BottomNav's Chats item) —
+   same "cart items count" pattern as the notifications bell, just anchored
+   to the icon instead of a standalone button. */
+.nav__icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface);
+}
+
 /* Avatar */
 .avatar {
   display: grid;
@@ -2286,6 +2311,111 @@ a.btn {
 .tab--active {
   color: var(--text);
   border-bottom-color: var(--primary-2);
+}
+
+/* Chats list (WhatsApp-style) */
+.chat-search {
+  margin-bottom: 16px;
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.chat-row:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.chat-row__body {
+  flex: 1;
+  min-width: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.chat-row:last-child .chat-row__body {
+  border-bottom: none;
+}
+
+.chat-row__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chat-row__name {
+  font-weight: 600;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-row__time {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.chat-row__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.chat-row__preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.chat-row__badge {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--primary-2);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+/* Unread chats: bolder name + preview + time, like WhatsApp. */
+.chat-row--unread .chat-row__name,
+.chat-row--unread .chat-row__time {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.chat-row--unread .chat-row__preview {
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* Chat */

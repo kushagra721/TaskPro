@@ -6,6 +6,7 @@ import {
   MailIcon,
   ActivityIcon,
   DatabaseIcon,
+  ReportsIcon,
   LogoutIcon,
   ChevronRightIcon,
 } from '../../components/icons.jsx';
@@ -38,6 +39,7 @@ export default function MorePage() {
       Icon: BuildingIcon,
     },
     { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your workspace', Icon: ActivityIcon },
+    { to: '/more/reports', label: 'Reports', desc: 'Progress across your workspace', Icon: ReportsIcon },
     // Storage report is admin-only. Member management moved to the Groups
     // page's Members tab (also admin-only).
     ...(isAdmin

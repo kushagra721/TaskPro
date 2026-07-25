@@ -5,6 +5,7 @@ import { activityReceived, fetchMyOrgs } from './slices/orgSlice.js';
 import { fetchIncomingJoinRequests } from './slices/joinRequestSlice.js';
 import { groupReceived } from './slices/groupSlice.js';
 import { messageReceived, reactionUpdated, messageDeleted } from './slices/messageSlice.js';
+import { chatMessageReceived } from './slices/chatSlice.js';
 import { taskReceived, taskUpdatedLive, taskRemovedLive } from './slices/taskSlice.js';
 import { projectChanged } from './slices/projectSlice.js';
 import { clientChanged } from './slices/clientSlice.js';
@@ -41,6 +42,13 @@ export const socketMiddleware = (store) => (next) => (action) => {
       socket.on('message:new', (message) => store.dispatch(messageReceived(message)));
       socket.on('message:reaction', (payload) => store.dispatch(reactionUpdated(payload)));
       socket.on('message:deleted', (payload) => store.dispatch(messageDeleted(payload)));
+      // Chats tab — org-wide broadcast (see message.service.js#sendMessage) so
+      // the list's last-message/unread badge updates live even when the
+      // recipient isn't currently viewing that particular channel.
+      socket.on('chat:message', (payload) => {
+        const mine = payload.message?.author?.id === store.getState().auth.user?.id;
+        store.dispatch(chatMessageReceived({ ...payload, mine }));
+      });
 
       // Tasks
       socket.on('task:new', (task) => store.dispatch(taskReceived(task)));

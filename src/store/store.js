@@ -5,6 +5,7 @@ import invitationReducer from './slices/invitationSlice.js';
 import notificationReducer from './slices/notificationSlice.js';
 import groupReducer from './slices/groupSlice.js';
 import messageReducer from './slices/messageSlice.js';
+import chatReducer from './slices/chatSlice.js';
 import taskReducer from './slices/taskSlice.js';
 import joinRequestReducer from './slices/joinRequestSlice.js';
 import projectReducer from './slices/projectSlice.js';
@@ -19,6 +20,7 @@ export const store = configureStore({
     notifications: notificationReducer,
     groups: groupReducer,
     messages: messageReducer,
+    chats: chatReducer,
     tasks: taskReducer,
     joinRequests: joinRequestReducer,
     projects: projectReducer,

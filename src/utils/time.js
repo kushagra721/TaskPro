@@ -31,3 +31,15 @@ export const relativeDay = (date) => {
   if (diffDays <= 10) return `${diffDays} days ago`;
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 };
+
+/** WhatsApp-style chat list timestamp: a clock time today, "Yesterday",
+ *  a weekday name within the last week, else a short date. */
+export const chatTimestamp = (date) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const diffDays = Math.round((startOfDay(Date.now()) - startOfDay(d)) / 86400000);
+  if (diffDays <= 0) return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return d.toLocaleDateString(undefined, { weekday: 'short' });
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+};

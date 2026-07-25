@@ -95,6 +95,8 @@ export const organizationsApi = {
   listInvitations: (orgId) => request(`/organizations/${orgId}/invitations`),
   cancelInvitation: (orgId, invitationId) =>
     request(`/organizations/${orgId}/invitations/${invitationId}`, { method: 'DELETE' }),
+  // Chats tab — WhatsApp-style inbox of the caller's own groups
+  chats: (orgId) => request(`/organizations/${orgId}/chats`),
   // Search + join requests
   search: (q) => request(`/organizations/search${qs({ q })}`),
   requestToJoin: (orgId) => request(`/organizations/${orgId}/join-requests`, { method: 'POST' }),
@@ -168,6 +170,7 @@ export const groupsApi = {
     request(`/groups/${groupId}/members/${userId}`, { method: 'DELETE' }),
   messages: (groupId, cursor) =>
     request(`/groups/${groupId}/messages${cursor ? `?cursor=${cursor}` : ''}`),
+  markRead: (groupId) => request(`/groups/${groupId}/read`, { method: 'POST' }),
   sendMessage: (groupId, content, attachments) =>
     request(`/groups/${groupId}/messages`, { method: 'POST', body: { content, attachments } }),
   react: (groupId, messageId, emoji) =>

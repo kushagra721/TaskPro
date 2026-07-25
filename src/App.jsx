@@ -15,6 +15,8 @@ import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 import DashboardHome from './pages/DashboardHome.jsx';
 import GroupsPage from './pages/GroupsPage.jsx';
 import ChannelPage from './pages/channel/ChannelPage.jsx';
+import ChatsPage from './pages/ChatsPage.jsx';
+import ChatViewPage from './pages/chat/ChatViewPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import MorePage from './pages/more/MorePage.jsx';
 import ProfilePage from './pages/more/ProfilePage.jsx';
@@ -34,6 +36,12 @@ import ClientDetailPage from './pages/ClientDetailPage.jsx';
 function RedirectToTasks() {
   const { search } = useLocation();
   return <Navigate to={`/tasks${search}`} replace />;
+}
+
+// Reports moved from its own sidebar tab into More (Chats took its nav slot).
+function RedirectToReports() {
+  const { search } = useLocation();
+  return <Navigate to={`/more/reports${search}`} replace />;
 }
 
 // Keep authenticated users out of the auth pages.
@@ -76,8 +84,11 @@ export default function App() {
         <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/clients/:clientId" element={<ClientDetailPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/chats" element={<ChatsPage />} />
+        <Route path="/chats/:groupId" element={<ChatViewPage />} />
+        <Route path="/reports" element={<RedirectToReports />} />
         <Route path="/more" element={<MorePage />} />
+        <Route path="/more/reports" element={<ReportsPage />} />
         <Route path="/more/profile" element={<ProfilePage />} />
         {/* Manage Members moved into the Groups page's Members tab (admin-only). */}
         <Route path="/more/members" element={<Navigate to="/groups" replace />} />

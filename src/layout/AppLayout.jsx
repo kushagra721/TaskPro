@@ -9,6 +9,7 @@ import PostLoginPopups from '../components/PostLoginPopups.jsx';
 import { HeaderActionsProvider } from './HeaderActions.jsx';
 import { fetchMyOrgs, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { fetchGroups } from '../store/slices/groupSlice.js';
+import { fetchChats } from '../store/slices/chatSlice.js';
 import { fetchNotifications } from '../store/slices/notificationSlice.js';
 import { fetchMyInvitations } from '../store/slices/invitationSlice.js';
 import { fetchIncomingJoinRequests } from '../store/slices/joinRequestSlice.js';
@@ -20,7 +21,8 @@ const TITLES = [
   { match: '/tasks', title: 'Tasks' },
   { match: '/projects/', title: 'Project Details' },
   { match: '/clients/', title: 'Client Details' },
-  { match: '/reports', title: 'Reports' },
+  { match: '/chats/', title: 'Chat' },
+  { match: '/chats', title: 'Chats' },
   { match: '/more/profile', title: 'My Profile' },
   { match: '/more/members/', title: 'Member Details' },
   { match: '/more/storage', title: 'Storage' },
@@ -28,11 +30,12 @@ const TITLES = [
   { match: '/more/projects', title: 'Manage Projects' },
   { match: '/more/activities', title: 'All Activities' },
   { match: '/more/invitations', title: 'Invitation Requests' },
+  { match: '/more/reports', title: 'Reports' },
   { match: '/more', title: 'More' },
 ];
 
 // Exact paths that are bottom-nav destinations (not their drill-down children).
-const ROOT_PATHS = ['/dashboard', '/groups', '/tasks', '/reports', '/more'];
+const ROOT_PATHS = ['/dashboard', '/groups', '/tasks', '/chats', '/more'];
 
 export default function AppLayout() {
   const dispatch = useDispatch();
@@ -50,6 +53,12 @@ export default function AppLayout() {
   // Keep the group list loaded so the nav can gate on "has any group".
   useEffect(() => {
     if (currentOrgId) dispatch(fetchGroups(currentOrgId));
+  }, [currentOrgId, dispatch]);
+
+  // Loaded globally (not just on the Chats page) so the sidebar/bottom-nav
+  // unread badge is populated as soon as the user is in the app.
+  useEffect(() => {
+    if (currentOrgId) dispatch(fetchChats(currentOrgId));
   }, [currentOrgId, dispatch]);
 
   const title = TITLES.find((t) => location.pathname.startsWith(t.match))?.title || 'Home';
