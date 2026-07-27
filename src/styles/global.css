@@ -2953,7 +2953,7 @@ a.btn {
   align-items: flex-end;
   gap: 10px;
   padding: 0px 0px;
-  border-top: 1px solid var(--border);
+  /* border-top: 1px solid var(--border); */
 }
 
 .composer--column {
@@ -5098,7 +5098,7 @@ a.btn {
 
   /* Sub-pages hide the bottom nav, so their content needs no nav clearance. */
   .layout--subpage .layout__content {
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
   }
 
   /* Desktop-only elements disappear on the mobile layout. */
