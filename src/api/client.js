@@ -1,11 +1,21 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const TOKEN_KEY = 'taskpro_token';
+// Separate key from TOKEN_KEY — a platform (Super Admin/Reseller) session and
+// a normal client session must never collide/overwrite each other, since a
+// browser could plausibly have both open (e.g. testing locally via ?portal=).
+const PLATFORM_TOKEN_KEY = 'taskpro_platform_token';
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (token) => localStorage.setItem(TOKEN_KEY, token),
   clear: () => localStorage.removeItem(TOKEN_KEY),
+};
+
+export const platformTokenStore = {
+  get: () => localStorage.getItem(PLATFORM_TOKEN_KEY),
+  set: (token) => localStorage.setItem(PLATFORM_TOKEN_KEY, token),
+  clear: () => localStorage.removeItem(PLATFORM_TOKEN_KEY),
 };
 
 /** Build a `?a=1&b=2` string from an object, skipping empty values. */
@@ -23,7 +33,14 @@ const qs = (params = {}) => {
  * Error carrying the server message + field errors on non-2xx responses.
  */
 async function request(path, { method = 'GET', body, auth = true } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {
+    'Content-Type': 'application/json',
+    // The browser's own hostname — the API may live on a different host
+    // entirely (VITE_API_URL), so this is how the backend knows which
+    // reseller's custom domain (if any) a signup is happening on. See
+    // organization.controller.js#create.
+    'X-App-Host': window.location.hostname,
+  };
   if (auth) {
     const token = tokenStore.get();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -32,6 +49,38 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
   let res;
   try {
     res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('Cannot reach the server. Is the backend running?');
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const error = new Error(data.message || 'Something went wrong');
+    error.fields = data.errors;
+    error.status = res.status;
+    throw error;
+  }
+
+  return data;
+}
+
+/** Same shape as `request`, but authenticates with the platform token and
+ *  never sends the normal user JWT — a fully separate credential lane. */
+async function platformRequest(path, { method = 'GET', body, auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth) {
+    const token = platformTokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res;
+  try {
+    res = await fetch(`${API_URL}/platform${path}`, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
@@ -223,4 +272,26 @@ export const tasksApi = {
     request(`/tasks/${taskId}/attachments`, { method: 'POST', body: { attachments } }),
   removeAttachment: (taskId, attachmentId) =>
     request(`/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' }),
+};
+
+// ---- Platform (Super Admin / Reseller) ----
+export const platformApi = {
+  requestOtp: (mobile) => platformRequest('/auth/login', { method: 'POST', body: { mobile }, auth: false }),
+  verifyOtp: (mobile, code) =>
+    platformRequest('/auth/verify', { method: 'POST', body: { mobile, code }, auth: false }),
+  resellers: {
+    list: () => platformRequest('/resellers'),
+    create: (payload) => platformRequest('/resellers', { method: 'POST', body: payload }),
+  },
+  domains: {
+    list: () => platformRequest('/domains'),
+    create: (payload) => platformRequest('/domains', { method: 'POST', body: payload }),
+    checkDns: (id) => platformRequest(`/domains/${id}/check-dns`, { method: 'POST' }),
+    activateSsl: (id) => platformRequest(`/domains/${id}/activate-ssl`, { method: 'POST' }),
+    remove: (id) => platformRequest(`/domains/${id}`, { method: 'DELETE' }),
+  },
+  clients: {
+    list: (resellerId) => platformRequest(`/clients${qs({ resellerId })}`),
+    create: (payload) => platformRequest('/clients', { method: 'POST', body: payload }),
+  },
 };

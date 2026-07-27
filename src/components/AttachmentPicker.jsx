@@ -5,7 +5,7 @@ import DocIcon from './DocIcon.jsx';
 import ImageEditorModal from './ImageEditorModal.jsx';
 import { prettySize } from '../utils/fileSize.js';
 
-const LIMITS = { image: 3, video: 10, document: 10 }; // MB, matches the backend
+const LIMITS = { image: 3, video: 20, document: 20 }; // MB, matches the backend
 
 const kindOf = (mimeType = '') => {
   if (mimeType.startsWith('image/')) return 'image';

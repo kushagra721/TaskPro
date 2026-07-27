@@ -10,6 +10,7 @@ import taskReducer from './slices/taskSlice.js';
 import joinRequestReducer from './slices/joinRequestSlice.js';
 import projectReducer from './slices/projectSlice.js';
 import clientReducer from './slices/clientSlice.js';
+import platformAuthReducer from './slices/platformAuthSlice.js';
 import { socketMiddleware } from './socketMiddleware.js';
 
 export const store = configureStore({
@@ -25,6 +26,7 @@ export const store = configureStore({
     joinRequests: joinRequestReducer,
     projects: projectReducer,
     clients: clientReducer,
+    platformAuth: platformAuthReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(socketMiddleware),
 });
