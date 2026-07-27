@@ -8,7 +8,7 @@ import Timeline from '../components/Timeline.jsx';
 import Modal from '../components/Modal.jsx';
 import ProjectFormModal from '../components/ProjectFormModal.jsx';
 import ClientFormModal from '../components/ClientFormModal.jsx';
-import { fetchGroup, selectGroupDetail } from '../store/slices/groupSlice.js';
+import { fetchGroup, selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
@@ -37,6 +37,10 @@ export default function TaskDetailPage() {
   const user = useSelector(selectUser);
   const projects = useSelector(selectAllProjects);
   const clients = useSelector(selectAllClients);
+  // Admins/owners can move a task into any group in the org; a regular
+  // creator only into a group they're themselves a member of — `selectGroups`
+  // already mirrors that exact admin-bypass scoping (see groupSlice/listGroups).
+  const groups = useSelector(selectGroups);
   // Editing/deleting is limited to the task's creator or an org admin.
   const canManage = task && (isAdminRole(org?.role) || task.createdBy?.id === user?.id);
   // Which status-change confirmation modal is open ('complete'|'cancel'|'reopen').
@@ -103,6 +107,11 @@ export default function TaskDetailPage() {
 
   const setAssignee = (assigneeId) =>
     dispatch(updateTask({ taskId: task.id, groupId: task.groupId, assigneeId: assigneeId || null }));
+  // Changing the group clears the assignee (they may not belong to the new
+  // group) — the server also enforces this, but resetting it here keeps the
+  // UI in sync immediately instead of waiting for the response.
+  const setGroup = (newGroupId) =>
+    dispatch(updateTask({ taskId: task.id, groupId: newGroupId, assigneeId: null }));
   const setDueDate = (value) =>
     dispatch(updateTask({
       taskId: task.id,
@@ -282,6 +291,15 @@ export default function TaskDetailPage() {
             read-only values above. */}
         {task.status === 'OPEN' && canManage && (
         <div className="task-detail__controls">
+          <div className="field">
+            <label className="field__label">Group</label>
+            <Select
+              value={task.group?.id || task.groupId || ''}
+              onChange={setGroup}
+              placeholder="Choose a group"
+              options={groups.map((g) => ({ value: g.id, label: `#${g.name}` }))}
+            />
+          </div>
           <div className="field">
             <label className="field__label">Assignee</label>
             <Select

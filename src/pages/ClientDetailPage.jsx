@@ -185,7 +185,6 @@ export default function ClientDetailPage() {
           {createOpen && (
             <CreateTaskModal
               askGroup
-              members={members}
               defaultClientId={clientId}
               onClose={() => setCreateOpen(false)}
               onCreated={reload}

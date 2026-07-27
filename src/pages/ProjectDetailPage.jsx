@@ -185,7 +185,6 @@ export default function ProjectDetailPage() {
           {createOpen && (
             <CreateTaskModal
               askGroup
-              members={members}
               defaultProjectId={projectId}
               onClose={() => setCreateOpen(false)}
               onCreated={reload}

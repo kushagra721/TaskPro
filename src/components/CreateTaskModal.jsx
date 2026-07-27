@@ -9,7 +9,7 @@ import ProjectFormModal from './ProjectFormModal.jsx';
 import ClientFormModal from './ClientFormModal.jsx';
 import CreateChannelModal from './CreateChannelModal.jsx';
 import { createTask } from '../store/slices/taskSlice.js';
-import { selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
+import { fetchGroup, selectGroupDetail, selectGroups } from '../store/slices/groupSlice.js';
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
@@ -28,16 +28,18 @@ const tomorrow = () => {
 /**
  * New-task form.
  * - Inside a channel, pass `groupId` — the group is fixed.
- * - From the Tasks page, pass `askGroup` plus `members` — the user picks one of
- *   the groups they belong to, and the assignee list is the org-scoped member
- *   list the caller already loaded (admins see everyone, regular members only
- *   see people they share a group with — same scoping as the org roster/filters).
+ * - From the Tasks page (and Project/Client detail pages), pass `askGroup` —
+ *   the user picks one of the groups they belong to first. The assignee list
+ *   is always that *picked* group's actual members (fetched via `fetchGroup`),
+ *   not an org-wide roster — a task's assignee must be someone who can
+ *   actually see the group/channel it lives in. Assignee stays disabled until
+ *   a group is chosen, and resets whenever the picked group changes (a prior
+ *   assignee may not belong to the newly picked group).
  * `onCreated` lets the caller refresh a list the slice can't update on its own.
  */
 export default function CreateTaskModal({
   groupId,
   askGroup,
-  members: askGroupMembers = [],
   defaultProjectId = '',
   defaultClientId = '',
   onClose,
@@ -80,7 +82,17 @@ export default function CreateTaskModal({
     if (orgId && clients.length === 0) dispatch(fetchAllClients(orgId));
   }, [orgId, clients.length, dispatch]);
 
-  const members = askGroup ? askGroupMembers : (detail?.id === groupId ? detail.members || [] : []);
+  // Assignee options must be the *selected* group's actual members, not the
+  // org-wide list passed in for the group picker itself — load that group's
+  // detail (for its members[]) whenever the picked group changes, and drop
+  // any previously chosen assignee since they may not belong to the new group.
+  useEffect(() => {
+    if (pickedGroupId) dispatch(fetchGroup(pickedGroupId));
+    setForm((f) => (f.assigneeId ? { ...f, assigneeId: '' } : f));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedGroupId, dispatch]);
+
+  const members = detail?.id === pickedGroupId ? detail.members || [] : [];
 
   const submit = async (e) => {
     e.preventDefault();
@@ -182,7 +194,8 @@ export default function CreateTaskModal({
             <Select
               value={form.assigneeId}
               onChange={set('assigneeId')}
-              placeholder="Unassigned"
+              disabled={askGroup && !pickedGroupId}
+              placeholder={askGroup && !pickedGroupId ? 'Choose a group first' : 'Unassigned'}
               options={[
                 { value: '', label: 'Unassigned' },
                 ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
