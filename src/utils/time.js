@@ -32,6 +32,12 @@ export const relativeDay = (date) => {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+/** Bare clock time for a chat bubble, e.g. "10:32 am" (WhatsApp-style). */
+export const clockTime = (date) => {
+  if (!date) return '';
+  return new Date(date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+};
+
 /** WhatsApp-style chat list timestamp: a clock time today, "Yesterday",
  *  a weekday name within the last week, else a short date. */
 export const chatTimestamp = (date) => {

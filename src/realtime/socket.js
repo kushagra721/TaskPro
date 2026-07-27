@@ -36,3 +36,14 @@ export const joinGroupRoom = (groupId) => {
 export const leaveGroupRoom = (groupId) => {
   if (socket && groupId) socket.emit('group:leave', groupId);
 };
+
+/** Ephemeral typing indicator — not persisted. Rebroadcast to the group room
+ *  (for anyone with the chat open) *and* the org room (so the Chats list can
+ *  show a live "typing…" preview even for a chat that isn't currently open). */
+export const sendTypingStart = (groupId, orgId) => {
+  if (socket && groupId) socket.emit('typing:start', { groupId, orgId });
+};
+
+export const sendTypingStop = (groupId, orgId) => {
+  if (socket && groupId) socket.emit('typing:stop', { groupId, orgId });
+};

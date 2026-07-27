@@ -52,6 +52,15 @@ const groupSlice = createSlice({
       state.detail = null;
       state.loaded = false;
     },
+    // From the 'group:read' socket event — keeps the currently-open channel's
+    // member read receipts live so sent ticks can flip to "read" (blue)
+    // without a full group refetch.
+    memberReadUpdated: (state, action) => {
+      const { groupId, userId, lastReadAt } = action.payload;
+      if (state.detail?.id !== groupId) return;
+      const m = state.detail.members?.find((mm) => mm.id === userId);
+      if (m) m.lastReadAt = lastReadAt;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -116,7 +125,7 @@ const groupSlice = createSlice({
   },
 });
 
-export const { groupReceived, clearGroups } = groupSlice.actions;
+export const { groupReceived, clearGroups, memberReadUpdated } = groupSlice.actions;
 export default groupSlice.reducer;
 
 export const selectGroups = (s) => s.groups.list;

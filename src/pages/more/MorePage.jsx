@@ -47,7 +47,7 @@ export default function MorePage() {
       : []),
     {
       to: '/more/invitations',
-      label: 'Invitation Requests',
+      label: 'Pending Approvals',
       desc: 'Invitations waiting for you',
       Icon: MailIcon,
       badge: invitationCount,

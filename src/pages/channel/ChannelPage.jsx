@@ -103,7 +103,7 @@ export default function ChannelPage() {
           <span className="spinner" />
         </div>
       ) : tab === 'chat' ? (
-        <ChannelChat groupId={groupId} canManage={canManage} />
+        <ChannelChat groupId={groupId} canManage={canManage} group={group} />
       ) : tab === 'tasks' ? (
         <ChannelTasks groupId={groupId} />
       ) : (

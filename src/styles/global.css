@@ -1417,6 +1417,20 @@ a.btn {
   max-width: 560px;
 }
 
+/* Full-bleed page (Chats): no max-width gutter, and stretches to the full
+   height of `.layout__content` so a split view (list + conversation) below
+   the head can size itself via flex instead of guessed vh math. */
+.page--full {
+  max-width: none;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.page--full .page__head {
+  flex-shrink: 0;
+}
+
 .page__head {
   margin-bottom: 22px;
 }
@@ -2313,9 +2327,115 @@ a.btn {
   border-bottom-color: var(--primary-2);
 }
 
+/* Chats — desktop side-by-side layout (list left, conversation right),
+   WhatsApp Web style. Mobile stays single-column: the list pane and the
+   detail pane are shown one at a time, toggled by `.chats-layout--detail`. */
+.chats-layout {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.chats-layout__list {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  overflow: hidden;
+}
+
+.chats-layout__list-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.chats-layout__detail {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chats-layout__empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-faint);
+}
+
+@media (max-width: 900px) {
+  .chats-layout__list {
+    width: 100%;
+  }
+  /* Mobile: show one pane at a time. Both stay full-height (flex:1, same as
+     desktop) so the white card fills all the way down to the bottom nav
+     instead of shrinking to fit its (possibly short) content. */
+  .chats-layout__detail {
+    display: none;
+  }
+  .chats-layout--detail .chats-layout__list {
+    display: none;
+  }
+  .chats-layout--detail .chats-layout__detail {
+    display: flex;
+  }
+}
+
 /* Chats list (WhatsApp-style) */
 .chat-search {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+}
+
+/* Guards against the shared `@media(max-width:720px){ .search-box{flex:1} }`
+   rule (meant for `.task-toolbar`'s row layout, where flex:1 just grows it
+   horizontally) — `.chats-layout__list` is a *column* flex container, so
+   that same flex:1 instead grew this box vertically and vertically centered
+   its content, leaving big empty gaps above/below the search input. The
+   combined selector's higher specificity wins regardless of source order. */
+.chats-layout__list .chat-search {
+  flex: none;
+}
+
+.chat-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.chat-filter-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.chat-filter-btn:hover {
+  border-color: var(--border-strong);
+}
+
+.chat-filter-btn--active {
+  background: var(--primary-2);
+  border-color: var(--primary-2);
+  color: #fff;
 }
 
 .chat-list {
@@ -2342,6 +2462,10 @@ a.btn {
 
 .chat-row:hover {
   background: rgba(15, 23, 42, 0.04);
+}
+
+.chat-row--active {
+  background: rgba(99, 102, 241, 0.1);
 }
 
 .chat-row__body {
@@ -2392,6 +2516,12 @@ a.btn {
   font-size: 13.5px;
 }
 
+.chat-row__preview--typing {
+  color: var(--primary-2);
+  font-weight: 600;
+  font-style: italic;
+}
+
 .chat-row__badge {
   flex-shrink: 0;
   min-width: 20px;
@@ -2418,7 +2548,7 @@ a.btn {
   font-weight: 600;
 }
 
-/* Chat */
+/* Chat — WhatsApp-style bubbles: own messages right-aligned, others left. */
 .chat {
   display: flex;
   flex-direction: column;
@@ -2430,13 +2560,48 @@ a.btn {
   overflow: hidden;
 }
 
+/* The Chats detail pane: one unified bordered panel — a fixed (non-scrolling)
+   header, a fixed composer, and only the messages list scrolls between them.
+   Scoped to `.chat-pane` so it doesn't affect the Hub channel page, which
+   reuses the bare `.channel`/`.channel__header`/`.chat` classes for its
+   Tasks/Members/Chat tabs in a normal scrolling page. */
+.chat-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.chat-pane__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-pane .chat {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
 .chat__messages {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 4px;
+  background: var(--chat-bg, var(--bg));
 }
 
 .chat__empty {
@@ -2447,48 +2612,106 @@ a.btn {
 
 .msg {
   display: flex;
-  gap: 12px;
+  gap: 8px;
+  max-width: 78%;
+  margin: 6px 0;
+  position: relative;
 }
 
+.msg--theirs {
+  align-self: flex-start;
+}
+
+.msg--mine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+/* A flex column so `.msg__bubble` (a flex item) shrink-wraps to its own
+   content width instead of stretching to fill `.msg`'s full max-width —
+   `align-items` controls which side it hugs. Without this, a block-level
+   bubble with no width set would default to 100% of this container, leaving
+   a large dead area next to a narrow attachment/short message. */
 .msg__body {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-.msg__head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+.msg--mine .msg__body {
+  align-items: flex-end;
+}
+
+.msg--theirs .msg__body {
+  align-items: flex-start;
+}
+
+.msg__bubble {
+  position: relative;
+  max-width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 7px 10px 6px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.msg--mine .msg__bubble {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.3);
+  border-top-right-radius: 3px;
+}
+
+.msg--theirs .msg__bubble {
+  border-top-left-radius: 3px;
+}
+
+.msg__bubble--pressed {
+  filter: brightness(0.94);
 }
 
 .msg__author {
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.msg__time {
-  color: var(--text-faint);
-  font-size: 11.5px;
-}
-
-.msg__delete {
-  margin-left: auto;
-  width: 26px;
-  height: 26px;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-}
-
-.msg:hover .msg__delete,
-.msg__delete:focus-visible {
-  opacity: 1;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--primary-2);
+  display: block;
+  margin-bottom: 2px;
 }
 
 .msg__content {
   font-size: 14.5px;
-  line-height: 1.5;
-  margin-top: 2px;
+  line-height: 1.45;
   word-wrap: break-word;
+}
+
+.msg__foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.msg__time {
+  color: var(--text-faint);
+  font-size: 11px;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.msg__ticks {
+  color: var(--text-faint);
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.msg__ticks--read {
+  color: #34a1f3;
 }
 
 .msg__reactions {
@@ -2564,27 +2787,195 @@ a.btn {
   background: var(--surface-2);
 }
 
+/* Long-press / right-click message action menu (Delete, Info — WhatsApp style). */
+.msg-menu {
+  position: fixed;
+  z-index: 60;
+  min-width: 160px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  padding: 4px;
+}
+
+.msg-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.msg-menu__item:hover {
+  background: var(--surface-2);
+}
+
+.msg-menu__item--danger {
+  color: var(--danger, #e11d48);
+}
+
+/* Message info modal: per-member delivered/read status. */
+.msg-info__preview {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.msg-info__section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin: 14px 0 8px;
+}
+
+.msg-info__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.msg-info__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msg-info__status {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.msg-info__status--read {
+  color: #34a1f3;
+  font-weight: 600;
+}
+
+/* Typing indicator — rendered as a "theirs" message bubble (with avatar) at
+   the end of the message list, WhatsApp-style, rather than a plain text line. */
+.msg__bubble--typing {
+  padding: 10px 14px;
+  cursor: default;
+}
+
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  animation: typing-bounce 1.1s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Composer — WhatsApp style: attach icon lives inside the input row, no
+   persistent full-width "Attach files" bar taking up vertical space. */
 .composer {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  padding: 12px;
+  padding: 10px 12px;
   border-top: 1px solid var(--border);
 }
 
 .composer--column {
   flex-direction: column;
   align-items: stretch;
+  gap: 4px;
 }
 
 .composer__row {
   display: flex;
   align-items: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
+.composer__field {
+  flex: 1;
+  min-width: 0;
+}
+
+.composer__send {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.attach-picker--icon {
+  flex-shrink: 0;
+}
+
+.attach-picker--icon .attach-list {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 12px;
+  right: 12px;
+  max-height: 160px;
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: var(--shadow);
+}
+
+.composer__attach-btn {
+  width: 38px;
+  height: 38px;
+}
+
+/* `auto-fit` (not `auto-fill`) so a single attachment's column stretches to
+   fill the bubble instead of leaving dead empty grid tracks beside it. */
 .attach-view__grid--msg {
-  max-width: 360px;
+  max-width: 320px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
 .attach-picker {

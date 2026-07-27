@@ -9,6 +9,7 @@ import { selectUser } from '../../store/slices/authSlice.js';
 import { joinGroupRoom, leaveGroupRoom } from '../../realtime/socket.js';
 import ChannelChat from '../channel/ChannelChat.jsx';
 import { isAdminRole } from '../../utils/role.js';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 
 /** The Chats tab's conversation view — a focused, chat-only counterpart to
  *  ChannelPage's Tasks/Members/Chat tabs, reusing the same `ChannelChat`
@@ -21,6 +22,7 @@ export default function ChatViewPage() {
   const org = useSelector(selectCurrentOrg);
   const user = useSelector(selectUser);
   const messages = useSelector(selectMessages(groupId));
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     dispatch(fetchGroup(groupId));
@@ -38,9 +40,11 @@ export default function ChatViewPage() {
   const canManage = isAdminRole(org?.role) || group?.createdById === user?.id;
 
   return (
-    <div className="channel">
-      <button className="link-btn channel__back" onClick={() => navigate('/chats')}>← Chats</button>
-      <div className="channel__header">
+    <div className="chat-pane">
+      <div className="chat-pane__header">
+        {isMobile && (
+          <button className="link-btn channel__back" onClick={() => navigate('/chats')}>←</button>
+        )}
         <div className="channel__title-row">
           <h1 className="channel__title">#{loaded ? group.name : '…'}</h1>
           {loaded && <span className="channel__members">{group.members?.length ?? 0} members</span>}
@@ -52,7 +56,7 @@ export default function ChatViewPage() {
           <span className="spinner" />
         </div>
       ) : (
-        <ChannelChat groupId={groupId} canManage={canManage} />
+        <ChannelChat groupId={groupId} canManage={canManage} group={group} />
       )}
     </div>
   );

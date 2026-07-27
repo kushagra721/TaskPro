@@ -297,6 +297,27 @@ export const TypeIcon = ({ size, ...p }) => (
   </svg>
 );
 
+export const DoubleCheckIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="m2 12 4.5 4.5L15 8" />
+    <path d="m9 12 4.5 4.5L22 8" />
+  </svg>
+);
+
+export const InfoIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v6M12 7.5v.01" />
+  </svg>
+);
+
+export const SmileIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M8.5 10v.01M15.5 10v.01M8 14.5a5 5 0 0 0 8 0" />
+  </svg>
+);
+
 export const UndoIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M3 10h11a5 5 0 0 1 0 10H9" />

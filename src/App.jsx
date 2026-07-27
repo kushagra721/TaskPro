@@ -15,7 +15,7 @@ import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
 import DashboardHome from './pages/DashboardHome.jsx';
 import GroupsPage from './pages/GroupsPage.jsx';
 import ChannelPage from './pages/channel/ChannelPage.jsx';
-import ChatsPage from './pages/ChatsPage.jsx';
+import ChatsLayout from './pages/ChatsLayout.jsx';
 import ChatViewPage from './pages/chat/ChatViewPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import MorePage from './pages/more/MorePage.jsx';
@@ -84,8 +84,9 @@ export default function App() {
         <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/clients/:clientId" element={<ClientDetailPage />} />
-        <Route path="/chats" element={<ChatsPage />} />
-        <Route path="/chats/:groupId" element={<ChatViewPage />} />
+        <Route path="/chats" element={<ChatsLayout />}>
+          <Route path=":groupId" element={<ChatViewPage />} />
+        </Route>
         <Route path="/reports" element={<RedirectToReports />} />
         <Route path="/more" element={<MorePage />} />
         <Route path="/more/reports" element={<ReportsPage />} />

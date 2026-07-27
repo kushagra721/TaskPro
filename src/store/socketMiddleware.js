@@ -3,8 +3,8 @@ import { notificationReceived } from './slices/notificationSlice.js';
 import { fetchMyInvitations } from './slices/invitationSlice.js';
 import { activityReceived, fetchMyOrgs } from './slices/orgSlice.js';
 import { fetchIncomingJoinRequests } from './slices/joinRequestSlice.js';
-import { groupReceived } from './slices/groupSlice.js';
-import { messageReceived, reactionUpdated, messageDeleted } from './slices/messageSlice.js';
+import { groupReceived, memberReadUpdated } from './slices/groupSlice.js';
+import { messageReceived, reactionUpdated, messageDeleted, typingReceived } from './slices/messageSlice.js';
 import { chatMessageReceived } from './slices/chatSlice.js';
 import { taskReceived, taskUpdatedLive, taskRemovedLive } from './slices/taskSlice.js';
 import { projectChanged } from './slices/projectSlice.js';
@@ -42,6 +42,8 @@ export const socketMiddleware = (store) => (next) => (action) => {
       socket.on('message:new', (message) => store.dispatch(messageReceived(message)));
       socket.on('message:reaction', (payload) => store.dispatch(reactionUpdated(payload)));
       socket.on('message:deleted', (payload) => store.dispatch(messageDeleted(payload)));
+      socket.on('group:read', (payload) => store.dispatch(memberReadUpdated(payload)));
+      socket.on('typing:update', (payload) => store.dispatch(typingReceived(payload)));
       // Chats tab — org-wide broadcast (see message.service.js#sendMessage) so
       // the list's last-message/unread badge updates live even when the
       // recipient isn't currently viewing that particular channel.

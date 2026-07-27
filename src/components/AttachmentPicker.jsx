@@ -20,7 +20,7 @@ const kindOf = (mimeType = '') => {
  * Any selected images are routed through `ImageEditorModal` first, one at a
  * time (crop/rotate/draw/text) — videos/docs upload as-is.
  */
-export default function AttachmentPicker({ value = [], onChange }) {
+export default function AttachmentPicker({ value = [], onChange, variant = 'default' }) {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -74,10 +74,19 @@ export default function AttachmentPicker({ value = [], onChange }) {
 
   const remove = (i) => onChange(value.filter((_, idx) => idx !== i));
 
-  return (
-    <div className="attach-picker">
-      {error && <div className="alert alert--error">{error}</div>}
-
+  const trigger =
+    variant === 'icon' ? (
+      <button
+        type="button"
+        className="icon-btn composer__attach-btn"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        aria-label="Attach files"
+        title="Attach files"
+      >
+        {busy ? <span className="spinner" /> : <PaperclipIcon size={20} />}
+      </button>
+    ) : (
       <button
         type="button"
         className="btn btn--ghost btn--sm"
@@ -86,7 +95,16 @@ export default function AttachmentPicker({ value = [], onChange }) {
       >
         {busy ? <span className="spinner" /> : (<><PaperclipIcon size={14} /> Attach files</>)}
       </button>
-      <p className="field__hint">Images up to {LIMITS.image}MB · Videos &amp; docs up to {LIMITS.video}MB each</p>
+    );
+
+  return (
+    <div className={variant === 'icon' ? 'attach-picker attach-picker--icon' : 'attach-picker'}>
+      {error && <div className="alert alert--error">{error}</div>}
+
+      {trigger}
+      {variant !== 'icon' && (
+        <p className="field__hint">Images up to {LIMITS.image}MB · Videos &amp; docs up to {LIMITS.video}MB each</p>
+      )}
       <input
         ref={inputRef}
         type="file"

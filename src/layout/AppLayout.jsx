@@ -29,7 +29,7 @@ const TITLES = [
   { match: '/more/organizations', title: 'Manage Workspaces' },
   { match: '/more/projects', title: 'Manage Projects' },
   { match: '/more/activities', title: 'All Activities' },
-  { match: '/more/invitations', title: 'Invitation Requests' },
+  { match: '/more/invitations', title: 'Pending Approvals' },
   { match: '/more/reports', title: 'Reports' },
   { match: '/more', title: 'More' },
 ];
