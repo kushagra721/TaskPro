@@ -890,7 +890,7 @@ a.btn {
   width: 52px;
   height: 52px;
   font-size: 22px;
-  border-radius: 14px;
+  border-radius: 24px;
 }
 
 .org-badge.ghost {
@@ -2328,11 +2328,12 @@ a.btn {
 }
 
 /* Chats — desktop side-by-side layout (list left, conversation right),
-   WhatsApp Web style. Mobile stays single-column: the list pane and the
-   detail pane are shown one at a time, toggled by `.chats-layout--detail`. */
+   WhatsApp style: full-bleed, no boxed/card container — panes are divided by
+   a plain 1px border, not a background/radius/shadow. Mobile stays
+   single-column: the list pane and the detail pane are shown one at a time,
+   toggled by `.chats-layout--detail`. */
 .chats-layout {
   display: flex;
-  gap: 16px;
   flex: 1;
   min-height: 0;
 }
@@ -2343,17 +2344,16 @@ a.btn {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  overflow: hidden;
+  padding: 2px 2px 0;
+  border-right: 1px solid var(--border);
 }
 
 .chats-layout__list-scroll {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  margin: 0 -14px;
+  padding: 0 2px;
 }
 
 .chats-layout__detail {
@@ -2371,19 +2371,17 @@ a.btn {
   justify-content: center;
   text-align: center;
   gap: 4px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   color: var(--text-faint);
 }
 
 @media (max-width: 900px) {
   .chats-layout__list {
     width: 100%;
+    border-right: none;
   }
   /* Mobile: show one pane at a time. Both stay full-height (flex:1, same as
-     desktop) so the white card fills all the way down to the bottom nav
-     instead of shrinking to fit its (possibly short) content. */
+     desktop) so the content fills all the way down to the bottom nav instead
+     of shrinking to fit its (possibly short) content. */
   .chats-layout__detail {
     display: none;
   }
@@ -2471,7 +2469,7 @@ a.btn {
 .chat-row__body {
   flex: 1;
   min-width: 0;
-  border-bottom: 1px solid var(--border);
+  /* border-bottom: 1px solid var(--border); */
   padding-bottom: 12px;
 }
 
@@ -2570,19 +2568,56 @@ a.btn {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
 }
 
+/* WhatsApp-style conversation header: back button + group avatar + a stacked
+   name/member-count block — a plain bottom-border divider, not a boxed card. */
 .chat-pane__header {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+  gap: 10px;
+  padding: 12px 0px;
   border-bottom: 1px solid var(--border);
+}
+
+.chat-pane__back {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.chat-pane__back:hover {
+  background: var(--surface-2);
+}
+
+.chat-pane__title-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-pane__name {
+  font-size: 16px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-pane__meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chat-pane .chat {
@@ -2597,7 +2632,7 @@ a.btn {
 .chat__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 0px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2917,7 +2952,7 @@ a.btn {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 0px 0px;
   border-top: 1px solid var(--border);
 }
 
@@ -2969,6 +3004,16 @@ a.btn {
 .composer__attach-btn {
   width: 38px;
   height: 38px;
+}
+
+/* Mobile chat composer: drop the bold/italic/underline/list/link toolbar for
+   a plain single-row WhatsApp-style input — attach icon, text field, send.
+   Scoped to the composer only (`RichTextEditor` keeps its toolbar elsewhere,
+   e.g. the task description field, even on mobile). */
+@media (max-width: 900px) {
+  .composer__field .rte__toolbar {
+    display: none;
+  }
 }
 
 /* `auto-fit` (not `auto-fill`) so a single attachment's column stretches to
@@ -4562,7 +4607,7 @@ a.btn {
 
 .search-box__input {
   height: 38px;
-  width: 240px;
+  width: 100%;
   max-width: 100%;
   padding: 0 34px;
   border-radius: var(--radius-sm);
@@ -4917,6 +4962,19 @@ a.btn {
   .topbar {
     padding: 10px 16px;
     gap: 8px;
+  }
+
+  /* Chats supplies its own compact header (bare "Chats" title on the list;
+     the conversation's own group-name/back-button header on a chat) — the
+     shared Topbar would just be a second, redundant header stacked above it. */
+  .layout--chats .topbar {
+    display: none;
+  }
+  .layout--chats .layout__content {
+    padding-top: 8px;
+  }
+  .layout--chats .page__head {
+    margin-bottom: 10px;
   }
 
   /* The header competes with up to three icon buttons — let the titles shrink. */

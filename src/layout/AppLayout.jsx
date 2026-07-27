@@ -68,9 +68,15 @@ export default function AppLayout() {
   // is a drill-down that shows its title and hides the nav.
   const isRoot = ROOT_PATHS.includes(location.pathname);
 
+  // Chats supplies its own compact header (a bare "Chats" title on the list,
+  // the conversation's own group-name/back-button header on a chat) — the
+  // shared mobile Topbar would just duplicate that above it, per user
+  // feedback ("remove this header ... make the group name part header").
+  const isChatsRoute = location.pathname === '/chats' || location.pathname.startsWith('/chats/');
+
   return (
     <HeaderActionsProvider>
-      <div className={`layout ${isRoot ? '' : 'layout--subpage'}`}>
+      <div className={`layout ${isRoot ? '' : 'layout--subpage'} ${isChatsRoute ? 'layout--chats' : ''}`}>
         <Sidebar onCreateOrg={() => setCreateOpen(true)} />
         <div className="layout__main">
           <Topbar title={title} isRoot={isRoot} onCreateOrg={() => setCreateOpen(true)} />

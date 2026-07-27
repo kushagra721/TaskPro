@@ -8,6 +8,8 @@ import { selectCurrentOrg } from '../../store/slices/orgSlice.js';
 import { selectUser } from '../../store/slices/authSlice.js';
 import { joinGroupRoom, leaveGroupRoom } from '../../realtime/socket.js';
 import ChannelChat from '../channel/ChannelChat.jsx';
+import OrgBadge from '../../components/OrgBadge.jsx';
+import { ArrowLeftIcon } from '../../components/icons.jsx';
 import { isAdminRole } from '../../utils/role.js';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
 
@@ -43,11 +45,14 @@ export default function ChatViewPage() {
     <div className="chat-pane">
       <div className="chat-pane__header">
         {isMobile && (
-          <button className="link-btn channel__back" onClick={() => navigate('/chats')}>←</button>
+          <button className="chat-pane__back" onClick={() => navigate('/chats')} aria-label="Back to chats">
+            <ArrowLeftIcon size={20} />
+          </button>
         )}
-        <div className="channel__title-row">
-          <h1 className="channel__title">#{loaded ? group.name : '…'}</h1>
-          {loaded && <span className="channel__members">{group.members?.length ?? 0} members</span>}
+        <OrgBadge name={loaded ? group.name : ''} />
+        <div className="chat-pane__title-block">
+          <h1 className="chat-pane__name">#{loaded ? group.name : '…'}</h1>
+          {loaded && <span className="chat-pane__meta">{group.members?.length ?? 0} members</span>}
         </div>
       </div>
 
