@@ -26,8 +26,9 @@ export default function CreateResellerPage() {
   const fileRef = useRef(null);
   const [form, setForm] = useState({
     name: '',
-    loginMobile: '',
     email: '',
+    mobile: '',
+    password: '',
     brandName: '',
     themeColor: THEME_COLORS[0],
     logoUrl: '',
@@ -77,7 +78,7 @@ export default function CreateResellerPage() {
     }
   };
 
-  const canSubmit = form.name.trim() && form.loginMobile.trim() && !busy && !uploading;
+  const canSubmit = form.name.trim() && form.email.trim() && !busy && !uploading;
 
   return (
     <div className="page">
@@ -107,22 +108,42 @@ export default function CreateResellerPage() {
               </div>
               <div className="field">
                 <label className="field__label">
-                  Login mobile <span className="req">*</span>
+                  Email <span className="req">*</span>
                 </label>
                 <input
                   className="input"
-                  value={form.loginMobile}
-                  onChange={up('loginMobile')}
+                  type="email"
+                  value={form.email}
+                  onChange={up('email')}
+                  placeholder="owner@acme.com"
+                />
+              </div>
+            </div>
+            <div className="row2">
+              <div className="field">
+                <label className="field__label">
+                  Mobile <span className="field__opt">(optional)</span>
+                </label>
+                <input
+                  className="input"
+                  value={form.mobile}
+                  onChange={up('mobile')}
                   placeholder="9812345678"
                   inputMode="numeric"
                 />
               </div>
-            </div>
-            <div className="field">
-              <label className="field__label">
-                Email <span className="field__opt">(optional)</span>
-              </label>
-              <input className="input" type="email" value={form.email} onChange={up('email')} placeholder="owner@acme.com" />
+              <div className="field">
+                <label className="field__label">
+                  Password <span className="field__opt">(optional)</span>
+                </label>
+                <input
+                  className="input"
+                  type="password"
+                  value={form.password}
+                  onChange={up('password')}
+                  placeholder="Leave blank for OTP-only login"
+                />
+              </div>
             </div>
 
             <div className="reseller-create__section">White-label brand</div>
@@ -200,7 +221,7 @@ export default function CreateResellerPage() {
                 {busy ? <span className="spinner" /> : <><PlusIcon size={15} /> Create reseller</>}
               </button>
               <span className="reseller-create__note">
-                They sign in with their mobile + OTP. Map their domain later in Custom Domains.
+                They sign in with their email — password if you set one above, otherwise OTP only. Map their domain later in Custom Domains.
               </span>
             </div>
           </div>

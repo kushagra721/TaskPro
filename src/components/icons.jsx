@@ -324,3 +324,25 @@ export const UndoIcon = ({ size, ...p }) => (
     <path d="m3 10 5-5M3 10l5 5" />
   </svg>
 );
+
+export const ArrowRightIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M5 12h14" />
+    <path d="m13 6 6 6-6 6" />
+  </svg>
+);
+
+export const ExternalLinkIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <path d="M15 3h6v6" />
+    <path d="M10 14 21 3" />
+  </svg>
+);
+
+export const CopyIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <rect x="9" y="9" width="12" height="12" rx="2" />
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+  </svg>
+);

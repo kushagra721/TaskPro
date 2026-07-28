@@ -368,6 +368,13 @@ a.btn {
   to { transform: rotate(360deg); }
 }
 
+/* Generic "this icon is spinning" utility — e.g. a Reload button's icon while
+   its request is in flight. Distinct from `.spinner` (a whole standalone
+   loading dot); this just animates an existing icon in place. */
+.spin {
+  animation: spin 0.7s linear infinite;
+}
+
 /* ---------- Alerts ---------- */
 .alert {
   padding: 12px 14px;
@@ -3108,26 +3115,6 @@ a.btn {
   background: var(--surface-2);
 }
 
-.attach-menu__back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px 8px;
-  margin-bottom: 2px;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  background: none;
-  color: var(--text-muted);
-  font-size: 12.5px;
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-
-.attach-menu__back:hover {
-  color: var(--text);
-}
-
 /* Anchored to `.attach-picker` (now positioned), so it needs an explicit
    width — it used to stretch across `.composer`, its old offset parent. */
 .attach-picker--icon .attach-list {
@@ -3806,6 +3793,34 @@ a.btn {
   font-weight: 600;
 }
 
+/* A row of action buttons in a table's trailing cell — Custom Domains'
+   Continue-setup + delete, and anywhere else that needs the same layout. */
+.table-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.table-actions .btn {
+  white-space: nowrap;
+}
+
+.domain-open-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.domain-open-link:hover {
+  text-decoration: underline;
+}
+
 .task-table__group {
   font-size: 12px;
   color: var(--text-faint);
@@ -3835,6 +3850,14 @@ a.btn {
 .status-pill--completed {
   background: rgba(16, 185, 129, 0.16);
   color: #047857;
+}
+
+/* A "no reseller" / neutral state — e.g. a House/Direct client, distinct from
+   the green reseller-name pill. Amber, not one of the task-status colors
+   above, since it isn't a task status. */
+.status-pill--neutral {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
 }
 
 .status-pill--cancelled {
@@ -6555,25 +6578,6 @@ a.btn {
   margin-top: 1px;
 }
 
-.platform-signout {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  font-weight: 600;
-  font-size: 13.5px;
-  cursor: pointer;
-  border-top: 1px solid var(--border);
-  margin-top: 10px;
-}
-
-.platform-signout:hover {
-  color: var(--danger, #e11d48);
-}
-
 .platform-main {
   flex: 1;
   min-width: 0;
@@ -6586,16 +6590,56 @@ a.btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 26px;
+  gap: 16px;
+  padding: 18px 26px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
 }
 
+/* The current section's title/subtitle — moved here from a per-page `<h1>`
+   so every platform page shares one header, matching the reference design
+   (which keeps this same title/subtitle showing across a section's whole
+   sub-page flow, e.g. throughout the Add Domain wizard). */
+.platform-topbar__title-block {
+  min-width: 0;
+}
+
+.platform-topbar__title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.platform-topbar__subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* User chip + its sign-out dropdown (moved here from a standalone sidebar
+   button, per explicit instruction — matches the reference design's
+   chip-with-chevron pattern). */
 .platform-topbar__user {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.platform-topbar__user-btn {
   display: flex;
   align-items: center;
   gap: 10px;
+  border: none;
+  background: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+}
+
+.platform-topbar__user-btn:hover {
+  background: var(--surface-2);
 }
 
 .platform-topbar__name {
@@ -6606,6 +6650,44 @@ a.btn {
 .platform-topbar__role {
   font-size: 12px;
   color: var(--text-faint);
+}
+
+.platform-topbar__chevron {
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.platform-topbar__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+  z-index: 20;
+}
+
+.platform-topbar__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--danger, #e11d48);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.platform-topbar__menu-item:hover {
+  background: var(--surface-2);
 }
 
 .platform-content {
@@ -6821,6 +6903,62 @@ a.btn {
 
 .logo-picker__remove:hover {
   color: var(--danger);
+}
+
+/* Shared "list card" pattern for platform pages (Resellers, Custom Domains,
+   and any similar list) — title row + count badge + description + Reload/Add
+   actions + table, all inside one `.panel`, matching the reference design's
+   single bordered card rather than a bare page head + separate table. The
+   page-level title/subtitle live in the shared platform topbar instead (see
+   PlatformLayout.jsx) — this card's own heading is the smaller, secondary one
+   sitting just above the table. */
+.platform-list-card {
+  padding: 20px 22px;
+}
+
+.platform-list-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.platform-list-card__title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.platform-list-card__title {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.platform-list-card__subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 60ch;
+}
+
+.platform-list-card__actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 720px) {
+  .platform-list-card__head {
+    flex-direction: column;
+  }
+  .platform-list-card__actions {
+    width: 100%;
+  }
+  .platform-list-card__actions .btn {
+    flex: 1;
+  }
 }
 
 /* Resellers table brand cell */
@@ -7128,5 +7266,358 @@ a.btn {
   .bp__shot,
   .bp__nav {
     display: none;
+  }
+}
+
+/* ============================================================
+   Custom Domains — "Add domain" 3-step wizard (Domain / Point DNS / SSL
+   certificate). Full page, not a modal — mirrors Create Reseller's
+   "needs the room" rationale. Light theme throughout, matching the rest of
+   the app (an earlier version used a deliberately dark card here — reverted
+   on explicit instruction; don't reintroduce a dark surface for this page).
+   ============================================================ */
+.domain-wizard__steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 4px 6px;
+}
+
+.domain-wizard__step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.domain-wizard__step-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+}
+
+.domain-wizard__step-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.domain-wizard__step--active .domain-wizard__step-dot {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.domain-wizard__step--active .domain-wizard__step-label {
+  color: var(--text);
+}
+
+.domain-wizard__step--done .domain-wizard__step-dot {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+.domain-wizard__step--done .domain-wizard__step-label {
+  color: var(--text-muted);
+}
+
+.domain-wizard__step-line {
+  flex: 1;
+  min-width: 24px;
+  height: 2px;
+  background: var(--border);
+}
+
+.domain-wizard__step-line--done {
+  background: var(--success);
+}
+
+/* The step-content card — a plain light panel, same as every other card in
+   the app. */
+.domain-wizard__card {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 28px 30px;
+  box-shadow: var(--shadow);
+}
+
+.domain-wizard__card-title {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.domain-wizard__card-sub {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: 0 0 22px;
+  max-width: 60ch;
+}
+
+.domain-wizard__card-sub code {
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.domain-wizard__field {
+  margin-bottom: 16px;
+  max-width: 480px;
+}
+
+.domain-wizard__field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.domain-wizard__input {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.domain-wizard__input::placeholder {
+  color: var(--text-faint);
+}
+
+.domain-wizard__input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.domain-wizard__record {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 18px;
+  max-width: 560px;
+  margin-bottom: 18px;
+}
+
+.domain-wizard__record-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.domain-wizard__record-row:last-child {
+  border-bottom: none;
+}
+
+.domain-wizard__record-key {
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.domain-wizard__record-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.domain-wizard__copy-btn {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+}
+
+.domain-wizard__copy-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.domain-wizard__copy-btn--copied {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.domain-wizard__banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 560px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--text);
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.domain-wizard__banner--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.domain-wizard__banner--error {
+  background: rgba(225, 29, 72, 0.1);
+  color: #be123c;
+}
+
+.domain-wizard__banner strong {
+  color: inherit;
+}
+
+.domain-wizard__banner-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.domain-wizard__banner-icon--spin {
+  animation: spin 1.2s linear infinite;
+}
+
+.domain-wizard__actions {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .domain-wizard__card {
+    padding: 20px 18px;
+  }
+  .domain-wizard__step-label {
+    display: none;
+  }
+  .domain-wizard__steps {
+    gap: 6px;
+  }
+}
+
+/* ============================================================
+   Platform Clients pages (admin cross-reseller list + reseller's own
+   "Client Management" dashboard) — pager and stat cards.
+   ============================================================ */
+.platform-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.platform-pager__info {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.platform-pager__btns {
+  display: flex;
+  gap: 8px;
+}
+
+/* A max-height scroll area for a long client table, rather than growing the
+   whole page — matches the reference's own scrollable card body. */
+.platform-list-card__scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.platform-list-card__sub-head {
+  margin-bottom: 12px;
+}
+
+.platform-list-card__sub-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.platform-list-card__sub-note {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* Reseller "Client Management" stat cards row. */
+.platform-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.platform-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.platform-stat__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+}
+
+.platform-stat__label {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.platform-stat__value {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+  .platform-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .platform-stats {
+    grid-template-columns: 1fr;
   }
 }

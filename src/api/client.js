@@ -309,9 +309,11 @@ export const stickersApi = {
 
 // ---- Platform (Super Admin / Reseller) ----
 export const platformApi = {
-  requestOtp: (mobile) => platformRequest('/auth/login', { method: 'POST', body: { mobile }, auth: false }),
-  verifyOtp: (mobile, code) =>
-    platformRequest('/auth/verify', { method: 'POST', body: { mobile, code }, auth: false }),
+  loginWithPassword: (email, password) =>
+    platformRequest('/auth/login/password', { method: 'POST', body: { email, password }, auth: false }),
+  requestOtp: (email) => platformRequest('/auth/login', { method: 'POST', body: { email }, auth: false }),
+  verifyOtp: (email, code) =>
+    platformRequest('/auth/verify', { method: 'POST', body: { email, code }, auth: false }),
   resellers: {
     list: () => platformRequest('/resellers'),
     create: (payload) => platformRequest('/resellers', { method: 'POST', body: payload }),
@@ -324,7 +326,8 @@ export const platformApi = {
     remove: (id) => platformRequest(`/domains/${id}`, { method: 'DELETE' }),
   },
   clients: {
-    list: (resellerId) => platformRequest(`/clients${qs({ resellerId })}`),
+    list: (params) => platformRequest(`/clients${qs(params)}`),
+    stats: () => platformRequest('/clients/stats'),
     create: (payload) => platformRequest('/clients', { method: 'POST', body: payload }),
   },
   /** Multipart, so it bypasses `platformRequest`'s JSON wrapper — same shape as

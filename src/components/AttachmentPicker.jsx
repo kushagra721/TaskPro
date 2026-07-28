@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../hooks/useIsMobile.js';
 import { uploadsApi } from '../api/client.js';
-import { PaperclipIcon, VideoIcon, XIcon, CameraIcon, FileIcon, FolderIcon } from './icons.jsx';
+import { PaperclipIcon, VideoIcon, XIcon, CameraIcon, FileIcon } from './icons.jsx';
 import DocIcon from './DocIcon.jsx';
 import LazyImageEditorModal from './LazyImageEditorModal.jsx';
 import { prettySize } from '../utils/fileSize.js';
@@ -11,29 +11,21 @@ const LIMITS = { image: 3, video: 20, document: 20 }; // MB, matches the backend
 const DOC_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip,.rar';
 const ALL_ACCEPT = `image/*,video/*,${DOC_ACCEPT}`;
 
-// WhatsApp-style attach menu — **mobile only**. Its whole point is `capture`,
-// which opens the device camera/camcorder; on desktop there is no camera step
-// and every row would just open the same file dialog, so the trigger skips the
-// menu entirely there and opens the picker (all types) directly.
+// WhatsApp-style attach menu — **mobile only** (see `onTriggerClick`). Each row
+// is a single tap that opens the file input with just `accept` set — no
+// `capture` attribute. Deliberately: `accept="image/*"`/`"video/*"` alone
+// already makes iOS/Android show their own native action sheet offering
+// "Take Photo/Video" alongside "Photo Library"/"Browse", which is exactly the
+// image/choose-from-gallery split this menu used to implement by hand as a
+// second-tap submenu. That submenu (tap Image → tap Take Photo/Choose from
+// Gallery) was found to silently do nothing on iOS Safari for both its rows —
+// only the always-single-tap Document row worked. Rather than chase the exact
+// WebKit cause, flattening to one tap per row removes the extra state
+// transition between the gesture and `input.click()` entirely, and matches
+// the reference design (WhatsApp's own menu has no such submenu either).
 const ATTACH_MENU = [
-  {
-    key: 'image',
-    label: 'Image',
-    Icon: CameraIcon,
-    choices: [
-      { label: 'Take photo', accept: 'image/*', capture: 'environment', Icon: CameraIcon },
-      { label: 'Choose from gallery', accept: 'image/*', Icon: FolderIcon },
-    ],
-  },
-  {
-    key: 'video',
-    label: 'Video',
-    Icon: VideoIcon,
-    choices: [
-      { label: 'Record video', accept: 'video/*', capture: 'environment', Icon: VideoIcon },
-      { label: 'Choose from gallery', accept: 'video/*', Icon: FolderIcon },
-    ],
-  },
+  { key: 'image', label: 'Image', Icon: CameraIcon, accept: 'image/*' },
+  { key: 'video', label: 'Video', Icon: VideoIcon, accept: 'video/*' },
   { key: 'document', label: 'Document', Icon: FileIcon, accept: DOC_ACCEPT },
 ];
 
@@ -56,29 +48,27 @@ export default function AttachmentPicker({ value = [], onChange, variant = 'defa
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [queue, setQueue] = useState(null); // { images, index, others, edited }
-  const [menu, setMenu] = useState(null); // null | 'root' | 'image' | 'video'
+  const [menu, setMenu] = useState(false); // whether the mobile attach menu is open
   const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!menu) return undefined;
     const close = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setMenu(null);
+      if (!wrapRef.current?.contains(e.target)) setMenu(false);
     };
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, [menu]);
 
-  // One shared hidden input serves every entry point, so its accept/capture are
-  // set imperatively right before `.click()`. Deliberately NOT React props: a
+  // One shared hidden input serves every entry point, so its `accept` is set
+  // imperatively right before `.click()`. Deliberately NOT a React prop: a
   // state round-trip would push the click into a later tick, and a file dialog
   // needs to open inside the user gesture that asked for it.
-  const openFileDialog = (accept, capture) => {
+  const openFileDialog = (accept) => {
     const el = inputRef.current;
     if (!el) return;
     el.accept = accept || '';
-    if (capture) el.setAttribute('capture', capture);
-    else el.removeAttribute('capture');
-    setMenu(null);
+    setMenu(false);
     el.click();
   };
 
@@ -137,7 +127,7 @@ export default function AttachmentPicker({ value = [], onChange, variant = 'defa
       openFileDialog(ALL_ACCEPT);
       return;
     }
-    setMenu((m) => (m ? null : 'root'));
+    setMenu((m) => !m);
   };
 
   const trigger =
@@ -158,8 +148,6 @@ export default function AttachmentPicker({ value = [], onChange, variant = 'defa
       </button>
     );
 
-  const submenu = menu && menu !== 'root' ? ATTACH_MENU.find((o) => o.key === menu) : null;
-
   return (
     <div ref={wrapRef} className={variant === 'icon' ? 'attach-picker attach-picker--icon' : 'attach-picker'}>
       {error && <div className="alert alert--error">{error}</div>}
@@ -171,34 +159,16 @@ export default function AttachmentPicker({ value = [], onChange, variant = 'defa
 
       {menu && (
         <div className="attach-menu">
-          {submenu ? (
-            <>
-              <button type="button" className="attach-menu__back" onClick={() => setMenu('root')}>
-                ← {submenu.label}
-              </button>
-              {submenu.choices.map((c) => (
-                <button
-                  key={c.label}
-                  type="button"
-                  className="attach-menu__item"
-                  onClick={() => openFileDialog(c.accept, c.capture)}
-                >
-                  <c.Icon size={17} /> {c.label}
-                </button>
-              ))}
-            </>
-          ) : (
-            ATTACH_MENU.map((o) => (
-              <button
-                key={o.key}
-                type="button"
-                className="attach-menu__item"
-                onClick={() => (o.choices ? setMenu(o.key) : openFileDialog(o.accept))}
-              >
-                <o.Icon size={17} /> {o.label}
-              </button>
-            ))
-          )}
+          {ATTACH_MENU.map((o) => (
+            <button
+              key={o.key}
+              type="button"
+              className="attach-menu__item"
+              onClick={() => openFileDialog(o.accept)}
+            >
+              <o.Icon size={17} /> {o.label}
+            </button>
+          ))}
         </div>
       )}
 

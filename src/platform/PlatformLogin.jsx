@@ -1,11 +1,21 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { requestPlatformOtp, verifyPlatformOtp } from '../store/slices/platformAuthSlice.js';
+import OtpInput from '../components/OtpInput.jsx';
+import {
+  loginPlatformWithPassword,
+  requestPlatformOtp,
+  verifyPlatformOtp,
+} from '../store/slices/platformAuthSlice.js';
 
-/** Mirrors BrandPanel's look (same `.auth__brand`/`.brand__*` classes) with
- *  copy accurate to this being the mobile+OTP platform login, not the normal
- *  email-based client login. */
+const RESEND_SECONDS = 30;
+const OTP_LENGTH = 4;
+
+/** Mirrors `BrandPanel`'s look (same `.auth__brand`/`.brand__*` classes) with
+ *  copy noting this is the platform portal rather than the normal client app —
+ *  the login process itself (password by default, "Login with OTP instead"
+ *  to switch, same as `Login.jsx`; the OTP step itself matches `Verify.jsx`
+ *  exactly, boxes and all) is otherwise identical. */
 function PlatformBrandPanel() {
   return (
     <aside className="auth__brand">
@@ -15,7 +25,7 @@ function PlatformBrandPanel() {
       </div>
       <div className="brand__hero">
         <h1>Platform access</h1>
-        <p>Super Admin and Reseller accounts sign in with their mobile number and a one-time code.</p>
+        <p>Super Admin and Reseller accounts sign in with their email — password or a one-time code, your choice.</p>
       </div>
     </aside>
   );
@@ -24,20 +34,55 @@ function PlatformBrandPanel() {
 export default function PlatformLogin() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [step, setStep] = useState('mobile'); // 'mobile' | 'otp'
-  const [mobile, setMobile] = useState('');
+  const [mode, setMode] = useState('password'); // 'password' | 'otp'
+  const [step, setStep] = useState('start'); // 'start' | 'otp' — 'otp' only ever reached from OTP mode
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
   const [devCode, setDevCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(RESEND_SECONDS);
 
-  const requestCode = async (e) => {
+  useEffect(() => {
+    if (step !== 'otp' || cooldown <= 0) return undefined;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [step, cooldown]);
+
+  const goToPortal = (platformUser) => {
+    navigate(platformUser.role === 'SUPER_ADMIN' ? '/platform/admin' : '/platform/reseller', { replace: true });
+  };
+
+  const switchMode = (next) => {
+    setMode(next);
+    setStep('start');
+    setError('');
+  };
+
+  const submitPassword = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const res = await dispatch(requestPlatformOtp(mobile.trim())).unwrap();
+      const res = await dispatch(loginPlatformWithPassword({ email: email.trim(), password })).unwrap();
+      goToPortal(res.platformUser);
+    } catch (err) {
+      setError(err.message || 'Incorrect email or password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const requestCode = async (e) => {
+    e?.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const res = await dispatch(requestPlatformOtp(email.trim())).unwrap();
       setDevCode(res.devCode || '');
+      setCooldown(RESEND_SECONDS);
+      setCode('');
       setStep('otp');
     } catch (err) {
       setError(err.message || 'Could not send the code');
@@ -46,80 +91,136 @@ export default function PlatformLogin() {
     }
   };
 
-  const verify = async (e) => {
-    e.preventDefault();
+  const verify = async (finalCode) => {
     setError('');
     setLoading(true);
     try {
-      const res = await dispatch(verifyPlatformOtp({ mobile: mobile.trim(), code: code.trim() })).unwrap();
-      navigate(res.platformUser.role === 'SUPER_ADMIN' ? '/platform/admin' : '/platform/reseller', {
-        replace: true,
-      });
+      const res = await dispatch(verifyPlatformOtp({ email: email.trim(), code: finalCode })).unwrap();
+      goToPortal(res.platformUser);
     } catch (err) {
       setError(err.message || 'Incorrect code');
+      setCode('');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleCodeChange = (next) => {
+    setCode(next);
+    setError('');
+    if (next.length === OTP_LENGTH) verify(next); // auto-submit when full
+  };
+
+  const handleOtpSubmit = (e) => {
+    e.preventDefault();
+    if (code.length >= OTP_LENGTH) verify(code);
+  };
+
+  const onSubmit = mode === 'password' ? submitPassword : step === 'start' ? requestCode : handleOtpSubmit;
+
   return (
     <div className="auth">
       <PlatformBrandPanel />
       <div className="auth__panel">
-        <form className="auth__card" onSubmit={step === 'mobile' ? requestCode : verify} noValidate>
+        <form className="auth__card" onSubmit={onSubmit} noValidate>
           <div className="auth__mobile-logo">
             <span className="brand__logo-mark">✓</span> Task&nbsp;Pro Platform
           </div>
 
-          <h2 className="auth__title">{step === 'mobile' ? 'Platform sign in' : 'Enter the code'}</h2>
+          <h2 className="auth__title">
+            {mode === 'otp' && step === 'otp' ? 'Check your email' : 'Platform sign in'}
+          </h2>
           <p className="auth__subtitle">
-            {step === 'mobile'
-              ? 'Super Admin and Reseller sign-in — enter your registered mobile number.'
-              : `We sent a code to ${mobile}.`}
+            {mode === 'password'
+              ? 'Enter your email and password to sign in.'
+              : step === 'start'
+                ? "Enter your email and we'll send you a sign-in code."
+                : (
+                  <>
+                    We sent a verification code to <span className="verify__email">{email}</span>.
+                  </>
+                )}
           </p>
 
           {error && <div className="alert alert--error">{error}</div>}
-          {step === 'otp' && devCode && (
+          {mode === 'otp' && step === 'otp' && devCode && (
             <div className="alert">Dev code: <strong>{devCode}</strong></div>
           )}
 
-          {step === 'mobile' ? (
-            <div className="field">
-              <label className="field__label" htmlFor="mobile">Mobile number</label>
-              <input
-                id="mobile"
-                className="input"
-                type="tel"
-                placeholder="9812345678"
-                autoFocus
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-              />
-            </div>
+          {mode === 'otp' && step === 'otp' ? (
+            <>
+              <OtpInput value={code} onChange={handleCodeChange} length={OTP_LENGTH} disabled={loading} />
+              <div className="verify__meta">
+                <button type="button" className="link-btn" onClick={() => setStep('start')}>
+                  ← Change email
+                </button>
+                {cooldown > 0 ? (
+                  <span>Resend in {cooldown}s</span>
+                ) : (
+                  <button type="button" className="link-btn" onClick={requestCode}>
+                    Resend code
+                  </button>
+                )}
+              </div>
+            </>
           ) : (
-            <div className="field">
-              <label className="field__label" htmlFor="code">Verification code</label>
-              <input
-                id="code"
-                className="input"
-                inputMode="numeric"
-                placeholder="0000"
-                autoFocus
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-              />
+            <>
+              <div className="field">
+                <label className="field__label" htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  className="input"
+                  type="email"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  autoFocus
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+
+              {mode === 'password' && (
+                <div className="field">
+                  <label className="field__label" htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    className="input"
+                    type="password"
+                    placeholder="Your password"
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {!(mode === 'otp' && step === 'otp') && (
+            <button className="btn" type="submit" disabled={loading} style={{ marginTop: 6 }}>
+              {loading ? <span className="spinner" /> : mode === 'password' ? 'Continue' : 'Send code'}
+            </button>
+          )}
+
+          {mode === 'otp' && step === 'otp' && (
+            <div style={{ marginTop: 22 }}>
+              <button className="btn" type="submit" disabled={loading || code.length < OTP_LENGTH}>
+                {loading ? <span className="spinner" /> : 'Verify & sign in'}
+              </button>
             </div>
           )}
 
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? <span className="spinner" /> : step === 'mobile' ? 'Send code' : 'Verify & sign in'}
-          </button>
-
-          {step === 'otp' && (
+          {!(mode === 'otp' && step === 'otp') && (
             <p className="auth__foot">
-              <button type="button" className="link-btn" onClick={() => setStep('mobile')}>
-                Use a different mobile number
-              </button>
+              {mode === 'password' ? (
+                <button type="button" className="link-btn" onClick={() => switchMode('otp')}>
+                  Login with OTP instead
+                </button>
+              ) : (
+                <button type="button" className="link-btn" onClick={() => switchMode('password')}>
+                  Login with password instead
+                </button>
+              )}
             </p>
           )}
         </form>
