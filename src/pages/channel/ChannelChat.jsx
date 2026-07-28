@@ -4,7 +4,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   fetchMessages,
   sendMessage,
+  editMessage,
   deleteMessage,
+  hideMessage,
   messagePending,
   selectMessages,
   selectPendingMessages,
@@ -18,7 +20,15 @@ import Avatar from '../../components/Avatar.jsx';
 import RichTextEditor from '../../components/RichTextEditor.jsx';
 import AttachmentPicker from '../../components/AttachmentPicker.jsx';
 import Modal from '../../components/Modal.jsx';
-import { DownloadIcon, TrashIcon, InfoIcon, DoubleCheckIcon, CheckIcon } from '../../components/icons.jsx';
+import {
+  DownloadIcon,
+  TrashIcon,
+  InfoIcon,
+  DoubleCheckIcon,
+  CheckIcon,
+  EditIcon,
+  XIcon,
+} from '../../components/icons.jsx';
 import DocIcon from '../../components/DocIcon.jsx';
 import { clockTime } from '../../utils/time.js';
 import { sanitizeHtml, htmlToText } from '../../utils/sanitizeHtml.js';
@@ -51,9 +61,13 @@ export default function ChannelChat({ groupId, canManage, group }) {
   const typingEntries = Object.entries(typing).filter(([uid]) => uid !== user?.id);
   const [html, setHtml] = useState('');
   const [attachments, setAttachments] = useState([]);
-  const [pickerFor, setPickerFor] = useState(null);
+  // { messageId, scope: 'me' | 'everyone' } — the confirm modal's copy and the
+  // action it fires both key off `scope`.
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [infoTarget, setInfoTarget] = useState(null);
+  // The message currently being edited, or null for the normal "new message"
+  // composer. Editing reuses the same composer rather than opening a modal.
+  const [editing, setEditing] = useState(null);
   const [menu, setMenu] = useState(null); // { messageId, x, y }
   const endRef = useRef(null);
   const editorRef = useRef(null);
@@ -90,8 +104,31 @@ export default function ChannelChat({ groupId, canManage, group }) {
     }, 2500);
   };
 
+  const startEdit = (message) => {
+    setEditing(message);
+    setHtml(message.content || '');
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setHtml('');
+  };
+
+  const saveEdit = () => {
+    const text = htmlToText(html);
+    if (!text) return;
+    dispatch(
+      editMessage({ groupId, messageId: editing.id, content: sanitizeHtml(html) })
+    );
+    cancelEdit();
+  };
+
   const send = (e) => {
     e?.preventDefault();
+    if (editing) {
+      saveEdit();
+      return;
+    }
     if (!htmlToText(html) && attachments.length === 0) return;
     const content = htmlToText(html) ? sanitizeHtml(html) : '';
     const clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -120,26 +157,31 @@ export default function ChannelChat({ groupId, canManage, group }) {
   };
 
   const react = (messageId, emoji) => {
-    setPickerFor(null);
+    setMenu(null);
     groupsApi.react(groupId, messageId, emoji).catch(() => {});
   };
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
-    dispatch(deleteMessage({ groupId, messageId: deleteTarget }));
+    const { messageId, scope } = deleteTarget;
+    dispatch(
+      scope === 'everyone'
+        ? deleteMessage({ groupId, messageId })
+        : hideMessage({ groupId, messageId })
+    );
     setDeleteTarget(null);
   };
 
+  // Every message opens the menu — the emoji row (react) is available on
+  // anyone's message, yours or theirs, which is why there's no "nothing to
+  // show" early return any more. Info is only meaningful for a message you
+  // sent (who's read/delivered it); Delete is your own message OR any message
+  // at all if you're an admin/channel creator.
   const openMenu = useCallback((e, messageId, mine) => {
-    // Info is only meaningful for a message you sent (who's read/delivered
-    // it); Delete is available for your own message OR any message at all
-    // if you're an admin/channel creator. A regular member long-pressing
-    // someone else's message has neither action — nothing to show.
-    if (!mine && !canManage) return;
     suppressClickRef.current = true;
     const point = e.touches?.[0] || e;
-    const x = Math.min(point.clientX, window.innerWidth - 180);
-    const y = Math.min(point.clientY, window.innerHeight - 140);
+    const x = Math.max(8, Math.min(point.clientX, window.innerWidth - 244));
+    const y = Math.max(8, Math.min(point.clientY, window.innerHeight - 280));
     setMenu({ messageId, x, y, mine, canDelete: mine || canManage });
   }, [canManage]);
 
@@ -231,6 +273,7 @@ export default function ChannelChat({ groupId, canManage, group }) {
                     </div>
                   )}
                   <div className="msg__foot">
+                    {m.edited && <span className="msg__edited">edited</span>}
                     <span className="msg__time">{clockTime(m.createdAt)}</span>
                     {mine &&
                       (m.pending ? (
@@ -243,7 +286,10 @@ export default function ChannelChat({ groupId, canManage, group }) {
                   </div>
                 </div>
 
-                {!m.pending && (
+                {/* Existing reactions only — adding one is a long-press/right-click
+                    action on the bubble itself (see the menu below), so there's no
+                    persistent "+" chip cluttering every message. */}
+                {!m.pending && m.reactions?.length > 0 && (
                   <div className="msg__reactions">
                     {m.reactions.map((r) => (
                       <button
@@ -254,24 +300,6 @@ export default function ChannelChat({ groupId, canManage, group }) {
                         <span>{r.emoji}</span> <span className="reaction__count">{r.count}</span>
                       </button>
                     ))}
-                    <div className="reaction-add">
-                      <button
-                        className="reaction reaction--add"
-                        onClick={() => setPickerFor(pickerFor === m.id ? null : m.id)}
-                        aria-label="Add reaction"
-                      >
-                        +
-                      </button>
-                      {pickerFor === m.id && (
-                        <div className="emoji-picker">
-                          {EMOJIS.map((e) => (
-                            <button key={e} onClick={() => react(m.id, e)}>
-                              {e}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 )}
               </div>
@@ -299,20 +327,44 @@ export default function ChannelChat({ groupId, canManage, group }) {
       </div>
 
       <form className="composer composer--column" onSubmit={send}>
+        {editing && (
+          <div className="composer__editing">
+            <EditIcon size={14} />
+            <span className="composer__editing-label">Editing message</span>
+            <button type="button" className="composer__editing-cancel" onClick={cancelEdit} aria-label="Cancel edit">
+              <XIcon size={14} />
+            </button>
+          </div>
+        )}
         <div className="composer__row">
-          <AttachmentPicker value={attachments} onChange={setAttachments} variant="icon" />
+          {/* Attachments are immutable once sent — only the text is editable. */}
+          {!editing && <AttachmentPicker value={attachments} onChange={setAttachments} variant="icon" />}
           <div className="composer__field">
-            <RichTextEditor ref={editorRef} onChange={onEditorChange} onSubmitKey={send} />
+            {/* `key` remounts the (uncontrolled) editor so `defaultValue` can
+                seed it with the message being edited, and clear it again on
+                cancel/save. No `onSubmitKey` — Enter inserts a newline here;
+                sending is the send button only (explicit product decision). */}
+            <RichTextEditor
+              key={editing ? `edit-${editing.id}` : 'new'}
+              ref={editorRef}
+              defaultValue={editing?.content}
+              onChange={onEditorChange}
+              placeholder={editing ? 'Edit your message…' : undefined}
+            />
           </div>
           <button
             className="btn composer__send"
             type="submit"
-            aria-label="Send"
-            disabled={!htmlToText(html) && attachments.length === 0}
+            aria-label={editing ? 'Save changes' : 'Send'}
+            disabled={editing ? !htmlToText(html) : !htmlToText(html) && attachments.length === 0}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m3 3 18 9-18 9 4-9Z" />
-            </svg>
+            {editing ? (
+              <CheckIcon size={18} />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m3 3 18 9-18 9 4-9Z" />
+              </svg>
+            )}
           </button>
         </div>
       </form>
@@ -320,6 +372,27 @@ export default function ChannelChat({ groupId, canManage, group }) {
       {menu &&
         createPortal(
           <div className="msg-menu" style={{ top: menu.y, left: menu.x }} onClick={(e) => e.stopPropagation()}>
+            <div className="msg-menu__emojis">
+              {EMOJIS.map((emoji) => (
+                <button key={emoji} type="button" onClick={() => react(menu.messageId, emoji)} aria-label={`React ${emoji}`}>
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            {/* Author-only, and only for a message that actually has text —
+                editing an attachment-only message would open an empty composer
+                whose save the server would reject as empty. */}
+            {menu.mine && !!messages.find((m) => m.id === menu.messageId)?.content && (
+              <button
+                className="msg-menu__item"
+                onClick={() => {
+                  startEdit(messages.find((m) => m.id === menu.messageId));
+                  setMenu(null);
+                }}
+              >
+                <EditIcon size={16} /> Edit
+              </button>
+            )}
             {menu.mine && (
               <button
                 className="msg-menu__item"
@@ -331,15 +404,27 @@ export default function ChannelChat({ groupId, canManage, group }) {
                 <InfoIcon size={16} /> Info
               </button>
             )}
+            {/* "Delete for me" is always available — it only hides the message
+                from you. "Delete for everyone" is the hard delete, so it's
+                gated on being the author or an admin/channel creator. */}
+            <button
+              className="msg-menu__item"
+              onClick={() => {
+                setDeleteTarget({ messageId: menu.messageId, scope: 'me' });
+                setMenu(null);
+              }}
+            >
+              <TrashIcon size={16} /> Delete for me
+            </button>
             {menu.canDelete && (
               <button
                 className="msg-menu__item msg-menu__item--danger"
                 onClick={() => {
-                  setDeleteTarget(menu.messageId);
+                  setDeleteTarget({ messageId: menu.messageId, scope: 'everyone' });
                   setMenu(null);
                 }}
               >
-                <TrashIcon size={16} /> Delete
+                <TrashIcon size={16} /> Delete for everyone
               </button>
             )}
           </div>,
@@ -347,12 +432,20 @@ export default function ChannelChat({ groupId, canManage, group }) {
         )}
 
       {deleteTarget && (
-        <Modal title="Delete message" onClose={() => setDeleteTarget(null)}>
-          <p className="modal__intro">This message will be permanently deleted. This can&apos;t be undone.</p>
+        <Modal
+          title={deleteTarget.scope === 'everyone' ? 'Delete for everyone' : 'Delete for me'}
+          onClose={() => setDeleteTarget(null)}
+        >
+          <p className="modal__intro">
+            {deleteTarget.scope === 'everyone'
+              ? "This message will be permanently deleted for everyone in this channel. This can't be undone."
+              : "This message will be removed from your view only — everyone else in the channel will still see it. This can't be undone."}
+          </p>
           <div className="modal__actions">
             <button className="btn btn--ghost" onClick={() => setDeleteTarget(null)}>Cancel</button>
             <button className="btn btn--danger" onClick={confirmDelete}>
-              <TrashIcon size={16} /> Delete
+              <TrashIcon size={16} />{' '}
+              {deleteTarget.scope === 'everyone' ? 'Delete for everyone' : 'Delete for me'}
             </button>
           </div>
         </Modal>

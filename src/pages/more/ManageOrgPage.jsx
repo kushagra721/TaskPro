@@ -167,7 +167,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
 
   return (
     <div className="page">
-      <div className="org-header org-header--row">
+      {/* <div className="org-header org-header--row">
         <div className="org-header__left">
           <OrgBadge name={org.name} icon={org.icon} photoUrl={org.photoUrl} size="lg" />
           <div>
@@ -184,7 +184,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
             </button>
           )}
         </div>
-      </div>
+      </div> */}
 
       {error && <div className="alert alert--error">{error}</div>}
       {message && <div className="alert alert--info">{message}</div>}

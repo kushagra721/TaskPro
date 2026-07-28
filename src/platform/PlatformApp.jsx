@@ -3,6 +3,7 @@ import PlatformLogin from './PlatformLogin.jsx';
 import PlatformProtectedRoute from './PlatformProtectedRoute.jsx';
 import PlatformLayout from './PlatformLayout.jsx';
 import ResellersPage from './admin/ResellersPage.jsx';
+import CreateResellerPage from './admin/CreateResellerPage.jsx';
 import CustomDomainsPage from './admin/CustomDomainsPage.jsx';
 import ClientsPage from './admin/ClientsPage.jsx';
 import ResellerClientsPage from './reseller/ResellerClientsPage.jsx';
@@ -36,6 +37,7 @@ export default function PlatformApp() {
       >
         <Route index element={<Navigate to="resellers" replace />} />
         <Route path="resellers" element={<ResellersPage />} />
+        <Route path="resellers/new" element={<CreateResellerPage />} />
         <Route path="domains" element={<CustomDomainsPage />} />
         <Route path="clients" element={<ClientsPage />} />
       </Route>

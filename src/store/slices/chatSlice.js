@@ -36,6 +36,15 @@ const chatSlice = createSlice({
       };
       if (!mine) chat.unreadCount = (chat.unreadCount || 0) + 1;
     },
+    // From 'chat:message:edited'. Only refreshes the preview text, and only if
+    // the edited message still *is* the last one — an edit is not new activity,
+    // so it must never touch unreadCount or reorder the list.
+    chatMessageEdited: (state, action) => {
+      const { groupId, message } = action.payload;
+      const chat = state.list.find((c) => c.id === groupId);
+      if (!chat || chat.lastMessage?.id !== message.id) return;
+      chat.lastMessage.content = message.content;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -58,7 +67,7 @@ const chatSlice = createSlice({
   },
 });
 
-export const { chatMessageReceived } = chatSlice.actions;
+export const { chatMessageReceived, chatMessageEdited } = chatSlice.actions;
 export default chatSlice.reducer;
 
 export const selectChats = (s) => s.chats.list;

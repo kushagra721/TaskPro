@@ -2327,6 +2327,30 @@ a.btn {
   border-bottom-color: var(--primary-2);
 }
 
+/* Tab item count — same "cart items count" badge pattern as `.nav-badge`
+   (the Chats nav icon's unread dot), just inline next to the label instead of
+   corner-anchored to an icon, since these tabs are plain text. */
+.tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.tab--active .tab__count {
+  background: var(--primary-2);
+  color: #fff;
+}
+
 /* Chats — desktop side-by-side layout (list left, conversation right),
    WhatsApp style: full-bleed, no boxed/card container — panes are divided by
    a plain 1px border, not a background/radius/shadow. Mobile stays
@@ -2336,6 +2360,9 @@ a.btn {
   display: flex;
   flex: 1;
   min-height: 0;
+  /* Nothing here may scroll sideways — the panes manage their own vertical
+     scroll and any horizontal spill is a bug, not something to scroll to. */
+  overflow-x: hidden;
 }
 
 .chats-layout__list {
@@ -2344,16 +2371,15 @@ a.btn {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: 2px 2px 0;
+  padding-right: 16px;
   border-right: 1px solid var(--border);
 }
 
 .chats-layout__list-scroll {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
-  margin: 0 -14px;
-  padding: 0 2px;
 }
 
 .chats-layout__detail {
@@ -2361,6 +2387,7 @@ a.btn {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  padding-left: 20px;
 }
 
 .chats-layout__empty {
@@ -2375,15 +2402,20 @@ a.btn {
 }
 
 @media (max-width: 900px) {
+  /* Mobile deliberately runs edge-to-edge — the desktop gutters above are
+     dropped rather than reduced (explicit product decision: "no extra
+     spacing/padding in mobile view, add spacing in web view only"). */
   .chats-layout__list {
     width: 100%;
     border-right: none;
+    padding-right: 0;
   }
   /* Mobile: show one pane at a time. Both stay full-height (flex:1, same as
      desktop) so the content fills all the way down to the bottom nav instead
      of shrinking to fit its (possibly short) content. */
   .chats-layout__detail {
     display: none;
+    padding-left: 0;
   }
   .chats-layout--detail .chats-layout__list {
     display: none;
@@ -2447,7 +2479,7 @@ a.btn {
   align-items: center;
   gap: 14px;
   width: 100%;
-  padding: 12px 10px;
+  padding: 10px 10px 0;
   text-align: left;
   background: none;
   border: none;
@@ -2466,10 +2498,13 @@ a.btn {
   background: rgba(99, 102, 241, 0.1);
 }
 
+/* The divider sits on the body, not the row, so it starts after the avatar —
+   WhatsApp-style — while the row's hover/active background still covers the
+   full width. The row therefore carries no bottom padding of its own. */
 .chat-row__body {
   flex: 1;
   min-width: 0;
-  /* border-bottom: 1px solid var(--border); */
+  border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
 }
 
@@ -2577,7 +2612,7 @@ a.btn {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 0px;
+  padding: 4px 4px 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -2620,6 +2655,11 @@ a.btn {
   white-space: nowrap;
 }
 
+/* `min-height: 0` is load-bearing, not decorative: the ≤720px `.chat` rule
+   further down sets `min-height: 400px` for the Hub channel page, and with
+   only equal-specificity selectors there it would also apply here — forcing
+   this flex child taller than the pane and pushing the composer clean off the
+   bottom of the screen ("input field disappears" on mobile). */
 .chat-pane .chat {
   flex: 1;
   min-height: 0;
@@ -2632,7 +2672,8 @@ a.btn {
 .chat__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 0px;
+  overflow-x: hidden;
+  padding: 10px 4px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2737,6 +2778,16 @@ a.btn {
   line-height: 1;
 }
 
+/* "edited" marker — derived server-side from the message's `updatedAt`
+   (see message.service.js#shape), sits left of the timestamp. */
+.msg__edited {
+  color: var(--text-faint);
+  font-size: 10.5px;
+  font-style: italic;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .msg__ticks {
   color: var(--text-faint);
   display: inline-flex;
@@ -2785,54 +2836,51 @@ a.btn {
   color: var(--text-muted);
 }
 
-.reaction--add {
-  color: var(--text-muted);
-  font-weight: 700;
-  padding: 3px 10px;
-}
+/* Reacting is a long-press/right-click action on the bubble (see
+   `.msg-menu__emojis`) — there is deliberately no persistent "+" chip on every
+   message any more, and `.msg__reactions` renders only when a message actually
+   has reactions. */
 
-.reaction-add {
-  position: relative;
-}
-
-.emoji-picker {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 0;
-  z-index: 30;
-  display: flex;
-  gap: 4px;
-  padding: 6px;
-  background: var(--panel);
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-}
-
-.emoji-picker button {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 8px;
-}
-
-.emoji-picker button:hover {
-  background: var(--surface-2);
-}
-
-/* Long-press / right-click message action menu (Delete, Info — WhatsApp style). */
+/* Long-press / right-click message action menu (React, Info, Delete —
+   WhatsApp style). The emoji row shows on every message, yours or theirs;
+   Info/Delete are permission-gated in the component. */
 .msg-menu {
   position: fixed;
   z-index: 60;
-  min-width: 160px;
+  min-width: 230px;
   background: var(--panel);
   border: 1px solid var(--border-strong);
   border-radius: 12px;
   box-shadow: var(--shadow);
   overflow: hidden;
   padding: 4px;
+}
+
+.msg-menu__emojis {
+  display: flex;
+  justify-content: space-between;
+  gap: 2px;
+  padding: 2px 2px 6px;
+}
+
+.msg-menu__emojis button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 999px;
+}
+
+.msg-menu__emojis button:hover {
+  background: var(--surface-2);
+  transform: scale(1.15);
+}
+
+.msg-menu__emojis + .msg-menu__item {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
 }
 
 .msg-menu__item {
@@ -2952,8 +3000,8 @@ a.btn {
   display: flex;
   align-items: flex-end;
   gap: 10px;
-  padding: 0px 0px;
-  /* border-top: 1px solid var(--border); */
+  padding: 10px 4px 4px;
+  flex-shrink: 0;
 }
 
 .composer--column {
@@ -2966,6 +3014,35 @@ a.btn {
   display: flex;
   align-items: flex-end;
   gap: 8px;
+}
+
+/* Edit mode: a slim strip above the input row (the composer is reused for
+   editing rather than opening a separate modal). */
+.composer__editing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.composer__editing-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.composer__editing-cancel {
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
 }
 
 .composer__field {
@@ -2983,15 +3060,81 @@ a.btn {
   padding: 0;
 }
 
+/* Positioned so both popovers below (`.attach-menu`, and the icon variant's
+   queued-file `.attach-list`) anchor to the picker itself. */
+.attach-picker {
+  position: relative;
+}
+
 .attach-picker--icon {
   flex-shrink: 0;
 }
 
+/* WhatsApp-style attach menu (Image / Video / Document), anchored above the
+   trigger. Image and Video drill into a "take/record" vs "choose from gallery"
+   submenu in place, rather than opening a second popover. */
+.attach-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  min-width: 210px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.attach-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attach-menu__item:hover {
+  background: var(--surface-2);
+}
+
+.attach-menu__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 8px;
+  margin-bottom: 2px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attach-menu__back:hover {
+  color: var(--text);
+}
+
+/* Anchored to `.attach-picker` (now positioned), so it needs an explicit
+   width — it used to stretch across `.composer`, its old offset parent. */
 .attach-picker--icon .attach-list {
   position: absolute;
   bottom: calc(100% + 8px);
-  left: 12px;
-  right: 12px;
+  left: 0;
+  width: min(300px, calc(100vw - 40px));
   max-height: 160px;
   overflow-y: auto;
   background: var(--panel);
@@ -3013,6 +3156,25 @@ a.btn {
 @media (max-width: 900px) {
   .composer__field .rte__toolbar {
     display: none;
+  }
+  /* Anything under 16px makes iOS/Android auto-zoom the page the moment the
+     field takes focus, and it never zooms back out — that's the "sometimes it
+     zooms up automatically" bug. 16px is the minimum that suppresses it. */
+  .composer__field .rte__input {
+    font-size: 16px;
+    min-height: 38px;
+    max-height: 120px;
+  }
+  /* Edge-to-edge on mobile: the desktop gutters added above are removed, not
+     shrunk, per the "no extra spacing in mobile view" decision. */
+  .chat-pane__header {
+    padding: 6px 0 10px;
+  }
+  .chat__messages {
+    padding: 6px 0;
+  }
+  .composer {
+    padding: 6px 0 0;
   }
 }
 
@@ -4964,17 +5126,16 @@ a.btn {
     gap: 8px;
   }
 
-  /* Chats supplies its own compact header (bare "Chats" title on the list;
-     the conversation's own group-name/back-button header on a chat) — the
-     shared Topbar would just be a second, redundant header stacked above it. */
-  .layout--chats .topbar {
+  /* An open conversation supplies its own header (`.chat-pane__header`: back
+     button + group avatar + name + member count), so the shared Topbar would
+     just be a second, redundant header stacked above it. Mobile only — desktop
+     keeps the normal Topbar. Scoped to `/chats/:groupId`; the Chats *list*
+     keeps the standard header like every other tab. */
+  .layout--chat-view .topbar {
     display: none;
   }
-  .layout--chats .layout__content {
+  .layout--chat-view .layout__content {
     padding-top: 8px;
-  }
-  .layout--chats .page__head {
-    margin-bottom: 10px;
   }
 
   /* The header competes with up to three icon buttons — let the titles shrink. */
@@ -6028,13 +6189,30 @@ a.btn {
   padding: 12px;
 }
 
-.image-editor__canvas {
-  max-width: 100%;
-  max-height: 100%;
+/* fabric.js wraps the <canvas> in its own `.canvas-container` and drives both
+   the element's width/height attributes and its inline CSS size. Anything that
+   changes the rendered size here (max-width, transforms) desyncs pointer
+   coordinates from the drawing surface, so the canvas is deliberately left
+   unconstrained — the fit-to-viewport maths in the component sizes it instead. */
+.image-editor__canvas-wrap .canvas-container {
   border-radius: 8px;
+  overflow: hidden;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   touch-action: none;
-  cursor: crosshair;
+}
+
+.image-editor__canvas {
+  touch-action: none;
+}
+
+.image-editor__error {
+  margin: 0 16px 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(225, 29, 72, 0.15);
+  color: #fecdd3;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .image-editor__text-editor {
@@ -6110,26 +6288,87 @@ a.btn {
 }
 
 .image-editor__sticker-empty {
+  grid-column: 1 / -1;
   font-size: 12.5px;
+  line-height: 1.5;
   color: rgba(255, 255, 255, 0.5);
-  padding: 4px 0;
+  padding: 10px 0;
 }
 
-.image-editor__subrow--stickers {
-  flex-wrap: nowrap;
+.image-editor__sticker-empty code {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11.5px;
+}
+
+/* Emoji / online-sticker source switch — mirrors WhatsApp's two-pill toggle
+   above its sticker grid. */
+.image-editor__sticker-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 10px auto 0;
+  padding: 3px;
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.image-editor__sticker-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.image-editor__sticker-tab--active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+/* A scrolling grid, not a single nowrap row — an online search returns dozens
+   of results and a one-line strip made them unreachable. */
+.image-editor__sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+  align-content: start;
+  justify-items: center;
+  max-height: 30vh;
+  overflow-y: auto;
+  padding: 12px 16px;
 }
 
 .image-editor__sticker-pick {
-  width: 34px;
-  height: 34px;
-  flex-shrink: 0;
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.08);
   border: none;
-  font-size: 20px;
+  font-size: 28px;
   display: grid;
   place-items: center;
   cursor: pointer;
+  padding: 0;
+}
+
+.image-editor__sticker-pick:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.image-editor__sticker-pick--img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
 }
 
 .image-editor__subrow {
@@ -6383,6 +6622,511 @@ a.btn {
     padding: 18px 16px;
   }
   .platform-nav__desc {
+    display: none;
+  }
+}
+
+/* ============================================================
+   Platform - full-page "Create a reseller" (deliberately a page, not a
+   modal: the white-label branding fields only make sense beside the live
+   preview of the reseller's home page, which needs the room).
+   ============================================================ */
+.back-btn {
+  margin-bottom: 14px;
+}
+
+.field__opt {
+  font-weight: 500;
+  color: var(--text-faint);
+}
+
+.reseller-create {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 22px 24px 24px;
+}
+
+.reseller-create__head {
+  margin-bottom: 18px;
+}
+
+.reseller-create__title {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.reseller-create__sub {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.reseller-create__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 30px;
+  align-items: start;
+}
+
+.reseller-create__section {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 4px 0 12px;
+}
+
+.reseller-create__form > .reseller-create__section:not(:first-child) {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.reseller-create__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.reseller-create__note {
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+.reseller-create__preview {
+  position: sticky;
+  top: 0;
+}
+
+.reseller-create__preview-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 10px;
+}
+
+.reseller-create__preview-note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* Theme colour swatches */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px var(--border) inset;
+  cursor: pointer;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  position: relative;
+}
+
+.swatch--active {
+  border-color: var(--text);
+}
+
+.swatch--custom {
+  background: var(--surface-2);
+  font-size: 14px;
+  line-height: 1;
+  overflow: hidden;
+}
+
+.swatch--custom input[type='color'] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* Logo upload row */
+.logo-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.logo-picker__img,
+.logo-picker__ph {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  object-fit: contain;
+  background: var(--surface);
+  display: grid;
+  place-items: center;
+  color: var(--text-faint);
+  border: 1px solid var(--border);
+}
+
+.logo-picker__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.logo-picker__btn {
+  border: none;
+  background: none;
+  padding: 0;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.logo-picker__btn:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.logo-picker__hint {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.logo-picker__remove {
+  border: none;
+  background: none;
+  color: var(--text-faint);
+  cursor: pointer;
+  padding: 6px;
+}
+
+.logo-picker__remove:hover {
+  color: var(--danger);
+}
+
+/* Resellers table brand cell */
+.reseller-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.reseller-cell__logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.reseller-cell__logo--mark {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  border: none;
+}
+
+/* ---- Live preview: a miniature of the app's own landing home page ---- */
+.bp {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+.bp__chrome {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.bp__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bp__url {
+  flex: 1;
+  margin-left: 6px;
+  background: var(--surface);
+  border-radius: 999px;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: center;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bp__site {
+  background: #f7f8fc;
+}
+
+.bp__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+}
+
+.bp__brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.bp__logo {
+  width: 16px;
+  height: 16px;
+  border-radius: 5px;
+  object-fit: contain;
+}
+
+.bp__logo--mark {
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.bp__brand-name {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.bp__nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.bp__nav span {
+  padding-bottom: 2px;
+}
+
+.bp__cta {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 999px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.bp__hero {
+  display: grid;
+  grid-template-columns: 1fr 0.85fr;
+  gap: 12px;
+  padding: 16px 14px 20px;
+  align-items: center;
+}
+
+.bp__pill {
+  display: inline-block;
+  font-size: 8.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+
+.bp__title {
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 800;
+  margin: 8px 0 0;
+  color: var(--text);
+}
+
+.bp__sub {
+  font-size: 9px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 6px 0 0;
+}
+
+.bp__btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.bp__btn {
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  border-radius: 999px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+
+.bp__btn--ghost {
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+
+.bp__ticks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 9px;
+  font-size: 8px;
+  color: var(--text-muted);
+}
+
+.bp__ticks span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+/* miniature product screenshot */
+.bp__shot {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px -12px rgba(15, 23, 42, 0.3);
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bp__shot-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.bp__shot-avatar {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bp__shot-line {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  display: block;
+}
+
+.bp__shot-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+
+.bp__shot-stat {
+  background: #f7f8fc;
+  border-radius: 5px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bp__shot-num {
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.bp__shot-body {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 5px;
+}
+
+.bp__shot-chart {
+  background: #f7f8fc;
+  border-radius: 5px;
+  padding: 5px;
+}
+
+.bp__shot-chart svg {
+  width: 100%;
+  height: 34px;
+  display: block;
+}
+
+.bp__shot-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  justify-content: center;
+}
+
+.bp__shot-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bp__shot-tick {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+  .reseller-create__grid {
+    grid-template-columns: 1fr;
+  }
+  .reseller-create__preview {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .reseller-create {
+    padding: 16px 14px 18px;
+  }
+  .bp__hero {
+    grid-template-columns: 1fr;
+  }
+  .bp__shot,
+  .bp__nav {
     display: none;
   }
 }

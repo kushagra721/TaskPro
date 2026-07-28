@@ -34,7 +34,10 @@ export default function MorePage() {
     { to: '/more/profile', label: 'My Profile', desc: 'Your name and account', Icon: UserIcon },
     {
       to: '/more/organizations',
-      label: 'Workspace',
+      // The current workspace's own name, not a generic "Workspace" label —
+      // falls back to the generic label only in the split second before
+      // `org` has loaded.
+      label: org?.name || 'Workspace',
       desc: 'Details & settings for your current workspace',
       Icon: BuildingIcon,
     },

@@ -224,6 +224,12 @@ export const groupsApi = {
     request(`/groups/${groupId}/messages`, { method: 'POST', body: { content, attachments } }),
   react: (groupId, messageId, emoji) =>
     request(`/groups/${groupId}/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } }),
+  editMessage: (groupId, messageId, content) =>
+    request(`/groups/${groupId}/messages/${messageId}`, { method: 'PATCH', body: { content } }),
+  /** "Delete for me" — hides it from this user only. */
+  hideMessage: (groupId, messageId) =>
+    request(`/groups/${groupId}/messages/${messageId}/hide`, { method: 'POST' }),
+  /** "Delete for everyone" — the hard delete. */
   deleteMessage: (groupId, messageId) =>
     request(`/groups/${groupId}/messages/${messageId}`, { method: 'DELETE' }),
   tasks: (groupId, params) => request(`/groups/${groupId}/tasks${qs(params)}`),
@@ -274,6 +280,33 @@ export const tasksApi = {
     request(`/tasks/${taskId}/attachments/${attachmentId}`, { method: 'DELETE' }),
 };
 
+// ---- Stickers (image editor's online sticker search, proxied via our API) ----
+export const stickersApi = {
+  search: (q) => request(`/stickers/search${qs({ q })}`),
+  /**
+   * Fetches a proxied sticker and returns it as a data URL.
+   *
+   * Not just `<img src={path}>`: the proxy endpoint requires auth and an
+   * `<img>` can't carry an Authorization header. Fetching it here also means
+   * fabric composites an inline data URL, so the editor's canvas stays
+   * same-origin and can always be exported.
+   */
+  async imageDataUrl(path) {
+    const headers = {};
+    const token = tokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${API_URL}${path}`, { headers });
+    if (!res.ok) throw new Error('Could not load that sticker');
+    const blob = await res.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  },
+};
+
 // ---- Platform (Super Admin / Reseller) ----
 export const platformApi = {
   requestOtp: (mobile) => platformRequest('/auth/login', { method: 'POST', body: { mobile }, auth: false }),
@@ -293,5 +326,28 @@ export const platformApi = {
   clients: {
     list: (resellerId) => platformRequest(`/clients${qs({ resellerId })}`),
     create: (payload) => platformRequest('/clients', { method: 'POST', body: payload }),
+  },
+  /** Multipart, so it bypasses `platformRequest`'s JSON wrapper — same shape as
+   *  `uploadsApi.upload` but on the platform credential lane. */
+  async upload(files) {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    const headers = {};
+    const token = platformTokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    let res;
+    try {
+      res = await fetch(`${API_URL}/platform/uploads`, { method: 'POST', headers, body: form });
+    } catch {
+      throw new Error('Cannot reach the server. Is the backend running?');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.message || 'Upload failed');
+      error.status = res.status;
+      throw error;
+    }
+    return data;
   },
 };

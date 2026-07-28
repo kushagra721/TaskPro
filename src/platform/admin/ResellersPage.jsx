@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { platformApi } from '../../api/client.js';
-import Modal from '../../components/Modal.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import { PlusIcon, UserIcon } from '../../components/icons.jsx';
 import { formatDate } from '../../utils/status.js';
 
 export default function ResellersPage() {
+  const navigate = useNavigate();
   const [resellers, setResellers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [createOpen, setCreateOpen] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -27,7 +27,7 @@ export default function ResellersPage() {
           <h1 className="page__title">Resellers</h1>
           <p className="page__subtitle">Create &amp; manage reseller accounts.</p>
         </div>
-        <button className="btn" onClick={() => setCreateOpen(true)}>
+        <button className="btn" onClick={() => navigate('/platform/admin/resellers/new')}>
           <PlusIcon size={16} /> Add reseller
         </button>
       </div>
@@ -58,8 +58,22 @@ export default function ResellersPage() {
               {resellers.map((r) => (
                 <tr key={r.id}>
                   <td>
-                    <div className="task-table__name">{r.brandName || r.name}</div>
-                    {r.brandName && <div className="muted" style={{ fontSize: 12.5 }}>{r.name}</div>}
+                    <div className="reseller-cell">
+                      {r.logoUrl ? (
+                        <img className="reseller-cell__logo" src={r.logoUrl} alt="" />
+                      ) : (
+                        <span
+                          className="reseller-cell__logo reseller-cell__logo--mark"
+                          style={{ background: r.themeColor || 'var(--primary)' }}
+                        >
+                          {(r.brandName || r.name || '?')[0].toUpperCase()}
+                        </span>
+                      )}
+                      <div>
+                        <div className="task-table__name">{r.brandName || r.name}</div>
+                        {r.brandName && <div className="muted" style={{ fontSize: 12.5 }}>{r.name}</div>}
+                      </div>
+                    </div>
                   </td>
                   <td className="nowrap">{r.loginMobile}</td>
                   <td>{r.email || '—'}</td>
@@ -72,92 +86,6 @@ export default function ResellersPage() {
         </div>
       )}
 
-      {createOpen && (
-        <CreateResellerModal
-          onClose={() => setCreateOpen(false)}
-          onCreated={() => {
-            setCreateOpen(false);
-            load();
-          }}
-        />
-      )}
     </div>
-  );
-}
-
-const THEME_COLORS = ['#6366f1', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#f59e0b', '#06b6d4', '#f43f5e'];
-
-function CreateResellerModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({ name: '', loginMobile: '', email: '', brandName: '', themeColor: THEME_COLORS[0] });
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const up = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setBusy(true);
-    try {
-      await platformApi.resellers.create(form);
-      onCreated();
-    } catch (err) {
-      setError(err.message || 'Could not create the reseller');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal title="Create a reseller" onClose={onClose}>
-      <form onSubmit={submit}>
-        {error && <div className="alert alert--error">{error}</div>}
-        <div className="row2">
-          <div className="field">
-            <label className="field__label">Reseller name <span className="req">*</span></label>
-            <input className="input" autoFocus value={form.name} onChange={up('name')} placeholder="Acme Digital" />
-          </div>
-          <div className="field">
-            <label className="field__label">Login mobile <span className="req">*</span></label>
-            <input className="input" value={form.loginMobile} onChange={up('loginMobile')} placeholder="9812345678" />
-          </div>
-        </div>
-        <div className="field">
-          <label className="field__label">Email (optional)</label>
-          <input className="input" type="email" value={form.email} onChange={up('email')} placeholder="owner@acme.com" />
-        </div>
-        <div className="field">
-          <label className="field__label">Brand name (optional)</label>
-          <input className="input" value={form.brandName} onChange={up('brandName')} placeholder="Acme AI" />
-        </div>
-        <div className="field">
-          <label className="field__label">Theme colour</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {THEME_COLORS.map((c) => (
-              <button
-                type="button"
-                key={c}
-                onClick={() => setForm((f) => ({ ...f, themeColor: c }))}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: c,
-                  border: form.themeColor === c ? '2px solid var(--text)' : '2px solid transparent',
-                  cursor: 'pointer',
-                }}
-                aria-label={c}
-              />
-            ))}
-          </div>
-        </div>
-        <div className="modal__actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button className="btn" type="submit" disabled={busy || !form.name.trim() || !form.loginMobile.trim()}>
-            {busy ? <span className="spinner" /> : 'Create reseller'}
-          </button>
-        </div>
-      </form>
-    </Modal>
   );
 }

@@ -48,6 +48,14 @@ export default function GroupsPage() {
   // Per-group completion rate, shown inline under each card. `reports` already
   // role-scopes this the same way the rest of the app does.
   const [groupProgress, setGroupProgress] = useState([]);
+  // Tab item counts (the "Groups (3)"-style badges below). `reports` already
+  // fetches org-wide project/client/member breakdowns for the progress bars,
+  // so their `.length` doubles as each tab's total count for free, with the
+  // same visibility scoping the tabs themselves already apply (e.g. a regular
+  // member's `members` count is co-membership-scoped). Groups uses the live
+  // `groups` selector instead of this snapshot, since it's already loaded and
+  // kept current by sockets.
+  const [tabCounts, setTabCounts] = useState({ projects: 0, clients: 0, members: 0 });
   const isMobile = useIsMobile();
   const orgPageRef = useRef(null);
 
@@ -65,8 +73,14 @@ export default function GroupsPage() {
     if (!orgId) return;
     organizationsApi
       .reports(orgId)
-      .then((r) => setGroupProgress(r.groups))
-      .catch(() => setGroupProgress([]));
+      .then((r) => {
+        setGroupProgress(r.groups);
+        setTabCounts({ projects: r.projects.length, clients: r.clients.length, members: r.members.length });
+      })
+      .catch(() => {
+        setGroupProgress([]);
+        setTabCounts({ projects: 0, clients: 0, members: 0 });
+      });
   }, [orgId]);
 
   if (!org) {
@@ -96,17 +110,17 @@ export default function GroupsPage() {
 
       <div className="groups-tabbar">
         <button className={`tab ${tab === 'groups' ? 'tab--active' : ''}`} onClick={() => setTab('groups')}>
-          Groups
+          Groups <span className="tab__count">{groups.length}</span>
         </button>
         <button className={`tab ${tab === 'projects' ? 'tab--active' : ''}`} onClick={() => setTab('projects')}>
-          Projects
+          Projects <span className="tab__count">{tabCounts.projects}</span>
         </button>
         <button className={`tab ${tab === 'clients' ? 'tab--active' : ''}`} onClick={() => setTab('clients')}>
-          Clients
+          Clients <span className="tab__count">{tabCounts.clients}</span>
         </button>
         {isAdmin && (
           <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>
-            Members
+            Members <span className="tab__count">{tabCounts.members}</span>
           </button>
         )}
       </div>

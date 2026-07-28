@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -8,7 +8,6 @@ import {
 } from "../store/slices/chatSlice.js";
 import { selectAllTyping } from "../store/slices/messageSlice.js";
 import { selectCurrentOrgId } from "../store/slices/orgSlice.js";
-import { useRegisterHeaderActions } from "../layout/HeaderActions.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import OrgBadge from "../components/OrgBadge.jsx";
 import { ChatIcon, SearchIcon, XIcon } from "../components/icons.jsx";
@@ -49,12 +48,15 @@ export default function ChatsLayout() {
     if (orgId) dispatch(fetchChats(orgId));
   }, [orgId, dispatch]);
 
-  const onSearch = useCallback((v) => setSearch(v), []);
-  useRegisterHeaderActions({ search, onSearch });
+  // Deliberately does NOT register a Topbar search action: unlike the other
+  // list pages, Chats keeps its own WhatsApp-style search box inside the list
+  // pane on mobile too, and a header search icon would be a second, duplicate
+  // entry point for the exact same filter.
 
-  const filtered = chats
+  // The All/Unread pill counts reflect the current search, not the raw list —
+  // "All (2)" should agree with the two rows actually on screen.
+  const searched = chats
     .filter((c) => c.name.toLowerCase().includes(search.trim().toLowerCase()))
-    .filter((c) => filter !== "unread" || c.unreadCount > 0)
     .slice()
     .sort((a, b) => {
       const at = a.lastMessage
@@ -65,19 +67,20 @@ export default function ChatsLayout() {
         : 0;
       return bt - at;
     });
+  const unreadCount = searched.filter((c) => c.unreadCount > 0).length;
+  const filtered =
+    filter === "unread" ? searched.filter((c) => c.unreadCount > 0) : searched;
 
   return (
-    <div className={`page page--full ${groupId ? "chats-detail-open" : ""}`}>
-      {!groupId && (
-        <div className="page__head">
-          <h1
-            style={{ color: "#8b5cf6", fontSize: "30px" }}
-            className="page__title"
-          >
-            Chats
-          </h1>
+    <div className="page page--full">
+      {/* Same head as Home/Hub/Tasks — the shared responsive rules hide it on
+          mobile, where the Topbar carries the page title instead. */}
+      <div className="page__head page__head--row">
+        <div className="page__head-text">
+          <h1 className="page__title">Chats</h1>
+          <p className="page__subtitle">Your group conversations, all in one place.</p>
         </div>
-      )}
+      </div>
 
       <div className={`chats-layout ${groupId ? "chats-layout--detail" : ""}`}>
         <div className="chats-layout__list">
@@ -105,13 +108,13 @@ export default function ChatsLayout() {
               className={`chat-filter-btn ${filter === "all" ? "chat-filter-btn--active" : ""}`}
               onClick={() => setFilter("all")}
             >
-              All
+              All ({searched.length})
             </button>
             <button
               className={`chat-filter-btn ${filter === "unread" ? "chat-filter-btn--active" : ""}`}
               onClick={() => setFilter("unread")}
             >
-              Unread
+              Unread ({unreadCount})
             </button>
           </div>
 

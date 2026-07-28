@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadsApi } from '../api/client.js';
 import { CameraIcon } from './icons.jsx';
-import ImageEditorModal from './ImageEditorModal.jsx';
+import LazyImageEditorModal from './LazyImageEditorModal.jsx';
 
 const LIMIT_MB = 3; // matches the shared /uploads image limit
 
@@ -66,7 +66,7 @@ export default function PhotoPicker({ children, onUploaded, disabled }) {
       {error && <div className="field__error">{error}</div>}
 
       {editing && (
-        <ImageEditorModal file={editing} label="Edit photo" onCancel={() => setEditing(null)} onSave={upload} />
+        <LazyImageEditorModal file={editing} label="Edit photo" onCancel={() => setEditing(null)} onSave={upload} />
       )}
     </div>
   );

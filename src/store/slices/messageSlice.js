@@ -14,8 +14,24 @@ export const sendMessage = createAsyncThunk(
   }
 );
 
+export const editMessage = createAsyncThunk(
+  'messages/edit',
+  async ({ groupId, messageId, content }) => {
+    const res = await groupsApi.editMessage(groupId, messageId, content);
+    return { groupId, message: res.message };
+  }
+);
+
+/** "Delete for everyone" — hard delete, broadcast to the whole group. */
 export const deleteMessage = createAsyncThunk('messages/delete', async ({ groupId, messageId }) => {
   await groupsApi.deleteMessage(groupId, messageId);
+  return { groupId, messageId };
+});
+
+/** "Delete for me" — hidden for this user only; drops out of the local list
+ *  the same way, but nobody else's view changes. */
+export const hideMessage = createAsyncThunk('messages/hide', async ({ groupId, messageId }) => {
+  await groupsApi.hideMessage(groupId, messageId);
   return { groupId, messageId };
 });
 
@@ -43,6 +59,15 @@ const messageSlice = createSlice({
       if (!bucket) return;
       const msg = bucket.items.find((m) => m.id === messageId);
       if (msg) msg.reactions = reactions;
+    },
+    // From the 'message:updated' socket event (an edit). Replaces the row in
+    // place so its position in the list — and therefore the scroll — doesn't move.
+    messageUpdated: (state, action) => {
+      const { groupId, id } = action.payload;
+      const bucket = state.byGroup[groupId];
+      if (!bucket) return;
+      const i = bucket.items.findIndex((m) => m.id === id);
+      if (i !== -1) bucket.items[i] = action.payload;
     },
     messageDeleted: (state, action) => {
       const { groupId, id } = action.payload;
@@ -88,15 +113,31 @@ const messageSlice = createSlice({
         const bucket = state.byGroup[action.meta.arg.groupId];
         if (bucket) bucket.pending = bucket.pending.filter((p) => p.clientId !== action.meta.arg.clientId);
       })
+      .addCase(editMessage.fulfilled, (state, action) => {
+        const bucket = state.byGroup[action.payload.groupId];
+        if (!bucket) return;
+        const i = bucket.items.findIndex((m) => m.id === action.payload.message.id);
+        if (i !== -1) bucket.items[i] = action.payload.message;
+      })
       .addCase(deleteMessage.fulfilled, (state, action) => {
+        const bucket = state.byGroup[action.payload.groupId];
+        if (bucket) bucket.items = bucket.items.filter((m) => m.id !== action.payload.messageId);
+      })
+      .addCase(hideMessage.fulfilled, (state, action) => {
         const bucket = state.byGroup[action.payload.groupId];
         if (bucket) bucket.items = bucket.items.filter((m) => m.id !== action.payload.messageId);
       });
   },
 });
 
-export const { messageReceived, reactionUpdated, messageDeleted, messagePending, typingReceived } =
-  messageSlice.actions;
+export const {
+  messageReceived,
+  reactionUpdated,
+  messageUpdated,
+  messageDeleted,
+  messagePending,
+  typingReceived,
+} = messageSlice.actions;
 export default messageSlice.reducer;
 
 export const selectMessages = (groupId) => (s) => s.messages.byGroup[groupId]?.items || [];
