@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Modal from './Modal.jsx';
+import QuotaGate from './QuotaGate.jsx';
 import Select from './Select.jsx';
 import DateField from './DateField.jsx';
 import AttachmentPicker from './AttachmentPicker.jsx';
@@ -62,6 +63,8 @@ export default function CreateTaskModal({
   });
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
+  // Set when the API refuses on quota — swaps the form for the upgrade dialog.
+  const [quotaInfo, setQuotaInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   // "+ Add <query>" from the Project/Client/Group dropdowns opens these inline.
   const [newProjectName, setNewProjectName] = useState(null);
@@ -119,11 +122,22 @@ export default function CreateTaskModal({
       onCreated?.();
       onClose();
     } catch (err) {
+      // 402 + `quotaExceeded` = the workspace is out of plan quota. That's a
+      // billing problem with its own call to action, not a form error, so it
+      // gets the upgrade dialog rather than a red line under the fields.
+      if (err?.status === 402 && err?.fields?.quotaExceeded) {
+        setQuotaInfo(err.fields);
+        return;
+      }
       setError(err.message || 'Could not create task');
     } finally {
       setLoading(false);
     }
   };
+
+  // Rendered over the form so the user's input survives — closing the gate
+  // returns them to the filled-in task, ready to retry after upgrading.
+  if (quotaInfo) return <QuotaGate info={quotaInfo} onClose={onClose} />;
 
   return (
     <Modal title="New task" onClose={onClose}>

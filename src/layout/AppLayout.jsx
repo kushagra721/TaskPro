@@ -24,6 +24,9 @@ const TITLES = [
   { match: '/chats/', title: 'Chat' },
   { match: '/chats', title: 'Chats' },
   { match: '/more/profile', title: 'My Profile' },
+  // More specific prefix first — `/more/billing/plans` must not match `/more/billing`.
+  { match: '/more/billing/plans', title: 'Manage Plan' },
+  { match: '/more/billing', title: 'Plans & Billing' },
   { match: '/more/members/', title: 'Member Details' },
   { match: '/more/storage', title: 'Storage' },
   { match: '/more/organizations', title: 'Manage Workspaces' },

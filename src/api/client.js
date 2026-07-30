@@ -18,6 +18,17 @@ export const platformTokenStore = {
   clear: () => localStorage.removeItem(PLATFORM_TOKEN_KEY),
 };
 
+/**
+ * Absolute URL for a server-rendered document (invoice/receipt), from the
+ * API-relative path the backend returns.
+ *
+ * The backend deliberately sends a path, not a URL: it can't know whether it's
+ * being reached on localhost or the deployed host, and it must never guess the
+ * *frontend* address (which is what produced broken links before). `API_URL`
+ * here is the single source of truth for where the API lives.
+ */
+export const documentHref = (path) => `${API_URL.replace(/\/$/, '')}${path}`;
+
 /** Build a `?a=1&b=2` string from an object, skipping empty values. */
 const qs = (params = {}) => {
   const sp = new URLSearchParams();
@@ -135,6 +146,22 @@ export const organizationsApi = {
   activities: (orgId, params) => request(`/organizations/${orgId}/activities${qs(params)}`),
   reports: (orgId, params) => request(`/organizations/${orgId}/reports${qs(params)}`),
   storageReport: (orgId) => request(`/organizations/${orgId}/storage`),
+  // Plans & billing — admin/owner only (requireOrgAdmin server-side).
+  billing: (orgId) => request(`/organizations/${orgId}/billing`),
+  billingPlans: (orgId) => request(`/organizations/${orgId}/billing/plans`),
+  updateBillingDetails: (orgId, payload) =>
+    request(`/organizations/${orgId}/billing/details`, { method: 'PATCH', body: payload }),
+  changePlan: (orgId, planId) => request(`/organizations/${orgId}/billing/plan`, { method: 'POST', body: { planId } }),
+  cancelPlan: (orgId) => request(`/organizations/${orgId}/billing/cancel`, { method: 'POST' }),
+  topup: (orgId, tasks) => request(`/organizations/${orgId}/billing/topup`, { method: 'POST', body: { tasks } }),
+  // Razorpay: open an order, then settle it. The server prices the order and
+  // verifies the signature — neither amount nor success is trusted from here.
+  // Read-only pricing for the confirm dialog — writes nothing, so an abandoned
+  // dialog doesn't leave a "not completed" payment behind.
+  quote: (orgId, payload) => request(`/organizations/${orgId}/billing/quote`, { method: 'POST', body: payload }),
+  checkout: (orgId, payload) => request(`/organizations/${orgId}/billing/checkout`, { method: 'POST', body: payload }),
+  verifyPayment: (orgId, payload) =>
+    request(`/organizations/${orgId}/billing/verify`, { method: 'POST', body: payload }),
   changeRole: (orgId, userId, role) =>
     request(`/organizations/${orgId}/members/${userId}/role`, { method: 'PATCH', body: { role } }),
   removeMember: (orgId, userId) =>
@@ -317,10 +344,15 @@ export const platformApi = {
   resellers: {
     list: () => platformRequest('/resellers'),
     create: (payload) => platformRequest('/resellers', { method: 'POST', body: payload }),
+    get: (id) => platformRequest(`/resellers/${id}`),
+    update: (id, payload) => platformRequest(`/resellers/${id}`, { method: 'PATCH', body: payload }),
+    remove: (id) => platformRequest(`/resellers/${id}`, { method: 'DELETE' }),
   },
   domains: {
     list: () => platformRequest('/domains'),
     create: (payload) => platformRequest('/domains', { method: 'POST', body: payload }),
+    get: (id) => platformRequest(`/domains/${id}`),
+    update: (id, payload) => platformRequest(`/domains/${id}`, { method: 'PATCH', body: payload }),
     checkDns: (id) => platformRequest(`/domains/${id}/check-dns`, { method: 'POST' }),
     activateSsl: (id) => platformRequest(`/domains/${id}/activate-ssl`, { method: 'POST' }),
     remove: (id) => platformRequest(`/domains/${id}`, { method: 'DELETE' }),
@@ -334,6 +366,29 @@ export const platformApi = {
     list: (params) => platformRequest(`/members${qs(params)}`),
   },
   navCounts: () => platformRequest('/nav-counts'),
+  // Manage Mandates — reseller-only, always scoped server-side to the caller's
+  // own reseller (the id comes from the token, never from these params).
+  mandates: {
+    list: (params) => platformRequest(`/mandates${qs(params)}`),
+    cancel: (id) => platformRequest(`/mandates/${id}/cancel`, { method: 'POST' }),
+  },
+  transactions: {
+    list: (params) => platformRequest(`/transactions${qs(params)}`),
+  },
+  invoices: { list: (params) => platformRequest(`/invoices${qs(params)}`) },
+  receipts: { list: (params) => platformRequest(`/receipts${qs(params)}`) },
+  gateway: {
+    get: () => platformRequest('/payment-gateway'),
+    update: (payload) => platformRequest('/payment-gateway', { method: 'PATCH', body: payload }),
+  },
+  signup: (payload) => platformRequest('/auth/signup', { method: 'POST', body: payload, auth: false }),
+  verifySignup: (email, code) =>
+    platformRequest('/auth/verify-signup', { method: 'POST', body: { email, code }, auth: false }),
+  onboarding: (payload) => platformRequest('/onboarding', { method: 'POST', body: payload }),
+  // Global (platform) plans — the set a reseller is subscribed to. Readable by
+  // either role; distinct from `plans.list()`, which returns whichever set the
+  // caller *owns*.
+  globalPlans: () => platformRequest('/global-plans'),
   plans: {
     list: () => platformRequest('/plans'),
     create: (payload) => platformRequest('/plans', { method: 'POST', body: payload }),

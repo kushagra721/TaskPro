@@ -5,6 +5,8 @@ import { selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlic
 import { usersApi, organizationsApi, authApi } from '../../api/client.js';
 import Avatar from '../../components/Avatar.jsx';
 import PhotoPicker from '../../components/PhotoPicker.jsx';
+import BillingDetailsModal from '../../components/BillingDetailsModal.jsx';
+import { isAdminRole } from '../../utils/role.js';
 import { formatDate } from '../../utils/status.js';
 import { prettySize } from '../../utils/fileSize.js';
 
@@ -19,6 +21,42 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState(null);
   const [photoError, setPhotoError] = useState('');
+
+  // Workspace billing details (admin/owner only — the API is requireOrgAdmin).
+  const isOrgAdmin = isAdminRole(org?.role);
+  const [billingDetails, setBillingDetails] = useState(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingSaving, setBillingSaving] = useState(false);
+  const [billingError, setBillingError] = useState('');
+  const [editingBilling, setEditingBilling] = useState(false);
+
+  useEffect(() => {
+    if (!orgId || !isOrgAdmin) return;
+    setBillingLoading(true);
+    organizationsApi
+      .billing(orgId)
+      .then((res) => setBillingDetails(res.billing.billingDetails))
+      .catch((err) => setBillingError(err.message || 'Could not load billing details'))
+      .finally(() => setBillingLoading(false));
+  }, [orgId, isOrgAdmin]);
+
+  const hasBillingDetails =
+    !!billingDetails &&
+    Object.entries(billingDetails).some(([, v]) => !!v);
+
+  const saveBillingDetails = async (form) => {
+    setBillingSaving(true);
+    setBillingError('');
+    try {
+      const res = await organizationsApi.updateBillingDetails(orgId, form);
+      setBillingDetails(res.billingDetails);
+      setEditingBilling(false);
+    } catch (err) {
+      setBillingError(err.message || 'Could not save the billing details');
+    } finally {
+      setBillingSaving(false);
+    }
+  };
 
   // Set/update password — OTP-confirmed, no current-password step.
   const [pwStage, setPwStage] = useState('idle'); // 'idle' | 'otp'
@@ -169,6 +207,58 @@ export default function ProfilePage() {
           {saving ? <span className="spinner" /> : 'Save changes'}
         </button>
       </form>
+
+      {/* Billing details are **workspace**-scoped, not personal — the same
+          person can own two workspaces billed to two different companies — so
+          this card is labelled with the workspace name and only shown to an
+          admin/owner, matching `requireOrgAdmin` on the API. It shares
+          `BillingDetailsModal` with the Plans & Billing page so the two entry
+          points can't drift. */}
+      {isOrgAdmin && (
+        <div className="card-form" style={{ marginTop: 20 }}>
+          <h3 className="field__label" style={{ fontSize: 15, marginBottom: 4 }}>
+            Billing details · {org?.name}
+          </h3>
+          <p className="field__hint" style={{ marginBottom: 16 }}>
+            These appear on this workspace&apos;s GST invoices. Each workspace has its own.
+          </p>
+
+          {billingError && <div className="alert alert--error">{billingError}</div>}
+
+          {billingLoading ? (
+            <span className="spinner" />
+          ) : (
+            <>
+              <div className="billing-details__text" style={{ marginBottom: 14 }}>
+                {hasBillingDetails ? (
+                  <>
+                    <strong>{billingDetails.businessName || '—'}</strong>
+                    <span>{[billingDetails.addressLine1, billingDetails.addressLine2].filter(Boolean).join(', ')}</span>
+                    <span>{[billingDetails.city, billingDetails.pincode].filter(Boolean).join(', ')}</span>
+                    <span>{billingDetails.state}</span>
+                    {billingDetails.gstin && <span className="muted">GSTIN {billingDetails.gstin}</span>}
+                  </>
+                ) : (
+                  <span className="muted">Not added yet.</span>
+                )}
+              </div>
+              <button className="btn btn--ghost" type="button" onClick={() => setEditingBilling(true)}>
+                {hasBillingDetails ? 'Edit billing details' : 'Add billing details'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {editingBilling && (
+        <BillingDetailsModal
+          details={billingDetails}
+          busy={billingSaving}
+          error={billingError}
+          onSave={saveBillingDetails}
+          onClose={() => setEditingBilling(false)}
+        />
+      )}
 
       <div className="card-form" style={{ marginTop: 20 }}>
         <h3 className="field__label" style={{ fontSize: 15, marginBottom: 4 }}>Password</h3>

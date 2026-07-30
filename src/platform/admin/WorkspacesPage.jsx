@@ -119,7 +119,7 @@ export default function WorkspacesPage() {
                       <td className="task-table__name">{w.name}</td>
                       <td>
                         <div>{w.owner?.name || '—'}</div>
-                        <div className="muted" style={{ fontSize: 12.5 }}>{w.owner?.email}</div>
+                        {/* <div className="muted" style={{ fontSize: 12.5 }}>{w.owner?.email}</div> */}
                       </td>
                       <td>{w.domain || '—'}</td>
                       <td>

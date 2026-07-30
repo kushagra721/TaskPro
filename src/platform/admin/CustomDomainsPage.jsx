@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { platformApi } from '../../api/client.js';
+import ConfirmModal from '../../components/ConfirmModal.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Fab from '../../components/Fab.jsx';
 import { PlusIcon, LinkIcon, TrashIcon, RotateIcon, ExternalLinkIcon, ArrowRightIcon } from '../../components/icons.jsx';
@@ -24,6 +25,10 @@ export default function CustomDomainsPage() {
   const [domains, setDomains] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
+  // The domain pending deletion — also what gates the confirm modal open.
+  const [target, setTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const load = (spinner) => {
     spinner(true);
@@ -35,9 +40,25 @@ export default function CustomDomainsPage() {
 
   useEffect(() => load(setLoading), []);
 
-  const remove = async (id) => {
-    await platformApi.domains.remove(id);
-    load(setReloading);
+  const askRemove = (e, d) => {
+    // The row itself opens the detail page — don't navigate on a delete click.
+    e.stopPropagation();
+    setDeleteError('');
+    setTarget(d);
+  };
+
+  const remove = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await platformApi.domains.remove(target.id);
+      setTarget(null);
+      load(setReloading);
+    } catch (err) {
+      setDeleteError(err.message || 'Could not remove the domain');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -88,7 +109,11 @@ export default function CustomDomainsPage() {
                 </thead>
                 <tbody>
                   {domains.map((d) => (
-                    <tr key={d.id}>
+                    <tr
+                      key={d.id}
+                      className="row-clickable"
+                      onClick={() => navigate(`/platform/admin/domains/${d.id}`)}
+                    >
                       <td>
                         <div className="task-table__name">{d.domain}</div>
                         {d.status === 'LIVE' && (
@@ -97,6 +122,7 @@ export default function CustomDomainsPage() {
                             href={`https://${d.domain}`}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLinkIcon size={12} /> Open
                           </a>
@@ -109,12 +135,19 @@ export default function CustomDomainsPage() {
                         {d.status !== 'LIVE' && (
                           <button
                             className="btn btn--sm"
-                            onClick={() => navigate(`/platform/admin/domains/${d.id}/setup`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/platform/admin/domains/${d.id}/setup`);
+                            }}
                           >
                             Continue setup <ArrowRightIcon size={14} />
                           </button>
                         )}
-                        <button className="icon-btn icon-btn--danger" onClick={() => remove(d.id)} aria-label="Remove domain">
+                        <button
+                          className="icon-btn icon-btn--danger"
+                          onClick={(e) => askRemove(e, d)}
+                          aria-label="Remove domain"
+                        >
                           <TrashIcon size={15} />
                         </button>
                       </td>
@@ -126,7 +159,11 @@ export default function CustomDomainsPage() {
 
             <div className="task-cards">
               {domains.map((d) => (
-                <div key={d.id} className="tcard">
+                <div
+                  key={d.id}
+                  className="tcard row-clickable"
+                  onClick={() => navigate(`/platform/admin/domains/${d.id}`)}
+                >
                   <div className="tcard__row">
                     <div className="tcard__title">{d.domain}</div>
                     <span className={`status-pill ${STATUS_PILL[d.status]} tcard__del`}>{STATUS_LABEL[d.status]}</span>
@@ -139,6 +176,7 @@ export default function CustomDomainsPage() {
                         href={`https://${d.domain}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ExternalLinkIcon size={12} /> Open
                       </a>
@@ -150,12 +188,19 @@ export default function CustomDomainsPage() {
                       {d.status !== 'LIVE' && (
                         <button
                           className="btn btn--sm"
-                          onClick={() => navigate(`/platform/admin/domains/${d.id}/setup`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/platform/admin/domains/${d.id}/setup`);
+                          }}
                         >
                           Continue <ArrowRightIcon size={14} />
                         </button>
                       )}
-                      <button className="icon-btn icon-btn--danger" onClick={() => remove(d.id)} aria-label="Remove domain">
+                      <button
+                        className="icon-btn icon-btn--danger"
+                        onClick={(e) => askRemove(e, d)}
+                        aria-label="Remove domain"
+                      >
                         <TrashIcon size={15} />
                       </button>
                     </div>
@@ -166,6 +211,18 @@ export default function CustomDomainsPage() {
           </>
         )}
       </div>
+
+      {target && (
+        <ConfirmModal
+          title="Remove this domain?"
+          confirmLabel="Remove domain"
+          message={`${target.domain} will stop routing signups to ${target.reseller?.name || 'its reseller'}. Existing workspaces are unaffected. This can't be undone.`}
+          busy={deleting}
+          error={deleteError}
+          onConfirm={remove}
+          onClose={() => setTarget(null)}
+        />
+      )}
 
       <Fab onClick={() => navigate('/platform/admin/domains/new')} label="Add domain" raised />
     </div>

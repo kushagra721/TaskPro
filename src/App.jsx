@@ -22,6 +22,8 @@ import MorePage from './pages/more/MorePage.jsx';
 import ProfilePage from './pages/more/ProfilePage.jsx';
 import UserProfilePage from './pages/more/UserProfilePage.jsx';
 import StorageReportPage from './pages/more/StorageReportPage.jsx';
+import BillingPage from './pages/more/BillingPage.jsx';
+import ManagePlanPage from './pages/more/ManagePlanPage.jsx';
 import ManageOrganizationsPage from './pages/more/ManageOrganizationsPage.jsx';
 import ManageProjectsPage from './pages/more/ManageProjectsPage.jsx';
 import ManageTasksPage from './pages/more/ManageTasksPage.jsx';
@@ -94,6 +96,11 @@ export default function App() {
         {/* Manage Members moved into the Groups page's Members tab (admin-only). */}
         <Route path="/more/members" element={<Navigate to="/groups" replace />} />
         <Route path="/more/members/:userId" element={<UserProfilePage />} />
+        {/* Plans & billing — admin/owner only, matching requireOrgAdmin on the
+            API. The More menu hides the entry for members; the page itself
+            surfaces the 403 rather than silently rendering empty. */}
+        <Route path="/more/billing" element={<BillingPage />} />
+        <Route path="/more/billing/plans" element={<ManagePlanPage />} />
         <Route path="/more/storage" element={<StorageReportPage />} />
         <Route path="/more/organizations" element={<ManageOrganizationsPage />} />
         <Route path="/more/projects" element={<ManageProjectsPage />} />

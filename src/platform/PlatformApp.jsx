@@ -1,19 +1,29 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PlatformLogin from './PlatformLogin.jsx';
+import PlatformSignup from './PlatformSignup.jsx';
+import PlatformOnboarding from './PlatformOnboarding.jsx';
 import PlatformProtectedRoute from './PlatformProtectedRoute.jsx';
 import PlatformLayout from './PlatformLayout.jsx';
 import PlatformPlaceholderPage from './PlatformPlaceholderPage.jsx';
 import PlatformProfilePage from './PlatformProfilePage.jsx';
 import ResellersPage from './admin/ResellersPage.jsx';
 import CreateResellerPage from './admin/CreateResellerPage.jsx';
+import ResellerDetailPage from './admin/ResellerDetailPage.jsx';
 import CustomDomainsPage from './admin/CustomDomainsPage.jsx';
 import AddDomainPage from './admin/AddDomainPage.jsx';
+import DomainDetailPage from './admin/DomainDetailPage.jsx';
 import AdminWorkspacesPage from './admin/WorkspacesPage.jsx';
 import AdminMembersPage from './admin/MembersPage.jsx';
 import ResellerWorkspacesPage from './reseller/ResellerWorkspacesPage.jsx';
 import ResellerMembersPage from './reseller/MembersPage.jsx';
-import PlansPage from './reseller/PlansPage.jsx';
-import CreatePlanPage from './reseller/CreatePlanPage.jsx';
+import MandatesPage from './reseller/MandatesPage.jsx';
+import TransactionsPage from './reseller/TransactionsPage.jsx';
+import PaymentGatewayPage from './reseller/PaymentGatewayPage.jsx';
+import DocumentsPage from './reseller/DocumentsPage.jsx';
+// Shared by both portals — see plansBase.js for how one component serves both
+// route trees (global plans for a Super Admin, own plans for a Reseller).
+import PlansPage from './PlansPage.jsx';
+import CreatePlanPage from './CreatePlanPage.jsx';
 import {
   BuildingIcon,
   ShieldIcon,
@@ -36,7 +46,7 @@ const ADMIN_NAV_GROUPS = [
       { to: '/platform/admin/domains', label: 'Domains', key: 'domains' },
       { to: '/platform/admin/workspaces', label: 'Workspaces', key: 'workspaces' },
       { to: '/platform/admin/members', label: 'Members', key: 'members' },
-      { to: '/platform/admin/plans', label: 'Plans' },
+      { to: '/platform/admin/plans', label: 'Plans', key: 'plans' },
     ],
   },
   {
@@ -60,7 +70,7 @@ const RESELLER_NAV_GROUPS = [
     children: [
       { to: '/platform/reseller/workspaces', label: 'Workspaces', key: 'workspaces' },
       { to: '/platform/reseller/members', label: 'Members', key: 'members' },
-      { to: '/platform/reseller/plans', label: 'Plans' },
+      { to: '/platform/reseller/plans', label: 'Plans', key: 'plans' },
     ],
   },
   {
@@ -103,6 +113,19 @@ export default function PlatformApp() {
   return (
     <Routes>
       <Route path="/platform/login" element={<PlatformLogin />} />
+      <Route path="/platform/signup" element={<PlatformSignup />} />
+
+      {/* Post-signup setup — authenticated but outside the portal shell, since
+          the reseller has no plan yet. Reseller-only for the same reason a
+          Super Admin never needs it. */}
+      <Route
+        path="/platform/onboarding"
+        element={
+          <PlatformProtectedRoute role="RESELLER">
+            <PlatformOnboarding />
+          </PlatformProtectedRoute>
+        }
+      />
 
       <Route
         path="/platform/admin"
@@ -114,16 +137,19 @@ export default function PlatformApp() {
       >
         <Route index element={<Navigate to="resellers" replace />} />
         <Route path="resellers" element={<ResellersPage />} />
+        {/* `new` before `:id` — literal segments must win over the param. */}
         <Route path="resellers/new" element={<CreateResellerPage />} />
+        <Route path="resellers/:id" element={<ResellerDetailPage />} />
+        <Route path="resellers/:id/edit" element={<CreateResellerPage />} />
         <Route path="domains" element={<CustomDomainsPage />} />
         <Route path="domains/new" element={<AddDomainPage />} />
+        <Route path="domains/:id" element={<DomainDetailPage />} />
         <Route path="domains/:id/setup" element={<AddDomainPage />} />
         <Route path="workspaces" element={<AdminWorkspacesPage />} />
         <Route path="members" element={<AdminMembersPage />} />
-        <Route
-          path="plans"
-          element={<PlatformPlaceholderPage icon={<FolderIcon size={30} />} title="Plans" description="Subscription plans for resellers and their clients." />}
-        />
+        <Route path="plans" element={<PlansPage />} />
+        <Route path="plans/new" element={<CreatePlanPage />} />
+        <Route path="plans/:planId/edit" element={<CreatePlanPage />} />
         <Route
           path="email"
           element={<PlatformPlaceholderPage icon={<MailIcon size={30} />} title="Email" description="Platform-wide email templates and delivery settings." />}
@@ -153,30 +179,15 @@ export default function PlatformApp() {
         <Route path="plans" element={<PlansPage />} />
         <Route path="plans/new" element={<CreatePlanPage />} />
         <Route path="plans/:planId/edit" element={<CreatePlanPage />} />
-        <Route
-          path="mandates"
-          element={<PlatformPlaceholderPage icon={<CreditCardIcon size={30} />} title="Mandates" description="Recurring-payment mandates for your clients." />}
-        />
-        <Route
-          path="transactions"
-          element={<PlatformPlaceholderPage icon={<CreditCardIcon size={30} />} title="Transactions" description="Mandate-driven transaction history." />}
-        />
+        <Route path="mandates" element={<MandatesPage />} />
+        <Route path="transactions" element={<TransactionsPage />} />
         <Route
           path="projections"
           element={<PlatformPlaceholderPage icon={<CreditCardIcon size={30} />} title="Projections" description="Upcoming/expected billing projections." />}
         />
-        <Route
-          path="payment-gateway"
-          element={<PlatformPlaceholderPage icon={<CreditCardIcon size={30} />} title="Payment Gateway" description="Payment gateway configuration." />}
-        />
-        <Route
-          path="invoices"
-          element={<PlatformPlaceholderPage icon={<ReceiptIcon size={30} />} title="Invoices" description="Invoices issued to your clients." />}
-        />
-        <Route
-          path="receipts"
-          element={<PlatformPlaceholderPage icon={<ReceiptIcon size={30} />} title="Receipts" description="Payment receipts for your clients." />}
-        />
+        <Route path="payment-gateway" element={<PaymentGatewayPage />} />
+        <Route path="invoices" element={<DocumentsPage />} />
+        <Route path="receipts" element={<DocumentsPage />} />
         <Route
           path="email"
           element={<PlatformPlaceholderPage icon={<MailIcon size={30} />} title="Email" description="Your branded email templates and delivery settings." showSettings />}

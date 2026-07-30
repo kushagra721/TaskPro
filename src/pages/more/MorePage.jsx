@@ -5,6 +5,7 @@ import {
   BuildingIcon,
   MailIcon,
   ActivityIcon,
+  CreditCardIcon,
   DatabaseIcon,
   ReportsIcon,
   LogoutIcon,
@@ -43,10 +44,19 @@ export default function MorePage() {
     },
     { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your workspace', Icon: ActivityIcon },
     { to: '/more/reports', label: 'Reports', desc: 'Progress across your workspace', Icon: ReportsIcon },
-    // Storage report is admin-only. Member management moved to the Groups
-    // page's Members tab (also admin-only).
+    // Plans & Billing and the Storage report are both admin-only — mirroring
+    // `requireOrgAdmin` on their APIs, so a member never sees an entry that
+    // would 403 on open.
     ...(isAdmin
-      ? [{ to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon }]
+      ? [
+          {
+            to: '/more/billing',
+            label: 'Plans & Billing',
+            desc: 'Your plan, task quota and invoice details',
+            Icon: CreditCardIcon,
+          },
+          { to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon },
+        ]
       : []),
     {
       to: '/more/invitations',

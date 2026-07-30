@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { platformApi } from '../../api/client.js';
-import EmptyState from '../../components/EmptyState.jsx';
-import Fab from '../../components/Fab.jsx';
-import Switch from '../../components/Switch.jsx';
-import { PlusIcon, FolderIcon, RotateIcon, EditIcon, CopyIcon, TrashIcon, CheckIcon, XIcon } from '../../components/icons.jsx';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { platformApi } from '../api/client.js';
+import { plansBase, plansCopy } from './plansBase.js';
+import ConfirmModal from '../components/ConfirmModal.jsx';
+import EmptyState from '../components/EmptyState.jsx';
+import Fab from '../components/Fab.jsx';
+import Switch from '../components/Switch.jsx';
+import { PlusIcon, FolderIcon, RotateIcon, EditIcon, CopyIcon, TrashIcon, CheckIcon, XIcon } from '../components/icons.jsx';
 
 const limitLabel = (n) => (n === -1 ? 'Unlimited' : n.toLocaleString());
 const storageLabel = (mb) => (mb === -1 ? 'Unlimited' : mb >= 1024 ? `${(mb / 1024).toFixed(mb % 1024 ? 1 : 0)} GB` : `${mb} MB`);
@@ -17,16 +19,28 @@ const ADD_ONS = [
   { key: 'customBranding', label: 'Custom branding' },
 ];
 
-/** Reseller's "Plans" tab — a real subscription-plan builder for their own
- *  client workspaces (Super Admin has no equivalent; this is Reseller-only,
- *  both in the UI and server-side via requireReseller). Table + edit actions
- *  up top, a public-facing "Plan comparison" card grid below, matching the
- *  reference design's two-section layout. */
+/** The "Plans" tab, shared by **both** portals — a Super Admin manages the
+ *  platform's global plans (sold to resellers), a Reseller manages their own
+ *  (sold to their client workspaces). `GET /platform/plans` returns whichever
+ *  set matches the caller's role, so the component itself is identical; only
+ *  the URL prefix and a little copy differ (see `plansBase.js`). Table + edit
+ *  actions up top, a public-facing "Plan comparison" card grid below, matching
+ *  the reference design's two-section layout. */
 export default function PlansPage() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = plansBase(pathname);
+  const copy = plansCopy(pathname);
+  // Only global (Super Admin) plans have subscribers — a reseller's own plans
+  // are held by client workspaces, which aren't tracked against a plan yet.
+  const showSubscribers = base.startsWith('/platform/admin');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
+  // The plan pending deletion — also what gates the confirm modal open.
+  const [target, setTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const load = (spinner) => {
     spinner(true);
@@ -51,8 +65,23 @@ export default function PlansPage() {
     platformApi.plans.duplicate(plan.id).then(() => load(setLoading));
   };
 
-  const remove = (plan) => {
-    platformApi.plans.remove(plan.id).then(() => load(setLoading));
+  const askRemove = (plan) => {
+    setDeleteError('');
+    setTarget(plan);
+  };
+
+  const remove = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await platformApi.plans.remove(target.id);
+      setTarget(null);
+      load(setReloading);
+    } catch (err) {
+      setDeleteError(err.message || 'Could not delete the plan');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const comparisonPlans = plans.filter((p) => p.isPublic && p.isActive);
@@ -63,13 +92,13 @@ export default function PlansPage() {
         <div className="platform-list-card__head">
           <div className="platform-list-card__head-text">
             <h2 className="platform-list-card__title">Plans</h2>
-            <p className="platform-list-card__subtitle">Create and manage subscription plans.</p>
+            <p className="platform-list-card__subtitle">{copy.subtitle}</p>
           </div>
           <div className="platform-list-card__actions">
             <button className="btn btn--ghost btn--sm" onClick={() => load(setReloading)} disabled={loading || reloading}>
               <RotateIcon size={15} className={reloading ? 'spin' : ''} /> Reload
             </button>
-            <button className="btn btn--sm hide-mobile" onClick={() => navigate('/platform/reseller/plans/new')}>
+            <button className="btn btn--sm hide-mobile" onClick={() => navigate(`${base}/new`)}>
               <PlusIcon size={16} /> New plan
             </button>
           </div>
@@ -83,7 +112,7 @@ export default function PlansPage() {
           <EmptyState
             icon={<FolderIcon size={30} />}
             title="No plans yet"
-            description="Create your first subscription plan — it'll show up here and on the comparison cards below."
+            description={copy.emptyDescription}
           />
         ) : (
           <>
@@ -94,9 +123,9 @@ export default function PlansPage() {
                     <th>Name</th>
                     <th>Monthly</th>
                     <th>Yearly</th>
-                    {/* <th>Users</th> */}
                     <th>Tasks / Active user</th>
                     <th>Storage / Active user</th>
+                    {showSubscribers && <th>Resellers</th>}
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -110,23 +139,23 @@ export default function PlansPage() {
                       </td>
                       <td>{money(p.monthlyPrice)}</td>
                       <td>{money(p.yearlyPrice)}</td>
-                      {/* <td>{limitLabel(p.maxUsers)}</td> */}
                       <td>{limitLabel(p.maxTasksPerUser)}</td>
                       <td>{storageLabel(p.maxStorageMbPerUser)}</td>
+                      {showSubscribers && <td>{p.subscriberCount}</td>}
                       <td>
                         <span className={`status-pill ${p.isActive ? 'status-pill--completed' : 'status-pill--neutral'}`}>
                           {p.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td className="table-actions">
-                        <button className="btn btn--ghost btn--sm" onClick={() => navigate(`/platform/reseller/plans/${p.id}/edit`)}>
+                        <button className="btn btn--ghost btn--sm" onClick={() => navigate(`${base}/${p.id}/edit`)}>
                           <EditIcon size={14} /> Edit
                         </button>
                         <button className="icon-btn" onClick={() => duplicate(p)} aria-label="Duplicate plan">
                           <CopyIcon size={15} />
                         </button>
                         <Switch checked={p.isActive} onChange={() => toggleActive(p)} />
-                        <button className="icon-btn icon-btn--danger" onClick={() => remove(p)} aria-label="Delete plan">
+                        <button className="icon-btn icon-btn--danger" onClick={() => askRemove(p)} aria-label="Delete plan">
                           <TrashIcon size={15} />
                         </button>
                       </td>
@@ -149,10 +178,10 @@ export default function PlansPage() {
                   <div className="tcard__tags">
                     <span>{money(p.monthlyPrice)}/mo</span>
                     <span>{money(p.yearlyPrice)}/yr</span>
-                    <span>{limitLabel(p.maxUsers)} users</span>
+                    <span>{limitLabel(p.maxTasksPerUser)} tasks / member</span>
                   </div>
                   <div className="tcard__foot">
-                    <button className="btn btn--ghost btn--sm" onClick={() => navigate(`/platform/reseller/plans/${p.id}/edit`)}>
+                    <button className="btn btn--ghost btn--sm" onClick={() => navigate(`${base}/${p.id}/edit`)}>
                       <EditIcon size={14} /> Edit
                     </button>
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -160,7 +189,7 @@ export default function PlansPage() {
                         <CopyIcon size={15} />
                       </button>
                       <Switch checked={p.isActive} onChange={() => toggleActive(p)} />
-                      <button className="icon-btn icon-btn--danger" onClick={() => remove(p)} aria-label="Delete plan">
+                      <button className="icon-btn icon-btn--danger" onClick={() => askRemove(p)} aria-label="Delete plan">
                         <TrashIcon size={15} />
                       </button>
                     </div>
@@ -174,7 +203,7 @@ export default function PlansPage() {
 
       {comparisonPlans.length > 0 && (
         <div className="plan-compare">
-          <h3 className="plan-compare__title">Plan comparison</h3>
+          <h3 className="plan-compare__title">{copy.comparisonTitle}</h3>
           <div className="plan-compare__grid">
             {comparisonPlans.map((p) => {
               const bullets = (p.featureBullets || '').split('\n').map((l) => l.trim()).filter(Boolean);
@@ -199,10 +228,6 @@ export default function PlansPage() {
                     </ul>
                   )}
                   <dl className="plan-spec-table">
-                    {/* <div className="plan-spec-table__row">
-                      <dt>Users</dt>
-                      <dd>{limitLabel(p.maxUsers)}</dd>
-                    </div> */}
                     <div className="plan-spec-table__row">
                       <dt>Tasks / Active user</dt>
                       <dd>{limitLabel(p.maxTasksPerUser)}</dd>
@@ -231,7 +256,7 @@ export default function PlansPage() {
                         )}
                       </dd>
                     </div>
-                    <div className="plan-spec-table__row">
+                    <div className="plan-spec-table__row plan-spec-table__row--clamp">
                       <dt>Add-ons</dt>
                       <dd>{addOns.length > 0 ? addOns.join(', ') : '—'}</dd>
                     </div>
@@ -243,7 +268,19 @@ export default function PlansPage() {
         </div>
       )}
 
-      <Fab onClick={() => navigate('/platform/reseller/plans/new')} label="New plan" raised />
+      {target && (
+        <ConfirmModal
+          title="Delete this plan?"
+          confirmLabel="Delete plan"
+          message={`"${target.name}" will be removed from your plan list and the public comparison cards. This can't be undone.`}
+          busy={deleting}
+          error={deleteError}
+          onConfirm={remove}
+          onClose={() => setTarget(null)}
+        />
+      )}
+
+      <Fab onClick={() => navigate(`${base}/new`)} label="New plan" raised />
     </div>
   );
 }

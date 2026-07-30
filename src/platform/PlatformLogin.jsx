@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import OtpInput from '../components/OtpInput.jsx';
 import {
   loginPlatformWithPassword,
   requestPlatformOtp,
   verifyPlatformOtp,
+  verifyPlatformSignup,
 } from '../store/slices/platformAuthSlice.js';
 
 const RESEND_SECONDS = 30;
@@ -43,6 +44,9 @@ export default function PlatformLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_SECONDS);
+  // Set when a password login hits an unverified self-signup: the OTP step then
+  // consumes the *signup* code rather than a login code (different purposes).
+  const [verifyingSignup, setVerifyingSignup] = useState(false);
 
   useEffect(() => {
     if (step !== 'otp' || cooldown <= 0) return undefined;
@@ -50,13 +54,21 @@ export default function PlatformLogin() {
     return () => clearTimeout(t);
   }, [step, cooldown]);
 
-  const goToPortal = (platformUser) => {
-    navigate(platformUser.role === 'SUPER_ADMIN' ? '/platform/admin' : '/platform/reseller', { replace: true });
+  /** `needsOnboarding` is computed server-side per sign-in (not a JWT claim, so
+   *  it can't go stale) — a self-signed-up reseller with no plan yet is sent to
+   *  finish setup instead of into a half-configured portal. */
+  const goToPortal = (res) => {
+    if (res.needsOnboarding) {
+      navigate('/platform/onboarding', { replace: true });
+      return;
+    }
+    navigate(res.platformUser.role === 'SUPER_ADMIN' ? '/platform/admin' : '/platform/reseller', { replace: true });
   };
 
   const switchMode = (next) => {
     setMode(next);
     setStep('start');
+    setVerifyingSignup(false);
     setError('');
   };
 
@@ -66,7 +78,17 @@ export default function PlatformLogin() {
     setLoading(true);
     try {
       const res = await dispatch(loginPlatformWithPassword({ email: email.trim(), password })).unwrap();
-      goToPortal(res.platformUser);
+      if (res.requiresVerification) {
+        // Unverified self-signup — the backend already reissued the signup
+        // code, so drop straight into the OTP step in signup-verify mode.
+        setVerifyingSignup(true);
+        setMode('otp');
+        setCooldown(RESEND_SECONDS);
+        setCode('');
+        setStep('otp');
+        return;
+      }
+      goToPortal(res);
     } catch (err) {
       setError(err.message || 'Incorrect email or password');
     } finally {
@@ -95,8 +117,9 @@ export default function PlatformLogin() {
     setError('');
     setLoading(true);
     try {
-      const res = await dispatch(verifyPlatformOtp({ email: email.trim(), code: finalCode })).unwrap();
-      goToPortal(res.platformUser);
+      const thunk = verifyingSignup ? verifyPlatformSignup : verifyPlatformOtp;
+      const res = await dispatch(thunk({ email: email.trim(), code: finalCode })).unwrap();
+      goToPortal(res);
     } catch (err) {
       setError(err.message || 'Incorrect code');
       setCode('');
@@ -211,17 +234,24 @@ export default function PlatformLogin() {
           )}
 
           {!(mode === 'otp' && step === 'otp') && (
-            <p className="auth__foot">
-              {mode === 'password' ? (
-                <button type="button" className="link-btn" onClick={() => switchMode('otp')}>
-                  Login with OTP instead
-                </button>
-              ) : (
-                <button type="button" className="link-btn" onClick={() => switchMode('password')}>
-                  Login with password instead
-                </button>
-              )}
-            </p>
+            <>
+              <p className="auth__foot">
+                {mode === 'password' ? (
+                  <button type="button" className="link-btn" onClick={() => switchMode('otp')}>
+                    Login with OTP instead
+                  </button>
+                ) : (
+                  <button type="button" className="link-btn" onClick={() => switchMode('password')}>
+                    Login with password instead
+                  </button>
+                )}
+              </p>
+              {/* Resellers can self-register; a Super Admin account is seeded,
+                  never signed up — hence the reseller-specific wording. */}
+              <p className="auth__foot">
+                Want to resell Task Pro? <Link className="link-btn" to="/platform/signup">Create a reseller account</Link>
+              </p>
+            </>
           )}
         </form>
       </div>

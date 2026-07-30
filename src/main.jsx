@@ -19,7 +19,14 @@ import './styles/global.css';
 // normal client functionality.
 const PLATFORM_HOSTNAME = 'supertasks.dialerp.com';
 const hasPortalParam = new URLSearchParams(window.location.search).has('portal');
-const isPlatformMode = window.location.hostname === PLATFORM_HOSTNAME || hasPortalParam;
+// The path check is what makes a **reload survive**. `?portal=` is only ever
+// present on the first URL someone types; the moment they sign in and the
+// router pushes `/platform/admin/...`, the query string is gone — so on reload
+// this file used to fall through to the normal <App/>, which looked exactly
+// like being logged out. Every platform route lives under `/platform`, so the
+// pathname is the reliable signal.
+const isPlatformPath = window.location.pathname.startsWith('/platform');
+const isPlatformMode = window.location.hostname === PLATFORM_HOSTNAME || hasPortalParam || isPlatformPath;
 
 if (isPlatformMode) {
   store.dispatch(bootstrapPlatform());

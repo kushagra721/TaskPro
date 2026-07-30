@@ -225,6 +225,14 @@ export const DownloadIcon = ({ size, ...p }) => (
   </svg>
 );
 
+/** Used for the "View" action beside a document's "Download". */
+export const EyeIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" />
+    <circle cx="12" cy="12" r="2.75" />
+  </svg>
+);
+
 export const VideoIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <rect x="3" y="5" width="13" height="14" rx="2" />

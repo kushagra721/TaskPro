@@ -396,6 +396,14 @@ a.btn {
   border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
+/* Amber middle ground — a consequence the user should read before confirming,
+   but not a failure (e.g. "renaming this domain resets its SSL setup"). */
+.alert--warn {
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+}
+
 /* ---------- Footer / links ---------- */
 .auth__foot {
   margin-top: 24px;
@@ -3950,16 +3958,26 @@ a.btn {
   margin: 0 0 14px;
 }
 
+/* `align-items: stretch` (the grid default — deliberately NOT `start` here)
+   is what keeps every card the same height regardless of how much its own
+   bullet list / Add-ons line wraps; the card is then a flex column with the
+   spec table pinned to the bottom via `margin-top: auto`, so the tables line
+   up across cards instead of floating at different heights. */
 .plan-compare__grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 18px;
-  align-items: start;
 }
 
 .plan-compare__grid .landing__pricing-card {
   max-width: none;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-compare__grid .landing__pricing-list {
+  margin-bottom: 0;
 }
 
 .plan-spec-table {
@@ -3968,6 +3986,20 @@ a.btn {
   border-top: 1px solid var(--border);
   display: grid;
   gap: 9px;
+}
+
+/* Bottom-pinned inside the flex card (see .plan-compare__grid above). */
+.plan-compare__grid .plan-spec-table {
+  margin-top: auto;
+}
+
+/* The Add-ons value is the one row whose text can run long enough to stagger
+   card heights — clamp it to two lines rather than letting it grow. */
+.plan-spec-table__row--clamp dd {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .plan-spec-table__row {
@@ -7875,12 +7907,1455 @@ a.btn {
   }
 }
 
+/* View + Download pair on an invoice/receipt row. */
+.doc-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Out-of-quota dialog shown when task creation is refused on billing grounds. */
+.quota-gate {
+  text-align: center;
+  padding: 4px 0 8px;
+}
+
+.quota-gate__icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  margin-bottom: 14px;
+}
+
+.quota-gate__lead {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.quota-gate__sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+/* ---------- Payment confirm dialog (upgrade / top-up) ----------
+   Review-before-you-pay: item row, priced breakdown, rollover callout, the
+   invoice address, then Cancel / Pay now. Every figure comes from the server's
+   quote — nothing here is computed client-side. */
+.payconf__sub {
+  margin: -6px 0 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.payconf__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.payconf__item-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: var(--primary);
+  color: #fff;
+}
+
+/* min-width:0 so a long plan name truncates instead of shoving the price out. */
+.payconf__item-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.payconf__item-name {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.payconf__item-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.payconf__item-price {
+  font-size: 17px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.payconf__box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.payconf__box-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.payconf__box-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: block;
+  margin-bottom: 10px;
+}
+
+.payconf__box-head .payconf__box-label {
+  margin-bottom: 0;
+}
+
+.payconf__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13.5px;
+  padding: 4px 0;
+}
+
+.payconf__row--muted {
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+
+.payconf__row--total {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 15.5px;
+  font-weight: 800;
+}
+
+.payconf__rollover {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  border-radius: var(--radius);
+  padding: 13px 15px;
+  margin-bottom: 14px;
+}
+
+.payconf__rollover-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #10b981;
+  color: #fff;
+}
+
+.payconf__rollover-title {
+  font-weight: 800;
+  font-size: 13.5px;
+  color: #047857;
+}
+
+.payconf__rollover-sub {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.payconf__billed {
+  display: grid;
+  gap: 2px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.payconf__billed strong {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.payconf__note {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 4px;
+}
+
+.payconf__note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: #10b981;
+}
+
+/* The primary action carries the amount, so let it take the space it needs. */
+.payconf__pay {
+  flex: 1.4;
+  justify-content: center;
+}
+
+/* ---------- Reseller portal: Manage Mandates ----------
+   Shared by the Mandates and Transactions pages — the four headline stat cards,
+   the secondary chip row under them, and the status dot/label pairs used in
+   both tables. */
+.mandate-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.mandate-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+
+.mandate-stat__label {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.mandate-stat__value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-top: 4px;
+  /* Long money values ("₹1,10,599.32") must shrink rather than overflow the
+     card on a narrow column. */
+  overflow-wrap: anywhere;
+}
+
+.mandate-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.mandate-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 13px;
+}
+
+.mandate-chip strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.mandate-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mandate-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.mandate-dot--active {
+  background: #10b981;
+}
+
+.mandate-dot--pending {
+  background: #f59e0b;
+}
+
+.mandate-dot--paused {
+  background: #6366f1;
+}
+
+.mandate-dot--cancelled,
+.mandate-dot--failed {
+  background: #ef4444;
+}
+
+/* The "Cancelled by the customer…" line under a status — muted and wrapping,
+   unlike the status itself. */
+.mandate-substatus {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  line-height: 1.35;
+  margin-top: 3px;
+  max-width: 230px;
+}
+
+.txn-ref {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+/* Date-range presets on the Transactions page. */
+.range-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.range-pill {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 15px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.range-pill:hover {
+  border-color: var(--primary);
+}
+
+.range-pill--active {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.range-note {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+/* ---------- Reseller portal: Payment Gateway ---------- */
+.gateway-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+
+.gateway-card--row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.gateway-card__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.gateway-card__title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 800;
+}
+
+.gateway-card__note {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 620px;
+}
+
+.gateway-card--row .gateway-card__note {
+  margin-bottom: 0;
+}
+
+.gateway-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.gateway-state--live {
+  color: #047857;
+}
+
+.gateway-state--live .mandate-dot {
+  background: #10b981;
+}
+
+.gateway-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.gateway-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  margin-top: 10px;
+  min-width: 0;
+}
+
+.gateway-copy__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.gateway-copy__value {
+  display: block;
+  font-size: 12.5px;
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.gateway-footnote {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+@media (max-width: 900px) {
+  .mandate-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .mandate-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .gateway-card--row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .gateway-toggle {
+    align-items: flex-start;
+  }
+}
+
+/* ---------- Plans & Billing (client app, More tab) ----------
+   The only gradient-on-brand-colour surface in the client app — deliberate, to
+   set the billing hero apart from the ordinary `.panel` cards around it, and
+   matching the reference design. Everything below it reuses `.panel`. */
+.billing-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-radius: var(--radius-lg);
+  padding: 28px 30px;
+  margin-bottom: 18px;
+  color: #fff;
+  background: linear-gradient(120deg, var(--primary) 0%, var(--primary-2, #7c3aed) 55%, #0ea5e9 100%);
+  box-shadow: var(--shadow);
+}
+
+.billing-hero__main {
+  flex: 1;
+  min-width: 240px;
+}
+
+.billing-hero__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+.billing-hero__big {
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1.05;
+  margin: 10px 0 12px;
+}
+
+.billing-hero__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.billing-hero__pill {
+  font-size: 12.5px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.16);
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+.billing-hero__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* White-on-gradient, so these override `.btn`'s own colours rather than
+   inheriting the page's primary fill (which would vanish into the banner). */
+.billing-hero__btn {
+  background: #fff;
+  color: var(--primary);
+}
+
+.billing-hero__btn:hover {
+  background: #fff;
+  filter: brightness(0.95);
+}
+
+.billing-hero__btn--ghost {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.billing-hero__btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.billing-hero__side {
+  text-align: center;
+}
+
+.billing-hero__ring {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.billing-hero__ring svg {
+  width: 100%;
+  height: 100%;
+  /* Start the arc at 12 o'clock instead of 3. */
+  transform: rotate(-90deg);
+}
+
+.billing-hero__ring-track,
+.billing-hero__ring-value {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+.billing-hero__ring-track {
+  stroke: rgba(255, 255, 255, 0.22);
+}
+
+.billing-hero__ring-value {
+  stroke: #fff;
+  transition: stroke-dashoffset 0.4s ease;
+}
+
+.billing-hero__ring-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.billing-hero__ring-text strong {
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.billing-hero__ring-text span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.billing-hero__side-note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  opacity: 0.9;
+}
+
+.billing-plan {
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  /* Accent rail, matching the reference's left-bordered current-plan card. */
+  border-left: 4px solid var(--primary);
+}
+
+.billing-plan__row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.billing-plan__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+}
+
+.billing-plan__text {
+  min-width: 0;
+}
+
+.billing-plan__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.billing-plan__name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 2px 0 6px;
+}
+
+.billing-plan__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.billing-plan__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.billing-plan__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.billing-plan__cancel {
+  margin-top: 10px;
+  color: var(--text-faint);
+}
+
+.billing-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.billing-stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 18px 16px;
+}
+
+.billing-stat__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+  margin-bottom: 14px;
+}
+
+.billing-stat__label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.billing-stat__value {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-top: 3px;
+}
+
+.billing-stat__value small {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.billing-stat__bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.billing-stat__bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+.billing-stat__sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.billing-section-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0 0 12px;
+}
+
+.billing-details {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+}
+
+.billing-details__text {
+  display: grid;
+  gap: 3px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.billing-details__text strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+/* Transaction-kind chip. Reuses the status-pill palette rather than inventing
+   a third set of semantic colours. */
+.billing-kind {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.billing-kind--plan_change {
+  background: rgba(99, 102, 241, 0.14);
+  color: var(--primary);
+}
+
+.billing-kind--topup {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.billing-kind--plan_cancel {
+  background: rgba(244, 63, 94, 0.12);
+  color: #be123c;
+}
+
+/* ---------- Manage plan (plan picker) ---------- */
+.planpick-banner {
+  border-radius: var(--radius-lg);
+  padding: 26px 28px;
+  margin-bottom: 18px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(120deg, var(--primary) 0%, var(--primary-2, #7c3aed) 60%, #0ea5e9 100%);
+}
+
+.planpick-banner__tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.18);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+
+.planpick-banner__title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 12px 0 8px;
+}
+
+.planpick-banner__sub {
+  margin: 0 auto;
+  max-width: 560px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  opacity: 0.92;
+}
+
+.planpick-banner__facts {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.planpick-banner__facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.planpick {
+  padding: 22px;
+}
+
+.planpick__head {
+  margin-bottom: 18px;
+}
+
+.planpick__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.planpick__sub {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* `align-items: stretch` (the default) keeps every card the same height even
+   when one plan lists more features — same reasoning as the platform portal's
+   `.plan-compare__grid`. */
+.planpick__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.planpick__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px 20px 20px;
+}
+
+.planpick__card--current {
+  border-color: #10b981;
+}
+
+.planpick__card--popular {
+  border-color: var(--primary);
+}
+
+.planpick__flag {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 11px;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.planpick__flag--current {
+  background: #10b981;
+}
+
+.planpick__flag--popular {
+  background: var(--primary);
+}
+
+.planpick__card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.planpick__card-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.planpick__card-name {
+  font-size: 15.5px;
+  font-weight: 800;
+}
+
+.planpick__card-kind {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.planpick__price {
+  font-size: 27px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.planpick__price small {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.planpick__quota {
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  margin-bottom: 14px;
+}
+
+.planpick__quota-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.planpick__quota-main strong {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.planpick__quota-rate {
+  display: block;
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* `flex: 1` pushes the button to the bottom of every card, so the CTA row
+   lines up across the grid regardless of feature-list length. */
+.planpick__features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  align-content: start;
+}
+
+.planpick__features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.planpick__features li svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.planpick__check {
+  color: #059669;
+}
+
+.planpick__btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.planpick__foot {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  .billing-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .billing-hero {
+    padding: 22px 18px;
+    gap: 18px;
+  }
+
+  .billing-hero__big {
+    font-size: 42px;
+  }
+
+  /* The ring is decorative once the numbers are already spelled out in the
+     pills above it — drop it rather than shrink it to illegibility. */
+  .billing-hero__side {
+    display: none;
+  }
+
+  .billing-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .billing-details {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .planpick-banner__title {
+    font-size: 21px;
+  }
+
+  .planpick {
+    padding: 16px 14px;
+  }
+}
+
+/* ---------- Reseller self-signup onboarding ----------
+   A standalone full-page step outside the portal shell (no sidebar/tab bar),
+   since the reseller has no plan yet and the portal would look half-built. */
+.onboarding {
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 40px 20px 60px;
+  overflow-y: auto;
+}
+
+.onboarding__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 32px;
+}
+
+.onboarding__plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+/* A real <button> (not a div) so it's keyboard-reachable and announces its
+   pressed state — it is a radio group in effect. */
+.onboarding__plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 16px 14px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text);
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.onboarding__plan:hover {
+  border-color: var(--primary);
+}
+
+.onboarding__plan--selected {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.onboarding__plan-check {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.onboarding__plan--selected .onboarding__plan-check {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.onboarding__plan-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.onboarding__plan-price {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.onboarding__plan-price small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.onboarding__plan-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+/* The spec table's own top border already separates it — trim its margin so a
+   compact plan tile doesn't get tall. */
+.onboarding__plan .plan-spec-table {
+  margin-top: 12px;
+  padding-top: 12px;
+  gap: 6px;
+}
+
+@media (max-width: 720px) {
+  .onboarding {
+    padding: 20px 12px 40px;
+  }
+
+  .onboarding__inner {
+    padding: 20px 16px;
+    border: none;
+    box-shadow: none;
+    background: none;
+  }
+}
+
+/* Opt-in affordance for a list row/tile that opens a detail page. `.task-table
+   tbody tr` already has this; the mobile `.tcard` variant does not. */
+.row-clickable {
+  cursor: pointer;
+}
+
+.tcard.row-clickable:hover {
+  border-color: var(--primary);
+}
+
+/* ---------- Platform detail pages (reseller / custom domain) ----------
+   Shared by ResellerDetailPage and DomainDetailPage: an identity header card,
+   then `.panel.platform-list-card` sections holding `.pdetail__list`
+   definition lists. Deliberately NOT the wizard's `.domain-wizard__*` classes
+   — these are read-first pages, not step flows. */
+.pdetail__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.pdetail__logo {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.pdetail__logo--mark {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 800;
+  font-size: 20px;
+}
+
+/* min-width:0 so a long email truncates instead of pushing the action buttons
+   off the card (same flex trap as the mobile tiles). */
+.pdetail__head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pdetail__title {
+  font-size: 19px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.pdetail__sub {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdetail__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* No `align-items: start` — the default `stretch` is what keeps the Account and
+   Billing cards the same height even though Billing has one extra row (or an
+   empty state instead of a list). Each card is then a flex column so its own
+   list fills the shared height rather than leaving a gap under a short card. */
+.pdetail__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.pdetail__card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* `align-content: start` (not `stretch`) so the rows keep their natural
+   spacing and the leftover height falls at the bottom — stretching them would
+   space Account's 6 rows differently from Billing's 7 and break the alignment
+   the equal height is there to create. */
+.pdetail__card .pdetail__list {
+  flex: 1;
+  align-content: start;
+}
+
+.pdetail__colour-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pdetail__colour-field input[type='color'] {
+  width: 42px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pdetail__colour-field .input {
+  flex: 1;
+}
+
+.pdetail__list {
+  margin: 0;
+  display: grid;
+  gap: 11px;
+}
+
+.pdetail__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  font-size: 13.5px;
+}
+
+.pdetail__row dt {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pdetail__row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pdetail__colour {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pdetail__swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.pdetail__domains {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pdetail__domains li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.pdetail__domains li:last-child {
+  border-bottom: none;
+}
+
+.pdetail__domain-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.pdetail__domain-name:hover {
+  color: var(--primary);
+}
+
+@media (max-width: 720px) {
+  /* Stack label above value — side-by-side rows get unreadably cramped once a
+     long value (address, GSTIN, email) has to share the line. */
+  .pdetail__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .pdetail__row dd {
+    text-align: left;
+  }
+
+  .pdetail__actions {
+    width: 100%;
+  }
+
+  .pdetail__actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 /* Reseller "Client Management" stat cards row. */
 .platform-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
   margin-bottom: 18px;
+}
+
+/* The reseller detail page shows three stats, not four — without this they'd
+   each take a quarter and leave a dead column. */
+.platform-stats--3 {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .platform-stat {

@@ -16,9 +16,17 @@ export const fetchTaskDetail = createAsyncThunk('tasks/fetchDetail', async (task
   return res.task;
 });
 
-export const createTask = createAsyncThunk('tasks/create', async ({ groupId, ...payload }) => {
-  const res = await groupsApi.createTask(groupId, payload);
-  return { groupId, task: res.task };
+export const createTask = createAsyncThunk('tasks/create', async ({ groupId, ...payload }, { rejectWithValue }) => {
+  try {
+    const res = await groupsApi.createTask(groupId, payload);
+    return { groupId, task: res.task };
+  } catch (err) {
+    // `unwrap()` normally throws a SerializedError, which keeps only
+    // name/message/stack — the billing details (`status: 402`,
+    // `fields.quotaExceeded`) would be lost, and the caller couldn't tell a
+    // quota block apart from any other failure. rejectWithValue preserves them.
+    return rejectWithValue({ message: err.message, status: err.status, fields: err.fields });
+  }
 });
 
 export const updateTask = createAsyncThunk('tasks/update', async ({ taskId, ...payload }) => {

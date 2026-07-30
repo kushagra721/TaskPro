@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { platformApi } from '../../api/client.js';
-import Switch from '../../components/Switch.jsx';
-import { ArrowLeftIcon, PlusIcon } from '../../components/icons.jsx';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { platformApi } from '../api/client.js';
+import { plansBase } from './plansBase.js';
+import Switch from '../components/Switch.jsx';
+import { ArrowLeftIcon, PlusIcon } from '../components/icons.jsx';
 
 const DEFAULT_FORM = {
   name: '',
@@ -10,7 +11,6 @@ const DEFAULT_FORM = {
   description: '',
   monthlyPrice: 0,
   yearlyPrice: 0,
-  maxUsers: -1,
   maxTasksPerUser: -1,
   maxStorageMbPerUser: -1,
   dataExport: false,
@@ -33,13 +33,17 @@ const ADD_ONS = [
 
 /** Full-page create/edit form — deliberately not a modal (per explicit
  *  instruction), mirroring the platform's other full-page forms
- *  (`CreateResellerPage.jsx`). One component serves both
- *  `/platform/reseller/plans/new` (no `planId`) and
- *  `/platform/reseller/plans/:planId/edit` — the latter loads the existing
- *  plan via the list endpoint (no dedicated get-by-id route, same convention
- *  `AddDomainPage.jsx` already uses) and pre-fills the form. */
+ *  (`CreateResellerPage.jsx`). Serves **four** routes: `plans/new` and
+ *  `plans/:planId/edit` under each of the two portals (a Super Admin editing a
+ *  global plan, a Reseller editing their own). The fields are identical and the
+ *  API scopes by role, so the only difference is the URL prefix, derived from
+ *  the pathname via `plansBase`. In edit mode the plan is loaded via the list
+ *  endpoint (no dedicated get-by-id route, same convention `AddDomainPage.jsx`
+ *  already uses) and pre-fills the form. */
 export default function CreatePlanPage() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const base = plansBase(pathname);
   const { planId } = useParams();
   const isEdit = Boolean(planId);
 
@@ -64,7 +68,6 @@ export default function CreatePlanPage() {
           description: plan.description || '',
           monthlyPrice: plan.monthlyPrice,
           yearlyPrice: plan.yearlyPrice,
-          maxUsers: plan.maxUsers,
           maxTasksPerUser: plan.maxTasksPerUser,
           maxStorageMbPerUser: plan.maxStorageMbPerUser,
           dataExport: plan.dataExport,
@@ -96,7 +99,7 @@ export default function CreatePlanPage() {
       } else {
         await platformApi.plans.create(payload);
       }
-      navigate('/platform/reseller/plans');
+      navigate(base);
     } catch (err) {
       setError(err.message || 'Could not save the plan');
     } finally {
@@ -116,7 +119,7 @@ export default function CreatePlanPage() {
 
   return (
     <div className="page">
-      <button className="btn btn--ghost btn--sm back-btn" onClick={() => navigate('/platform/reseller/plans')}>
+      <button className="btn btn--ghost btn--sm back-btn" onClick={() => navigate(base)}>
         <ArrowLeftIcon size={15} /> Back to plans
       </button>
 
@@ -164,29 +167,30 @@ export default function CreatePlanPage() {
         </div>
 
         <div className="reseller-create__section">Usage limits</div>
-        <p className="field__hint">Tasks and storage are per user. Use -1 for unlimited.</p>
+        {/* There is deliberately NO seat cap — a plan never limits how many
+            members a workspace may have. Both allowances below are per active
+            member, so a bigger team simply gets more. */}
+        <p className="field__hint">
+          Per active member — a workspace&apos;s allowance grows with its team. Use -1 for unlimited. Plans don&apos;t
+          cap how many members a workspace can have.
+        </p>
         <div className="row2">
-          {/* <div className="field">
-            <label className="field__label">Users</label>
-            <input className="input" type="number" value={form.maxUsers} onChange={upNum('maxUsers')} />
-            <p className="field__hint">-1 = unlimited</p>
-          </div> */}
           <div className="field">
-            <label className="field__label">Tasks / user</label>
+            <label className="field__label">Tasks / active member</label>
             <input className="input" type="number" value={form.maxTasksPerUser} onChange={upNum('maxTasksPerUser')} />
             <p className="field__hint">-1 = unlimited</p>
           </div>
-            <div className="field">
-          <label className="field__label">Storage / user (MB)</label>
-          <input className="input" type="number" value={form.maxStorageMbPerUser} onChange={upNum('maxStorageMbPerUser')} />
-          <p className="field__hint">-1 = unlimited</p>
+          <div className="field">
+            <label className="field__label">Storage / active member (MB)</label>
+            <input
+              className="input"
+              type="number"
+              value={form.maxStorageMbPerUser}
+              onChange={upNum('maxStorageMbPerUser')}
+            />
+            <p className="field__hint">-1 = unlimited</p>
+          </div>
         </div>
-        </div>
-        {/* <div className="field">
-          <label className="field__label">Storage / user (MB)</label>
-          <input className="input" type="number" value={form.maxStorageMbPerUser} onChange={upNum('maxStorageMbPerUser')} />
-          <p className="field__hint">-1 = unlimited</p>
-        </div> */}
 
         <div className="reseller-create__section">Feature access</div>
         <div className="plan-form__switch-grid">
@@ -219,7 +223,7 @@ export default function CreatePlanPage() {
         </div>
 
         <div className="reseller-create__actions">
-          <button type="button" className="btn btn--ghost" onClick={() => navigate('/platform/reseller/plans')} disabled={busy}>
+          <button type="button" className="btn btn--ghost" onClick={() => navigate(base)} disabled={busy}>
             Cancel
           </button>
           <button className="btn" type="submit" disabled={busy || !form.name.trim()}>

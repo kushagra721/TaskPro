@@ -20,13 +20,29 @@ export const verifyPlatformOtp = createAsyncThunk('platformAuth/verifyOtp', asyn
   return res;
 });
 
+/** Reseller self-registration — no token yet, that comes from verifySignup. */
+export const signupPlatformReseller = createAsyncThunk('platformAuth/signup', async (payload) => {
+  return platformApi.signup(payload);
+});
+
+export const verifyPlatformSignup = createAsyncThunk('platformAuth/verifySignup', async ({ email, code }) => {
+  const res = await platformApi.verifySignup(email, code);
+  platformTokenStore.set(res.token);
+  return res;
+});
+
 const platformAuthSlice = createSlice({
   name: 'platformAuth',
-  initialState: { platformUser: null, loading: false, error: '' },
+  initialState: { platformUser: null, loading: false, error: '', needsOnboarding: false },
   reducers: {
     platformLogout: (state) => {
       platformTokenStore.clear();
       state.platformUser = null;
+      state.needsOnboarding = false;
+    },
+    /** Cleared once the onboarding step succeeds, so the guard stops firing. */
+    platformOnboarded: (state) => {
+      state.needsOnboarding = false;
     },
     platformHydrated: (state, action) => {
       state.platformUser = action.payload;
@@ -36,17 +52,34 @@ const platformAuthSlice = createSlice({
     builder
       .addCase(verifyPlatformOtp.fulfilled, (state, action) => {
         state.platformUser = action.payload.platformUser;
+        state.needsOnboarding = !!action.payload.needsOnboarding;
+      })
+      .addCase(verifyPlatformSignup.fulfilled, (state, action) => {
+        state.platformUser = action.payload.platformUser;
+        state.needsOnboarding = !!action.payload.needsOnboarding;
       })
       .addCase(loginPlatformWithPassword.fulfilled, (state, action) => {
-        state.platformUser = action.payload.platformUser;
+        // A password login on an unverified account returns no token — it
+        // bounces to the verify screen instead, so there's no session to set.
+        if (action.payload.platformUser) {
+          state.platformUser = action.payload.platformUser;
+          state.needsOnboarding = !!action.payload.needsOnboarding;
+        }
       });
   },
 });
 
-export const { platformLogout, platformHydrated } = platformAuthSlice.actions;
+export const { platformLogout, platformHydrated, platformOnboarded } = platformAuthSlice.actions;
 export default platformAuthSlice.reducer;
 
 export const selectPlatformUser = (s) => s.platformAuth.platformUser;
+
+/** True only within the sign-in that reported it — `bootstrapPlatform()` can't
+ *  know it from the JWT alone (deliberately, so the claim can't go stale), so
+ *  after a page reload this is false and the guard simply doesn't fire. It's a
+ *  routing convenience, not a security boundary: the plan is still enforced
+ *  server-side wherever it matters. */
+export const selectNeedsOnboarding = (s) => s.platformAuth.needsOnboarding;
 
 const decodeJwtPayload = (token) => {
   try {
