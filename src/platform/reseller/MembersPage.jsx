@@ -2,16 +2,15 @@ import { useEffect, useState } from 'react';
 import { platformApi } from '../../api/client.js';
 import EmptyState from '../../components/EmptyState.jsx';
 import PlatformPager from '../PlatformPager.jsx';
-import { BuildingIcon, SearchIcon, RotateIcon } from '../../components/icons.jsx';
+import { UserIcon, SearchIcon, RotateIcon } from '../../components/icons.jsx';
 import { formatDateTime } from '../../utils/status.js';
 
-/** Reseller's "Workspaces" tab — one row per client workspace (Organization)
- *  under this reseller. Read-only: a reseller can no longer create workspaces
- *  from the portal (that's a Super Admin action now), so there's no "Add"
- *  affordance here any more. Sibling of `MembersPage.jsx`, which shows the
- *  same underlying orgs aggregated per-user instead. */
-export default function ResellerWorkspacesPage() {
-  const [clients, setClients] = useState([]);
+/** Reseller's "Members" tab — one row per person across this reseller's
+ *  workspaces, with how many workspaces/groups they belong to. Sibling of
+ *  `ResellerWorkspacesPage.jsx`, which shows the same underlying orgs
+ *  organized per-workspace instead. */
+export default function MembersPage() {
+  const [members, setMembers] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -30,10 +29,10 @@ export default function ResellerWorkspacesPage() {
 
   const load = (spinner) => {
     spinner(true);
-    platformApi.clients
+    platformApi.members
       .list({ q: debouncedSearch || undefined, page, limit: 20 })
       .then((res) => {
-        setClients(res.clients);
+        setMembers(res.members);
         setPagination(res.pagination);
       })
       .finally(() => spinner(false));
@@ -49,9 +48,9 @@ export default function ResellerWorkspacesPage() {
       <div className="panel platform-list-card">
         <div className="platform-list-card__head">
           <div className="platform-list-card__head-text">
-            <h2 className="platform-list-card__title">Workspaces</h2>
+            <h2 className="platform-list-card__title">Members</h2>
             <p className="platform-list-card__subtitle">
-              {pagination.total} workspace{pagination.total === 1 ? '' : 's'} · showing page {pagination.page} of{' '}
+              {pagination.total} member{pagination.total === 1 ? '' : 's'} · showing page {pagination.page} of{' '}
               {pagination.totalPages}
             </p>
           </div>
@@ -67,7 +66,7 @@ export default function ResellerWorkspacesPage() {
             <SearchIcon className="search-box__icon" size={16} />
             <input
               className="search-box__input"
-              placeholder="Search by workspace or owner"
+              placeholder="Search by name or email"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -78,44 +77,48 @@ export default function ResellerWorkspacesPage() {
           <div className="screen-center" style={{ minHeight: '30vh' }}>
             <span className="spinner" />
           </div>
-        ) : clients.length === 0 ? (
-          <EmptyState icon={<BuildingIcon size={30} />} title="No workspaces yet" description="Workspaces you're assigned appear here once the Super Admin creates one for you." />
+        ) : members.length === 0 ? (
+          <EmptyState icon={<UserIcon size={30} />} title="No members found" description="Members appear here once they join one of your client workspaces." />
         ) : (
           <>
             <div className="table-wrap platform-list-card__scroll task-desktop">
               <table className="task-table">
                 <thead>
                   <tr>
-                    <th>Workspace</th>
-                    <th>Owner</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Workspaces</th>
+                    <th>Groups</th>
                     <th>Domain</th>
                     <th>Reseller</th>
-                    <th>Members</th>
-                    <th>Plan</th>
                     <th>Status</th>
                     <th>Joined</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {clients.map((c) => (
-                    <tr key={c.id}>
-                      <td className="task-table__name">{c.name}</td>
+                  {members.map((m) => (
+                    <tr key={m.id}>
                       <td>
-                        <div>{c.owner?.name || '—'}</div>
-                        <div className="muted" style={{ fontSize: 12.5 }}>{c.owner?.email}</div>
+                        <div className="reseller-cell">
+                          <span className="reseller-cell__logo reseller-cell__logo--mark" style={{ background: 'var(--primary)' }}>
+                            {(m.name || m.email || '?')[0].toUpperCase()}
+                          </span>
+                          <div className="task-table__name">{m.name || m.email || '—'}</div>
+                        </div>
                       </td>
-                      <td>{c.domain || '—'}</td>
+                      <td>{m.email || '—'}</td>
+                      <td>{m.workspaceCount}</td>
+                      <td>{m.groupCount}</td>
+                      <td>{m.domain || '—'}</td>
                       <td>
-                        {c.reseller ? (
-                          <span className="status-pill status-pill--completed">{c.reseller.name}</span>
+                        {m.reseller ? (
+                          <span className="status-pill status-pill--completed">{m.reseller.name}</span>
                         ) : (
                           <span className="status-pill status-pill--neutral">House / Direct</span>
                         )}
                       </td>
-                      <td>{c.memberCount}</td>
-                      <td><span className="status-pill status-pill--neutral">Free</span></td>
                       <td><span className="status-pill status-pill--completed">Active</span></td>
-                      <td className="nowrap">{formatDateTime(c.createdAt)}</td>
+                      <td className="nowrap">{formatDateTime(m.joinedAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -123,26 +126,29 @@ export default function ResellerWorkspacesPage() {
             </div>
 
             <div className="task-cards">
-              {clients.map((c) => (
-                <div key={c.id} className="tcard">
+              {members.map((m) => (
+                <div key={m.id} className="tcard">
                   <div className="tcard__row">
-                    <div className="tcard__title">{c.name}</div>
+                    <span className="reseller-cell__logo reseller-cell__logo--mark" style={{ background: 'var(--primary)' }}>
+                      {(m.name || m.email || '?')[0].toUpperCase()}
+                    </span>
+                    <div className="tcard__title">{m.name || m.email || '—'}</div>
                     <span className="status-pill status-pill--completed tcard__del">Active</span>
                   </div>
-                  <div className="tcard__sub">{c.owner?.name || '—'} · {c.owner?.email}</div>
+                  <div className="tcard__sub">{m.email || '—'}</div>
                   <div className="tcard__tags">
-                    <span>{c.domain || 'No domain'}</span>
-                    {c.reseller ? (
-                      <span className="status-pill status-pill--completed">{c.reseller.name}</span>
+                    <span>{m.workspaceCount} workspace{m.workspaceCount === 1 ? '' : 's'}</span>
+                    <span>{m.groupCount} group{m.groupCount === 1 ? '' : 's'}</span>
+                    <span>{m.domain || 'No domain'}</span>
+                    {m.reseller ? (
+                      <span className="status-pill status-pill--completed">{m.reseller.name}</span>
                     ) : (
                       <span className="status-pill status-pill--neutral">House / Direct</span>
                     )}
-                    <span>{c.memberCount} member{c.memberCount === 1 ? '' : 's'}</span>
-                    <span className="status-pill status-pill--neutral">Free</span>
                   </div>
                   <div className="tcard__foot">
                     <span className="muted">Joined</span>
-                    <span className="nowrap">{formatDateTime(c.createdAt)}</span>
+                    <span className="nowrap">{formatDateTime(m.joinedAt)}</span>
                   </div>
                 </div>
               ))}

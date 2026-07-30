@@ -2170,6 +2170,12 @@ a.btn {
   gap: 12px;
 }
 
+@media (max-width: 480px) {
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Channel grid */
 .channel-grid {
   display: grid;
@@ -3863,6 +3869,131 @@ a.btn {
 .status-pill--cancelled {
   background: rgba(244, 63, 94, 0.14);
   color: #be123c;
+}
+
+/* On/off pill toggle (components/Switch.jsx) — Plans list's Active column,
+   and the Create/Edit Plan page's boolean feature flags. */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch__track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s;
+}
+
+.switch input:checked + .switch__track {
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  border-color: transparent;
+}
+
+.switch input:checked + .switch__track .switch__thumb {
+  transform: translateX(18px);
+}
+
+.switch input:focus-visible + .switch__track {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 2px;
+}
+
+.switch--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.switch__label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Reseller Plans page — "Plan comparison" cards. Reuses the marketing
+   PricingPage's `.landing__pricing-card` look (name/price/checklist) for
+   visual consistency, with an added spec table below the checklist. */
+.plan-compare {
+  margin-top: 24px;
+}
+
+.plan-compare__title {
+  font-size: 17px;
+  font-weight: 800;
+  margin: 0 0 14px;
+}
+
+.plan-compare__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.plan-compare__grid .landing__pricing-card {
+  max-width: none;
+  margin: 0;
+}
+
+.plan-spec-table {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 9px;
+}
+
+.plan-spec-table__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.plan-spec-table__row dt {
+  color: var(--text-muted);
+}
+
+.plan-spec-table__row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.plan-spec-table__check {
+  color: var(--success, #059669);
+}
+
+.plan-spec-table__x {
+  color: var(--text-faint);
 }
 
 .status-select {
@@ -6690,10 +6821,32 @@ a.btn {
   background: var(--surface-2);
 }
 
+/* "Profile" entry above Sign out — same row shape, but plain text color
+   instead of the danger red reserved for the destructive Sign out action. */
+.platform-topbar__menu-item--muted {
+  color: var(--text);
+}
+
 .platform-content {
   flex: 1;
   overflow-y: auto;
   padding: 26px 30px;
+}
+
+/* The horizontal child-tab row (Hub-style) sits between the topbar and the
+   scrollable content, so it needs the same side padding as .platform-content
+   without also scrolling with it. */
+.platform-tabbar {
+  padding: 14px 30px 0;
+  margin-bottom: 0;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+@media (max-width: 900px) {
+  .platform-tabbar {
+    padding: 12px 16px 0;
+  }
 }
 
 @media (max-width: 900px) {
@@ -6766,6 +6919,28 @@ a.btn {
   margin-top: 20px;
   padding-top: 18px;
   border-top: 1px solid var(--border);
+}
+
+/* Create/Edit Plan page — single-column form (no live-preview aside like
+   CreateResellerPage), so section dividers apply directly under `.plan-form`
+   rather than requiring the `.reseller-create__form` two-column wrapper. */
+.plan-form .reseller-create__section:not(:first-child) {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.plan-form__switch-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 600px) {
+  .plan-form__switch-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .reseller-create__actions {
@@ -7567,6 +7742,137 @@ a.btn {
   margin: 2px 0 0;
   font-size: 12.5px;
   color: var(--text-faint);
+}
+
+/* ============================================================
+   Platform (Super Admin / Reseller) — mobile: sidebar collapses to a bottom
+   nav, matching the main app's Sidebar/BottomNav pattern (same .bottom-nav
+   class, reused as-is — it already defaults to display:none and flips to
+   flex at this breakpoint). "Add X" actions move to a Fab (also shared with
+   the main app; its CSS is likewise breakpoint-gated already).
+   ============================================================ */
+@media (max-width: 900px) {
+  .platform-sidebar {
+    display: none;
+  }
+  .platform-topbar {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  .platform-topbar__title-block {
+    flex: 1;
+    min-width: 0;
+  }
+  .platform-topbar__title {
+    font-size: 17px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .platform-topbar__name,
+  .platform-topbar__role {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .platform-content {
+    padding: 18px 16px calc(78px + env(safe-area-inset-bottom));
+  }
+  /* Many tabs (e.g. Resellers/Domains/Workspaces/Members/Plans) would wrap on
+     a narrow phone — scroll sideways instead, same trick as .channel__tabs. */
+  .platform-tabbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .platform-tabbar::-webkit-scrollbar {
+    display: none;
+  }
+  .platform-tabbar .tab {
+    flex-shrink: 0;
+  }
+  /* The topbar's <h1> already shows the section's name — the per-page card's
+     own heading/description/count badge just duplicate it, so drop them here,
+     same as the main app's .page__head-text. */
+  .platform-list-card__head-text {
+    display: none;
+  }
+  .platform-list-card__sub-head {
+    display: none;
+  }
+
+  /* Tighter, edge-to-edge feel — less outer whitespace around the list. */
+  .platform-list-card {
+    padding: 12px 14px;
+  }
+  .platform-list-card__head {
+    margin-bottom: 12px;
+  }
+  .list-controls {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   Platform mobile tiles — scoped to .platform-content (NOT the bare .tcard/
+   .task-cards selectors) so the main app's Tasks page keeps its own mobile
+   card behavior untouched; only the platform portal's reused cards get this
+   treatment.
+   - Tight, consistent card size: less padding/gap than the Tasks cards.
+   - Long free text (name/email/domain) truncates to one line with an
+     ellipsis instead of wrapping, which is what keeps every card on a page
+     the same height — the tag row itself still wraps (unavoidable once a
+     card carries 4+ chips), so this is a consistent-looking height, not a
+     hard-clipped fixed pixel box that could cut off content.
+   ------------------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .platform-content .task-cards {
+    gap: 8px;
+  }
+  .platform-content .tcard {
+    padding: 10px 12px;
+  }
+  .platform-content .tcard__row {
+    gap: 8px;
+  }
+  .platform-content .tcard__title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .platform-content .tcard__row > .reseller-cell__logo,
+  .platform-content .tcard__row > .tcard__del {
+    flex-shrink: 0;
+  }
+  .platform-content .tcard__sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .platform-content .tcard__tags {
+    row-gap: 4px;
+  }
+  .platform-content .tcard__tags > span {
+    max-width: 45vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Plan comparison cards — tighter padding than the marketing PricingPage's
+     single showcase card (scoped to .platform-content so that page is
+     untouched); the grid already collapses to 1 column on its own once a
+     260px card no longer fits two-up. */
+  .platform-content .landing__pricing-card {
+    padding: 22px 20px;
+  }
+  .platform-content .plan-compare {
+    margin-top: 16px;
+  }
 }
 
 /* Reseller "Client Management" stat cards row. */

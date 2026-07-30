@@ -20,7 +20,7 @@ const STEPS = [
 // A domain's persisted `status` maps onto which wizard step it should resume
 // at — this is what makes "Continue setup" from the list page land in the
 // right place instead of always restarting at step 1.
-const STEP_FOR_STATUS = { AWAITING_DNS: 1, VERIFIED_SSL_PENDING: 2, LIVE: 2 };
+const STEP_FOR_STATUS = { AWAITING_DNS: 1, VERIFIED_SSL_PENDING: 2, SSL_FAILED: 2, LIVE: 2 };
 
 const DNS_POLL_MS = 8000;
 
@@ -305,22 +305,36 @@ export default function AddDomainPage() {
         <div className="domain-wizard__card">
           <h2 className="domain-wizard__card-title">Issue the SSL certificate</h2>
           <p className="domain-wizard__card-sub">
-            We fetch a free Let&apos;s Encrypt certificate and bind it so <code>https://{domain.domain}</code> works.
-            This usually takes 30-60 seconds.
+            DNS is verified. Clicking <strong>Activate SSL</strong> automatically validates the domain, issues a free
+            Let's Encrypt certificate, and binds HTTPS for <code>{domain.domain}</code> — no manual server steps needed.
           </p>
 
           {error && <div className="domain-wizard__banner domain-wizard__banner--error">{error}</div>}
 
-          <div className="domain-wizard__banner">
-            <ShieldIcon size={16} className="domain-wizard__banner-icon" />
-            <span>
-              Ready to issue. Click <strong>Activate SSL</strong> — you&apos;ll see live progress here.
-            </span>
-          </div>
+          {domain.status === 'SSL_FAILED' ? (
+            <div className="domain-wizard__banner domain-wizard__banner--error">
+              <ShieldIcon size={16} className="domain-wizard__banner-icon" />
+              <span>
+                <strong>SSL activation failed last time.</strong> Double-check the DNS record above is still correct,
+                then try again.
+              </span>
+            </div>
+          ) : (
+            <div className="domain-wizard__banner">
+              <ShieldIcon size={16} className="domain-wizard__banner-icon" />
+              <span>This usually takes a few seconds.</span>
+            </div>
+          )}
 
           <div className="domain-wizard__actions">
             <button className="btn" onClick={activateSsl} disabled={busy}>
-              {busy ? <span className="spinner" /> : (<><ShieldIcon size={16} /> Activate SSL</>)}
+              {busy ? (
+                <span className="spinner" />
+              ) : domain.status === 'SSL_FAILED' ? (
+                <><ShieldIcon size={16} /> Retry SSL activation</>
+              ) : (
+                <><ShieldIcon size={16} /> Activate SSL</>
+              )}
             </button>
           </div>
         </div>

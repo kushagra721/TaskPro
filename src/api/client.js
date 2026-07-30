@@ -330,6 +330,17 @@ export const platformApi = {
     stats: () => platformRequest('/clients/stats'),
     create: (payload) => platformRequest('/clients', { method: 'POST', body: payload }),
   },
+  members: {
+    list: (params) => platformRequest(`/members${qs(params)}`),
+  },
+  navCounts: () => platformRequest('/nav-counts'),
+  plans: {
+    list: () => platformRequest('/plans'),
+    create: (payload) => platformRequest('/plans', { method: 'POST', body: payload }),
+    update: (id, payload) => platformRequest(`/plans/${id}`, { method: 'PATCH', body: payload }),
+    duplicate: (id) => platformRequest(`/plans/${id}/duplicate`, { method: 'POST' }),
+    remove: (id) => platformRequest(`/plans/${id}`, { method: 'DELETE' }),
+  },
   /** Multipart, so it bypasses `platformRequest`'s JSON wrapper — same shape as
    *  `uploadsApi.upload` but on the platform credential lane. */
   async upload(files) {

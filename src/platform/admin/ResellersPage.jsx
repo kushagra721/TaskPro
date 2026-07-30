@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { platformApi } from '../../api/client.js';
 import EmptyState from '../../components/EmptyState.jsx';
+import Fab from '../../components/Fab.jsx';
 import { PlusIcon, UserIcon, RotateIcon } from '../../components/icons.jsx';
 import { formatDate } from '../../utils/status.js';
 
@@ -46,7 +47,7 @@ export default function ResellersPage() {
             <button className="btn btn--ghost btn--sm" onClick={reload} disabled={loading || reloading}>
               <RotateIcon size={15} className={reloading ? 'spin' : ''} /> Reload
             </button>
-            <button className="btn btn--sm" onClick={() => navigate('/platform/admin/resellers/new')}>
+            <button className="btn btn--sm hide-mobile" onClick={() => navigate('/platform/admin/resellers/new')}>
               <PlusIcon size={16} /> Add reseller
             </button>
           </div>
@@ -63,49 +64,83 @@ export default function ResellersPage() {
             description="Create a reseller account — they sign in with email + OTP and manage their own clients."
           />
         ) : (
-          <div className="table-wrap">
-            <table className="task-table">
-              <thead>
-                <tr>
-                  <th>Reseller</th>
-                  <th>Email</th>
-                  <th>Mobile</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resellers.map((r) => (
-                  <tr key={r.id}>
-                    <td>
-                      <div className="reseller-cell">
-                        {r.logoUrl ? (
-                          <img className="reseller-cell__logo" src={r.logoUrl} alt="" />
-                        ) : (
-                          <span
-                            className="reseller-cell__logo reseller-cell__logo--mark"
-                            style={{ background: r.themeColor || 'var(--primary)' }}
-                          >
-                            {(r.brandName || r.name || '?')[0].toUpperCase()}
-                          </span>
-                        )}
-                        <div>
-                          <div className="task-table__name">{r.brandName || r.name}</div>
-                          {r.brandName && <div className="muted" style={{ fontSize: 12.5 }}>{r.name}</div>}
-                        </div>
-                      </div>
-                    </td>
-                    <td>{r.email}</td>
-                    <td className="nowrap">{r.mobile || '—'}</td>
-                    <td><span className="status-pill status-pill--completed">{r.status}</span></td>
-                    <td className="nowrap">{formatDate(r.createdAt)}</td>
+          <>
+            <div className="table-wrap task-desktop">
+              <table className="task-table">
+                <thead>
+                  <tr>
+                    <th>Reseller</th>
+                    <th>Email</th>
+                    <th>Mobile</th>
+                    <th>Status</th>
+                    <th>Created</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {resellers.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <div className="reseller-cell">
+                          {r.logoUrl ? (
+                            <img className="reseller-cell__logo" src={r.logoUrl} alt="" />
+                          ) : (
+                            <span
+                              className="reseller-cell__logo reseller-cell__logo--mark"
+                              style={{ background: r.themeColor || 'var(--primary)' }}
+                            >
+                              {(r.brandName || r.name || '?')[0].toUpperCase()}
+                            </span>
+                          )}
+                          <div>
+                            <div className="task-table__name">{r.brandName || r.name}</div>
+                            {r.brandName && <div className="muted" style={{ fontSize: 12.5 }}>{r.name}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td>{r.email}</td>
+                      <td className="nowrap">{r.mobile || '—'}</td>
+                      <td><span className="status-pill status-pill--completed">{r.status}</span></td>
+                      <td className="nowrap">{formatDate(r.createdAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="task-cards">
+              {resellers.map((r) => (
+                <div key={r.id} className="tcard">
+                  <div className="tcard__row">
+                    {r.logoUrl ? (
+                      <img className="reseller-cell__logo" src={r.logoUrl} alt="" />
+                    ) : (
+                      <span
+                        className="reseller-cell__logo reseller-cell__logo--mark"
+                        style={{ background: r.themeColor || 'var(--primary)' }}
+                      >
+                        {(r.brandName || r.name || '?')[0].toUpperCase()}
+                      </span>
+                    )}
+                    <div className="tcard__title">{r.brandName || r.name}</div>
+                    <span className="status-pill status-pill--completed tcard__del">{r.status}</span>
+                  </div>
+                  <div className="tcard__sub">{r.brandName ? r.name : ' '}</div>
+                  <div className="tcard__tags">
+                    <span>{r.email}</span>
+                    {r.mobile && <span>{r.mobile}</span>}
+                  </div>
+                  <div className="tcard__foot">
+                    <span className="muted">Created</span>
+                    <span className="nowrap">{formatDate(r.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
+
+      <Fab onClick={() => navigate('/platform/admin/resellers/new')} label="Add reseller" raised />
     </div>
   );
 }

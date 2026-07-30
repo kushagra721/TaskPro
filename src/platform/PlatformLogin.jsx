@@ -143,9 +143,9 @@ export default function PlatformLogin() {
           </p>
 
           {error && <div className="alert alert--error">{error}</div>}
-          {mode === 'otp' && step === 'otp' && devCode && (
+          {/* {mode === 'otp' && step === 'otp' && devCode && (
             <div className="alert">Dev code: <strong>{devCode}</strong></div>
-          )}
+          )} */}
 
           {mode === 'otp' && step === 'otp' ? (
             <>
