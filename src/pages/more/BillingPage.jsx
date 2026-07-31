@@ -237,6 +237,8 @@ export default function BillingPage() {
   // server prices the actual order, and says so in the hint below.
   const perTaskRate = plan && !usage.unlimited && usage.planQuota > 0 ? plan.monthlyPrice / usage.planQuota : null;
   const topupPrice = perTaskRate === null ? null : Math.round(perTaskRate * (Number(topupTasks) || 0));
+  // Extra tasks are a paid-plan feature — see the Recharge button below.
+  const canRecharge = Boolean(plan) && plan.monthlyPrice > 0;
   const hasDetails = d.businessName || d.addressLine1 || d.city || d.state || d.pincode || d.gstin;
 
   return (
@@ -271,11 +273,20 @@ export default function BillingPage() {
             )}
             {period && <span className="billing-hero__pill">{period.daysLeft}d left</span>}
           </div>
+          {plan && !usage.unlimited && !canRecharge && (
+            <p className="billing-hero__note">
+              Extra tasks are available on a paid plan — upgrade to add more.
+            </p>
+          )}
           <div className="billing-hero__actions">
             <button className="btn billing-hero__btn" onClick={() => navigate('/more/billing/plans')}>
               <CreditCardIcon size={16} /> Manage plan
             </button>
-            {plan && !usage.unlimited && (
+            {/* Top-ups are priced off the plan's own per-task rate, so a free
+                plan has nothing to price them against — the server rejects it
+                with a 402 too (`billing.service.js#priceTopup`). Point at the
+                upgrade instead of offering a button that can only fail. */}
+            {plan && !usage.unlimited && canRecharge && (
               <button className="btn billing-hero__btn billing-hero__btn--ghost" onClick={() => setRecharging(true)}>
                 <PlusIcon size={16} /> Recharge
               </button>

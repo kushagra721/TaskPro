@@ -143,13 +143,13 @@ export default function CustomDomainsPage() {
                             Continue setup <ArrowRightIcon size={14} />
                           </button>
                         )}
-                        <button
+                        {/* <button
                           className="icon-btn icon-btn--danger"
                           onClick={(e) => askRemove(e, d)}
                           aria-label="Remove domain"
                         >
                           <TrashIcon size={15} />
-                        </button>
+                        </button> */}
                       </td>
                     </tr>
                   ))}

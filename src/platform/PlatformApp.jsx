@@ -20,6 +20,7 @@ import MandatesPage from './reseller/MandatesPage.jsx';
 import TransactionsPage from './reseller/TransactionsPage.jsx';
 import PaymentGatewayPage from './reseller/PaymentGatewayPage.jsx';
 import DocumentsPage from './reseller/DocumentsPage.jsx';
+import ProjectionsPage from './reseller/ProjectionsPage.jsx';
 // Shared by both portals — see plansBase.js for how one component serves both
 // route trees (global plans for a Super Admin, own plans for a Reseller).
 import PlansPage from './PlansPage.jsx';
@@ -181,10 +182,7 @@ export default function PlatformApp() {
         <Route path="plans/:planId/edit" element={<CreatePlanPage />} />
         <Route path="mandates" element={<MandatesPage />} />
         <Route path="transactions" element={<TransactionsPage />} />
-        <Route
-          path="projections"
-          element={<PlatformPlaceholderPage icon={<CreditCardIcon size={30} />} title="Projections" description="Upcoming/expected billing projections." />}
-        />
+        <Route path="projections" element={<ProjectionsPage />} />
         <Route path="payment-gateway" element={<PaymentGatewayPage />} />
         <Route path="invoices" element={<DocumentsPage />} />
         <Route path="receipts" element={<DocumentsPage />} />

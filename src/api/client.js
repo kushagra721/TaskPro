@@ -366,6 +366,13 @@ export const platformApi = {
     list: (params) => platformRequest(`/members${qs(params)}`),
   },
   navCounts: () => platformRequest('/nav-counts'),
+  // The signed-in account's own record — always scoped server-side to the
+  // caller, never by id.
+  profile: {
+    get: () => platformRequest('/profile'),
+    update: (payload) => platformRequest('/profile', { method: 'PATCH', body: payload }),
+  },
+  projections: { get: (params) => platformRequest(`/projections${qs(params)}`) },
   // Manage Mandates — reseller-only, always scoped server-side to the caller's
   // own reseller (the id comes from the token, never from these params).
   mandates: {

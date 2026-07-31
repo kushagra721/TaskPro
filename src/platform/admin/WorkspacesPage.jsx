@@ -105,8 +105,8 @@ export default function WorkspacesPage() {
                   <tr>
                     <th>Workspace</th>
                     <th>Owner</th>
-                    <th>Domain</th>
-                    <th>Reseller</th>
+                    {/* <th>Domain</th> */}
+                    <th>Brand</th>
                     <th>Members</th>
                     <th>Plan</th>
                     <th>Status</th>
@@ -121,7 +121,7 @@ export default function WorkspacesPage() {
                         <div>{w.owner?.name || '—'}</div>
                         {/* <div className="muted" style={{ fontSize: 12.5 }}>{w.owner?.email}</div> */}
                       </td>
-                      <td>{w.domain || '—'}</td>
+                      {/* <td>{w.domain || '—'}</td> */}
                       <td>
                         {w.reseller ? (
                           <span className="status-pill status-pill--completed">{w.reseller.name}</span>
@@ -148,7 +148,7 @@ export default function WorkspacesPage() {
                   </div>
                   <div className="tcard__sub">{w.owner?.name || '—'} · {w.owner?.email}</div>
                   <div className="tcard__tags">
-                    <span>{w.domain || 'No domain'}</span>
+                    {/* <span>{w.domain || 'No domain'}</span> */}
                     {w.reseller ? (
                       <span className="status-pill status-pill--completed">{w.reseller.name}</span>
                     ) : (

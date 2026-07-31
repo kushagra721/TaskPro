@@ -33,7 +33,6 @@ export default function PlansPage() {
   const copy = plansCopy(pathname);
   // Only global (Super Admin) plans have subscribers — a reseller's own plans
   // are held by client workspaces, which aren't tracked against a plan yet.
-  const showSubscribers = base.startsWith('/platform/admin');
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [reloading, setReloading] = useState(false);
@@ -125,7 +124,6 @@ export default function PlansPage() {
                     <th>Yearly</th>
                     <th>Tasks / Active user</th>
                     <th>Storage / Active user</th>
-                    {showSubscribers && <th>Resellers</th>}
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>
@@ -141,7 +139,6 @@ export default function PlansPage() {
                       <td>{money(p.yearlyPrice)}</td>
                       <td>{limitLabel(p.maxTasksPerUser)}</td>
                       <td>{storageLabel(p.maxStorageMbPerUser)}</td>
-                      {showSubscribers && <td>{p.subscriberCount}</td>}
                       <td>
                         <span className={`status-pill ${p.isActive ? 'status-pill--completed' : 'status-pill--neutral'}`}>
                           {p.isActive ? 'Active' : 'Inactive'}

@@ -248,9 +248,9 @@ export default function PlatformLogin() {
               </p>
               {/* Resellers can self-register; a Super Admin account is seeded,
                   never signed up — hence the reseller-specific wording. */}
-              <p className="auth__foot">
+              {/* <p className="auth__foot">
                 Want to resell Task Pro? <Link className="link-btn" to="/platform/signup">Create a reseller account</Link>
-              </p>
+              </p> */}
             </>
           )}
         </form>

@@ -72,7 +72,8 @@ export default function ResellersPage() {
                     <th>Reseller</th>
                     <th>Email</th>
                     <th>Mobile</th>
-                    <th>Plan</th>
+                    <th>Workspaces</th>
+                    <th>Plans</th>
                     <th>Status</th>
                     <th>Created</th>
                   </tr>
@@ -104,13 +105,12 @@ export default function ResellersPage() {
                       </td>
                       <td>{r.email}</td>
                       <td className="nowrap">{r.mobile || '—'}</td>
-                      <td>
-                        {r.plan ? (
-                          <span className="status-pill status-pill--open">{r.plan.name}</span>
-                        ) : (
-                          <span className="status-pill status-pill--neutral">No plan</span>
-                        )}
-                      </td>
+                      {/* A reseller isn't *on* a plan — they sell their own
+                          set (seeded from the platform's global plans when the
+                          account is created), so the useful figures are how
+                          many workspaces they run and how many plans they list. */}
+                      <td>{r.workspaceCount}</td>
+                      <td>{r.planCount}</td>
                       <td><span className="status-pill status-pill--completed">{r.status}</span></td>
                       <td className="nowrap">{formatDate(r.createdAt)}</td>
                     </tr>
@@ -143,9 +143,8 @@ export default function ResellersPage() {
                   <div className="tcard__sub">{r.brandName ? r.name : ' '}</div>
                   <div className="tcard__tags">
                     <span>{r.email}</span>
-                    <span className={`status-pill ${r.plan ? 'status-pill--open' : 'status-pill--neutral'}`}>
-                      {r.plan ? r.plan.name : 'No plan'}
-                    </span>
+                    <span>{r.workspaceCount} workspaces</span>
+                    <span>{r.planCount} plans</span>
                     {r.mobile && <span>{r.mobile}</span>}
                   </div>
                   <div className="tcard__foot">

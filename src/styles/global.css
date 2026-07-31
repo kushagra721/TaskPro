@@ -299,6 +299,7 @@ input {
   box-shadow: 0 10px 24px -8px var(--primary-glow);
   transition: transform 0.12s, box-shadow 0.18s, opacity 0.18s;
   text-align: center;
+  align-items: center;
 }
 
 /* `.btn` is normally a real <button> (vertically centers text by default UA
@@ -6862,7 +6863,16 @@ a.btn {
 .platform-content {
   flex: 1;
   overflow-y: auto;
-  padding: 26px 30px;
+  padding: 20px 24px 26px;
+}
+
+/* The portals are dense admin tables, not reading material — `.page`'s 1080px
+   centring column (right for the client app's forms and cards) left big empty
+   gutters either side of every list. Inside the portal shell a page fills the
+   width it's given; the sidebar already provides the left margin. */
+.platform-content > .page {
+  max-width: none;
+  margin: 0;
 }
 
 /* The horizontal child-tab row (Hub-style) sits between the topbar and the
@@ -8260,6 +8270,27 @@ a.btn {
   font-size: 12px;
   color: var(--text-faint);
   margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+/* The "nothing due in this window" banner under each Projections table — a
+   calm green rather than an error tone: no upcoming debits is normal, not a
+   failure state. Sits outside `.table-wrap` so it spans the full card. */
+.projection-empty {
+  background: rgba(16, 185, 129, 0.09);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  color: var(--success, #059669);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 13.5px;
+  text-align: center;
+}
+
+/* Free-plan note under the Billing hero's pills (recharge needs a paid plan). */
+.billing-hero__note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.82);
   line-height: 1.45;
 }
 

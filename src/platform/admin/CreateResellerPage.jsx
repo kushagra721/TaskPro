@@ -24,7 +24,6 @@ const EMPTY = {
   email: '',
   mobile: '',
   password: '',
-  planId: '',
   brandName: '',
   themeColor: THEME_COLORS[0],
   logoUrl: '',
@@ -48,18 +47,10 @@ export default function CreateResellerPage() {
   const navigate = useNavigate();
   const fileRef = useRef(null);
   const [form, setForm] = useState(EMPTY);
-  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(editing);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
-
-  // The global (platform) plans a reseller can be put on — NOT `plans.list()`,
-  // which for a Super Admin returns the same set but for a Reseller would
-  // return their own. This endpoint is explicitly the global one.
-  useEffect(() => {
-    platformApi.globalPlans().then((r) => setPlans(r.plans)).catch(() => setPlans([]));
-  }, []);
 
   useEffect(() => {
     if (!editing) return;
@@ -74,7 +65,6 @@ export default function CreateResellerPage() {
           name: r.name ?? '',
           email: r.email ?? '',
           mobile: r.mobile ?? '',
-          planId: r.planId ?? '',
           brandName: r.brandName ?? '',
           themeColor: r.themeColor || THEME_COLORS[0],
           logoUrl: r.logoUrl ?? '',
@@ -126,10 +116,8 @@ export default function CreateResellerPage() {
       if (editing) {
         // `password` isn't part of the update contract — there's no
         // change-password flow for platform accounts yet (see CLAUDE.md).
-        // `planId` is dropped when empty: it's a required *uuid* in the update
-        // schema too, and pre-global-plans resellers legitimately have none.
-        const { password, planId, ...rest } = form;
-        await platformApi.resellers.update(id, planId ? { ...rest, planId } : rest);
+        const { password, ...rest } = form;
+        await platformApi.resellers.update(id, rest);
         navigate(`/platform/admin/resellers/${id}`);
       } else {
         await platformApi.resellers.create(form);
@@ -142,10 +130,19 @@ export default function CreateResellerPage() {
     }
   };
 
-  // A plan is mandatory when creating; on edit it's only enforced if the
-  // reseller already had one (see the submit handler).
-  const canSubmit =
-    form.name.trim() && form.email.trim() && (editing || form.planId) && !busy && !uploading;
+  /*
+   * Everything a reseller needs to actually operate is required at creation:
+   * they must be able to sign in (password), be contactable (mobile), be shown
+   * to their clients (brand name) and raise a compliant invoice (the billing
+   * block, which prints as the "billed from" on every client invoice). Mirrors
+   * `createResellerSchema` server-side — the form just avoids a round trip.
+   *
+   * On edit, `password` is absent from the contract entirely, so it's excluded.
+   */
+  const REQUIRED = ['name', 'email', 'mobile', 'brandName', 'businessName', 'addressLine1', 'city', 'state', 'pincode'];
+  const missing = REQUIRED.filter((k) => !String(form[k] || '').trim());
+  if (!editing && form.password.trim().length < 6) missing.push('password');
+  const canSubmit = missing.length === 0 && !busy && !uploading;
   const backTo = editing ? `/platform/admin/resellers/${id}` : '/platform/admin/resellers';
 
   if (loading) {
@@ -182,7 +179,7 @@ export default function CreateResellerPage() {
             <div className="row2">
               <div className="field">
                 <label className="field__label">
-                  Reseller name <span className="req">*</span>
+                  Contact name <span className="req">*</span>
                 </label>
                 <input className="input" autoFocus value={form.name} onChange={up('name')} placeholder="Acme Digital" />
               </div>
@@ -202,7 +199,7 @@ export default function CreateResellerPage() {
             <div className="row2">
               <div className="field">
                 <label className="field__label">
-                  Mobile <span className="field__opt">(optional)</span>
+                  Mobile <span className="req">*</span>
                 </label>
                 <input
                   className="input"
@@ -215,43 +212,23 @@ export default function CreateResellerPage() {
               {!editing && (
                 <div className="field">
                   <label className="field__label">
-                    Password <span className="field__opt">(optional)</span>
+                    Password <span className="req">*</span>
                   </label>
                   <input
                     className="input"
                     type="password"
                     value={form.password}
                     onChange={up('password')}
-                    placeholder="Leave blank for OTP-only login"
+                    placeholder="At least 6 characters"
                   />
                 </div>
               )}
             </div>
 
-            <div className="field">
-              <label className="field__label">
-                Platform plan <span className="req">*</span>
-              </label>
-              <Select
-                value={form.planId}
-                onChange={(v) => set('planId', v)}
-                placeholder={plans.length ? 'Choose a plan' : 'No platform plans yet'}
-                options={plans.map((p) => ({
-                  value: p.id,
-                  label: `${p.name} — ₹${p.monthlyPrice.toLocaleString('en-IN')}/mo`,
-                }))}
-              />
-              <p className="field__hint">
-                {plans.length
-                  ? 'Which platform plan this reseller is subscribed to. Create more under Plans.'
-                  : 'Create a platform plan under the Plans tab first — every reseller must be on one.'}
-              </p>
-            </div>
-
             <div className="reseller-create__section">Billing details</div>
             <div className="field">
               <label className="field__label">
-                Business name <span className="field__opt">(as it should appear on invoices)</span>
+                Business name <span className="req">*</span>
               </label>
               <input
                 className="input"
@@ -262,7 +239,7 @@ export default function CreateResellerPage() {
             </div>
             <div className="field">
               <label className="field__label">
-                Address <span className="field__opt">(optional)</span>
+                Address <span className="req">*</span>
               </label>
               <input
                 className="input"
@@ -284,11 +261,11 @@ export default function CreateResellerPage() {
             </div>
             <div className="row2">
               <div className="field">
-                <label className="field__label">City</label>
+                <label className="field__label">City <span className="req">*</span></label>
                 <input className="input" value={form.city} onChange={up('city')} placeholder="Noida" />
               </div>
               <div className="field">
-                <label className="field__label">Pincode</label>
+                <label className="field__label">Pincode <span className="req">*</span></label>
                 <input
                   className="input"
                   value={form.pincode}
@@ -300,7 +277,7 @@ export default function CreateResellerPage() {
             </div>
             <div className="row2">
               <div className="field">
-                <label className="field__label">State</label>
+                <label className="field__label">State <span className="req">*</span></label>
                 <input className="input" value={form.state} onChange={up('state')} placeholder="Uttar Pradesh" />
               </div>
               <div className="field">
@@ -320,7 +297,7 @@ export default function CreateResellerPage() {
             <div className="reseller-create__section">White-label brand</div>
             <div className="field">
               <label className="field__label">
-                Brand name <span className="field__opt">(shown to their clients)</span>
+                Brand name <span className="req">*</span>
               </label>
               <input className="input" value={form.brandName} onChange={up('brandName')} placeholder="Acme AI" />
             </div>
@@ -399,8 +376,8 @@ export default function CreateResellerPage() {
               </button>
               <span className="reseller-create__note">
                 {editing
-                  ? 'Billing details are used for their invoices and receipts. Domains are managed under Custom Domains.'
-                  : 'They sign in with their email — password if you set one above, otherwise OTP only. Map their domain later in Custom Domains.'}
+                  ? 'Billing details print as the seller on every invoice their clients receive. Domains are managed under Custom Domains.'
+                  : 'They sign in with this email and password. Their billing details print as the seller on every invoice their clients receive.'}
               </span>
             </div>
           </div>

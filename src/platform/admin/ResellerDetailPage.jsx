@@ -38,9 +38,6 @@ const ACCOUNT_FIELDS = [
   { key: 'email', label: 'Login email', required: true, type: 'email', placeholder: 'owner@acme.com' },
   { key: 'mobile', label: 'Mobile', placeholder: '9812345678' },
   { key: 'themeColor', label: 'Theme colour', type: 'color' },
-  // Options are loaded at runtime (the global plan list) rather than declared
-  // here — see `planOptions` in the component.
-  { key: 'planId', label: 'Platform plan', required: true, type: 'plan' },
 ];
 
 const BILLING_FIELDS = [
@@ -62,15 +59,13 @@ function Row({ label, value }) {
   );
 }
 
-function Field({ field, value, onChange, planOptions }) {
+function Field({ field, value, onChange }) {
   return (
     <div className="field">
       <label className="field__label">
         {field.label} {field.required ? <span className="req">*</span> : <span className="field__opt">(optional)</span>}
       </label>
-      {field.type === 'plan' ? (
-        <Select value={value} onChange={onChange} placeholder="Choose a plan" options={planOptions} />
-      ) : field.type === 'color' ? (
+      {field.type === 'color' ? (
         <div className="pdetail__colour-field">
           <input type="color" value={value || '#6366f1'} onChange={(e) => onChange(e.target.value)} aria-label={field.label} />
           <input className="input" value={value} onChange={(e) => onChange(e.target.value)} placeholder="#6366f1" />
@@ -90,7 +85,7 @@ function Field({ field, value, onChange, planOptions }) {
 }
 
 /** Renders a field list, pairing consecutive `half` fields into `.row2` rows. */
-function FieldList({ fields, form, onChange, planOptions }) {
+function FieldList({ fields, form, onChange }) {
   const rows = [];
   for (let i = 0; i < fields.length; i += 1) {
     const f = fields[i];
@@ -98,8 +93,8 @@ function FieldList({ fields, form, onChange, planOptions }) {
     if (f.half && next?.half) {
       rows.push(
         <div className="row2" key={f.key}>
-          <Field field={f} value={form[f.key]} onChange={(v) => onChange(f.key, v)} planOptions={planOptions} />
-          <Field field={next} value={form[next.key]} onChange={(v) => onChange(next.key, v)} planOptions={planOptions} />
+          <Field field={f} value={form[f.key]} onChange={(v) => onChange(f.key, v)} />
+          <Field field={next} value={form[next.key]} onChange={(v) => onChange(next.key, v)} />
         </div>
       );
       i += 1;
@@ -110,8 +105,7 @@ function FieldList({ fields, form, onChange, planOptions }) {
           field={f}
           value={form[f.key]}
           onChange={(v) => onChange(f.key, v)}
-          planOptions={planOptions}
-        />
+            />
       );
     }
   }
@@ -126,7 +120,6 @@ export default function ResellerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [reseller, setReseller] = useState(null);
-  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   // Which card's edit popup is open ('account' | 'billing' | null). Each one
@@ -149,15 +142,6 @@ export default function ResellerDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  useEffect(() => {
-    platformApi.globalPlans().then((r) => setPlans(r.plans)).catch(() => setPlans([]));
-  }, []);
-
-  const planOptions = plans.map((p) => ({
-    value: p.id,
-    label: `${p.name} — ₹${p.monthlyPrice.toLocaleString('en-IN')}/mo`,
-  }));
-
   const openSection = (which) => {
     const fields = which === 'account' ? ACCOUNT_FIELDS : BILLING_FIELDS;
     // `?? ''` on every field: these columns are nullable and a null in a
@@ -172,11 +156,7 @@ export default function ResellerDetailPage() {
     setSaving(true);
     setSaveError('');
     try {
-      // `planId: ''` would fail the schema's uuid check — a reseller from
-      // before global plans existed legitimately has none, so omit it instead.
-      const { planId, ...rest } = form;
-      const payload = 'planId' in form && planId ? { ...rest, planId } : rest;
-      const res = await platformApi.resellers.update(id, payload);
+      const res = await platformApi.resellers.update(id, form);
       // The update endpoint returns the plain shape (no counts/domains), so
       // merge rather than replace or the stats row and domain list blank out.
       setReseller((r) => ({ ...r, ...res.reseller }));
@@ -326,16 +306,6 @@ export default function ResellerDetailPage() {
                 )
               }
             />
-            <Row
-              label="Platform plan"
-              value={
-                reseller.plan && (
-                  <span className="status-pill status-pill--open">
-                    {reseller.plan.name} · ₹{reseller.plan.monthlyPrice.toLocaleString('en-IN')}/mo
-                  </span>
-                )
-              }
-            />
             <Row label="Created" value={formatDate(reseller.createdAt)} />
           </dl>
         </div>
@@ -426,8 +396,7 @@ export default function ResellerDetailPage() {
               fields={section === 'account' ? ACCOUNT_FIELDS : BILLING_FIELDS}
               form={form}
               onChange={(k, v) => setForm((f) => ({ ...f, [k]: v }))}
-              planOptions={planOptions}
-            />
+                    />
             <div className="modal__actions">
               <button type="button" className="btn btn--ghost" onClick={() => setSection(null)} disabled={saving}>
                 Cancel

@@ -89,8 +89,8 @@ export default function MembersPage() {
                     <th>Email</th>
                     <th>Workspaces</th>
                     <th>Groups</th>
-                    <th>Domain</th>
-                    <th>Reseller</th>
+                    {/* <th>Domain</th>
+                    <th>Reseller</th> */}
                     <th>Status</th>
                     <th>Joined</th>
                   </tr>
@@ -109,14 +109,14 @@ export default function MembersPage() {
                       <td>{m.email || '—'}</td>
                       <td>{m.workspaceCount}</td>
                       <td>{m.groupCount}</td>
-                      <td>{m.domain || '—'}</td>
-                      <td>
+                      {/* <td>{m.domain || '—'}</td> */}
+                      {/* <td>
                         {m.reseller ? (
                           <span className="status-pill status-pill--completed">{m.reseller.name}</span>
                         ) : (
                           <span className="status-pill status-pill--neutral">House / Direct</span>
                         )}
-                      </td>
+                      </td> */}
                       <td><span className="status-pill status-pill--completed">Active</span></td>
                       <td className="nowrap">{formatDateTime(m.joinedAt)}</td>
                     </tr>
@@ -139,12 +139,12 @@ export default function MembersPage() {
                   <div className="tcard__tags">
                     <span>{m.workspaceCount} workspace{m.workspaceCount === 1 ? '' : 's'}</span>
                     <span>{m.groupCount} group{m.groupCount === 1 ? '' : 's'}</span>
-                    <span>{m.domain || 'No domain'}</span>
-                    {m.reseller ? (
+                    {/* <span>{m.domain || 'No domain'}</span> */}
+                    {/* {m.reseller ? (
                       <span className="status-pill status-pill--completed">{m.reseller.name}</span>
                     ) : (
                       <span className="status-pill status-pill--neutral">House / Direct</span>
-                    )}
+                    )} */}
                   </div>
                   <div className="tcard__foot">
                     <span className="muted">Joined</span>
