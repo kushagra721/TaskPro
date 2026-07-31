@@ -162,6 +162,11 @@ export const organizationsApi = {
   checkout: (orgId, payload) => request(`/organizations/${orgId}/billing/checkout`, { method: 'POST', body: payload }),
   verifyPayment: (orgId, payload) =>
     request(`/organizations/${orgId}/billing/verify`, { method: 'POST', body: payload }),
+  // The replacement autopay mandate of a scheduled downgrade — future-dated, so
+  // authorising it charges nothing today.
+  setupMandate: (orgId) => request(`/organizations/${orgId}/billing/mandate/setup`, { method: 'POST' }),
+  confirmMandate: (orgId, payload) =>
+    request(`/organizations/${orgId}/billing/mandate/confirm`, { method: 'POST', body: payload }),
   changeRole: (orgId, userId, role) =>
     request(`/organizations/${orgId}/members/${userId}/role`, { method: 'PATCH', body: { role } }),
   removeMember: (orgId, userId) =>

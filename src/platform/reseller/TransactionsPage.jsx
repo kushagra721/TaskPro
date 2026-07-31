@@ -3,7 +3,8 @@ import { platformApi } from '../../api/client.js';
 import EmptyState from '../../components/EmptyState.jsx';
 import PlatformPager from '../PlatformPager.jsx';
 import Select from '../../components/Select.jsx';
-import { DownloadIcon, ReceiptIcon, RotateIcon, SearchIcon } from '../../components/icons.jsx';
+import { ReceiptIcon, RotateIcon, SearchIcon } from '../../components/icons.jsx';
+import DocumentActions from '../../components/DocumentActions.jsx';
 import { formatDateTime } from '../../utils/status.js';
 
 const money = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
@@ -219,10 +220,11 @@ export default function TransactionsPage() {
                       </td>
                       <td className="nowrap">{formatDateTime(t.createdAt)}</td>
                       <td className="nowrap">{t.paidAt ? formatDateTime(t.paidAt) : '-'}</td>
-                      {/* Documents aren't generated yet — rendered as "-" rather
-                          than a dead icon, same as the reference's older rows. */}
-                      <td>{t.invoiceUrl ? <DocLink url={t.invoiceUrl} /> : '-'}</td>
-                      <td>{t.receiptUrl ? <DocLink url={t.receiptUrl} /> : '-'}</td>
+                      {/* Same View/Download pair the client's own transactions
+                          table shows — an abandoned checkout has an invoice but
+                          no receipt, so the two are rendered independently. */}
+                      <td>{t.invoice ? <DocumentActions doc={t.invoice} /> : <span className="muted">—</span>}</td>
+                      <td>{t.receipt ? <DocumentActions doc={t.receipt} /> : <span className="muted">—</span>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -249,6 +251,12 @@ export default function TransactionsPage() {
                     <span className="muted">Started</span>
                     <span className="nowrap">{formatDateTime(t.createdAt)}</span>
                   </div>
+                  {(t.invoice || t.receipt) && (
+                    <div className="tcard__tags">
+                      {t.invoice && <DocumentActions doc={t.invoice} />}
+                      {t.receipt && <DocumentActions doc={t.receipt} />}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -258,13 +266,5 @@ export default function TransactionsPage() {
         )}
       </div>
     </div>
-  );
-}
-
-function DocLink({ url }) {
-  return (
-    <a className="icon-btn" href={url} target="_blank" rel="noopener noreferrer" aria-label="Download">
-      <DownloadIcon size={15} />
-    </a>
   );
 }

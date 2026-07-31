@@ -7,6 +7,7 @@ import DocumentActions from '../../components/DocumentActions.jsx';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Modal from '../../components/Modal.jsx';
+import MandateActionModal from '../../components/MandateActionModal.jsx';
 import PaymentConfirmModal from '../../components/PaymentConfirmModal.jsx';
 import { selectCurrentOrg } from '../../store/slices/orgSlice.js';
 import { useCheckout } from '../../hooks/useCheckout.js';
@@ -99,6 +100,7 @@ export default function BillingPage() {
   const [saveError, setSaveError] = useState('');
 
   const [recharging, setRecharging] = useState(false);
+  const [showPending, setShowPending] = useState(false);
   const [topupTasks, setTopupTasks] = useState('100');
   // Server-priced breakdown for the confirm dialog. Set = dialog open, so the
   // amount shown is always the one the order will be created for.
@@ -230,7 +232,7 @@ export default function BillingPage() {
     );
   }
 
-  const { plan, usage, period, billingDetails, transactions, hasReseller, reseller, memberCount } = billing;
+  const { plan, usage, period, billingDetails, transactions, hasReseller, reseller, memberCount, pendingChange } = billing;
   const d = billingDetails;
   // Mirrors `billing.service.js#priceTopup` so the user sees roughly what
   // they'll be charged before the payment window opens. Indicative only — the
@@ -254,6 +256,22 @@ export default function BillingPage() {
       </div>
 
       {actionError && <div className="alert alert--error">{actionError}</div>}
+
+      {/* A downgrade booked for the next cycle. It stays visible until the
+          switch date because the customer has to cancel their old autopay
+          mandate themselves — see MandateActionModal. */}
+      {pendingChange && (
+        <div className="alert alert--warn pending-change">
+          <div>
+            <strong>{pendingChange.plan.name}</strong> starts on {formatDate(pendingChange.startsAt)}. You keep{' '}
+            {plan?.name} until then, and nothing is charged today.
+            {!pendingChange.mandateReady && ' Your old autopay mandate still needs cancelling, and the new one approving.'}
+          </div>
+          <button className="btn btn--sm" onClick={() => setShowPending(true)}>
+            {pendingChange.mandateReady ? 'View details' : 'Finish setup'}
+          </button>
+        </div>
+      )}
 
       {/* ---- Hero: remaining quota ---- */}
       <div className="billing-hero">
@@ -286,11 +304,11 @@ export default function BillingPage() {
                 plan has nothing to price them against — the server rejects it
                 with a 402 too (`billing.service.js#priceTopup`). Point at the
                 upgrade instead of offering a button that can only fail. */}
-            {plan && !usage.unlimited && canRecharge && (
+            {/* {plan && !usage.unlimited && canRecharge && (
               <button className="btn billing-hero__btn billing-hero__btn--ghost" onClick={() => setRecharging(true)}>
                 <PlusIcon size={16} /> Recharge
               </button>
-            )}
+            )} */}
           </div>
         </div>
         {!usage.unlimited && (
@@ -495,6 +513,15 @@ export default function BillingPage() {
 
       {/* Two steps: pick a quantity, then review the priced breakdown. The
           quote replaces this dialog rather than stacking on it. */}
+      {showPending && pendingChange && (
+        <MandateActionModal
+          orgId={orgId}
+          pending={{ ...pendingChange, previousPlanName: plan?.name }}
+          onDone={(next) => setBilling(next)}
+          onClose={() => setShowPending(false)}
+        />
+      )}
+
       {recharging && !topupQuote && (
         <Modal title="Recharge tasks" onClose={closeRecharge}>
           <form

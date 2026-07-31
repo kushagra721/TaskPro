@@ -102,10 +102,14 @@ export default function PaymentConfirmModal({ quote, busy = false, error = '', o
           <span>
             {isTopup
               ? 'Top-up tasks never expire and are used once your monthly quota runs out.'
-              : 'Your plan activates immediately and a new billing cycle starts.'}{' '}
+              : quote.downgrade
+                ? 'Your new plan applies now and your current billing cycle continues unchanged.'
+                : 'Your plan activates immediately and a new billing cycle starts.'}{' '}
             {quote.requiresPayment
               ? "You'll pay through a secure Razorpay window, and it's applied as soon as the payment succeeds."
-              : 'No payment is needed — this is applied straight away.'}
+              : quote.downgrade
+                ? 'Nothing is charged today — the autopay mandate you already approved is updated to the lower amount, which is what you pay from the next cycle.'
+                : 'No payment is needed — this is applied straight away.'}
           </span>
         </p>
 

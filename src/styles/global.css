@@ -8294,6 +8294,79 @@ a.btn {
   line-height: 1.45;
 }
 
+/* Scheduled-downgrade banner on the Billing page: text on the left, the
+   "Finish setup" action pinned right, stacking under 560px. */
+.pending-change {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.pending-change > div {
+  flex: 1;
+  min-width: 240px;
+}
+
+/* The two-step "cancel the old mandate / approve the new one" dialog. */
+.mandate-steps__lead {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.mandate-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.mandate-steps__item {
+  display: flex;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.mandate-steps__num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mandate-steps__num--done {
+  background: #10b981;
+}
+.mandate-steps__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.mandate-steps__text {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.mandate-steps__note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+.mandate-steps__note--ok {
+  color: #059669;
+}
+
 /* ---------- Reseller portal: Payment Gateway ---------- */
 .gateway-card {
   border: 1px solid var(--border);
