@@ -11,6 +11,7 @@ import joinRequestReducer from './slices/joinRequestSlice.js';
 import projectReducer from './slices/projectSlice.js';
 import clientReducer from './slices/clientSlice.js';
 import platformAuthReducer from './slices/platformAuthSlice.js';
+import kamdhenuAuthReducer from './slices/kamdhenuAuthSlice.js';
 import { socketMiddleware } from './socketMiddleware.js';
 
 export const store = configureStore({
@@ -27,6 +28,7 @@ export const store = configureStore({
     projects: projectReducer,
     clients: clientReducer,
     platformAuth: platformAuthReducer,
+    kamdhenuAuth: kamdhenuAuthReducer,
   },
   middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(socketMiddleware),
 });

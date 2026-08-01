@@ -18,6 +18,17 @@ export const platformTokenStore = {
   clear: () => localStorage.removeItem(PLATFORM_TOKEN_KEY),
 };
 
+// Separate again from both TOKEN_KEY and PLATFORM_TOKEN_KEY — the Kamdhenu
+// portal (`?portal=adminkamdhenu`) is a third, fully isolated session lane so
+// all three can coexist in one browser.
+const KAMDHENU_TOKEN_KEY = 'taskpro_kamdhenu_token';
+
+export const kamdhenuTokenStore = {
+  get: () => localStorage.getItem(KAMDHENU_TOKEN_KEY),
+  set: (token) => localStorage.setItem(KAMDHENU_TOKEN_KEY, token),
+  clear: () => localStorage.removeItem(KAMDHENU_TOKEN_KEY),
+};
+
 /**
  * Absolute URL for a server-rendered document (invoice/receipt), from the
  * API-relative path the backend returns.
@@ -111,6 +122,116 @@ async function platformRequest(path, { method = 'GET', body, auth = true } = {})
 
   return data;
 }
+
+/** Same shape as `platformRequest`, but for the Kamdhenu portal's own
+ *  credential lane — never sends the normal user or platform JWT. */
+async function kamdhenuRequest(path, { method = 'GET', body, auth = true } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (auth) {
+    const token = kamdhenuTokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
+
+  let res;
+  try {
+    res = await fetch(`${API_URL}/kamdhenu${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('Cannot reach the server. Is the backend running?');
+  }
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const error = new Error(data.message || 'Something went wrong');
+    error.fields = data.errors;
+    error.status = res.status;
+    throw error;
+  }
+
+  return data;
+}
+
+export const kamdhenuApi = {
+  loginWithPassword: (email, password) =>
+    kamdhenuRequest('/auth/login/password', { method: 'POST', body: { email, password }, auth: false }),
+  requestOtp: (email) => kamdhenuRequest('/auth/login', { method: 'POST', body: { email }, auth: false }),
+  verifyOtp: (email, code) =>
+    kamdhenuRequest('/auth/verify', { method: 'POST', body: { email, code }, auth: false }),
+  me: () => kamdhenuRequest('/auth/me'),
+
+  // ---- Kamdhenu Construction ERP (routes verified against
+  // TaskProApi/src/routes/kamdhenu.routes.js) ----
+  sites: {
+    list: (params) => kamdhenuRequest(`/sites${qs(params)}`),
+    listAll: () => kamdhenuRequest(`/sites${qs({ all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/sites/${id}`),
+    create: (payload) => kamdhenuRequest('/sites', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/sites/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/sites/${id}`, { method: 'DELETE' }),
+  },
+  equipment: {
+    list: (params) => kamdhenuRequest(`/equipment${qs(params)}`),
+    listAll: () => kamdhenuRequest(`/equipment${qs({ all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/equipment/${id}`),
+    create: (payload) => kamdhenuRequest('/equipment', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/equipment/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/equipment/${id}`, { method: 'DELETE' }),
+  },
+  members: {
+    list: (params) => kamdhenuRequest(`/members${qs(params)}`),
+    listAll: () => kamdhenuRequest(`/members${qs({ all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/members/${id}`),
+    create: (payload) => kamdhenuRequest('/members', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/members/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/members/${id}`, { method: 'DELETE' }),
+  },
+  materials: {
+    list: (params) => kamdhenuRequest(`/materials${qs(params)}`),
+    listAll: () => kamdhenuRequest(`/materials${qs({ all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/materials/${id}`),
+    create: (payload) => kamdhenuRequest('/materials', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/materials/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/materials/${id}`, { method: 'DELETE' }),
+  },
+  categories: {
+    list: () => kamdhenuRequest('/material-categories'),
+    create: (payload) => kamdhenuRequest('/material-categories', { method: 'POST', body: payload }),
+    remove: (id) => kamdhenuRequest(`/material-categories/${id}`, { method: 'DELETE' }),
+  },
+  purchaseOrders: {
+    list: (params) => kamdhenuRequest(`/purchase-orders${qs(params)}`),
+    listAll: (params) => kamdhenuRequest(`/purchase-orders${qs({ ...params, all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/purchase-orders/${id}`),
+    create: (payload) => kamdhenuRequest('/purchase-orders', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/purchase-orders/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/purchase-orders/${id}`, { method: 'DELETE' }),
+  },
+  materialIn: {
+    list: (params) => kamdhenuRequest(`/material-in${qs(params)}`),
+    listAll: (params) => kamdhenuRequest(`/material-in${qs({ ...params, all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/material-in/${id}`),
+    create: (payload) => kamdhenuRequest('/material-in', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/material-in/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/material-in/${id}`, { method: 'DELETE' }),
+  },
+  jobWorks: {
+    list: (params) => kamdhenuRequest(`/job-works${qs(params)}`),
+    listAll: (params) => kamdhenuRequest(`/job-works${qs({ ...params, all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/job-works/${id}`),
+    create: (payload) => kamdhenuRequest('/job-works', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/job-works/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/job-works/${id}`, { method: 'DELETE' }),
+  },
+  stock: (params) => kamdhenuRequest(`/stock${qs(params)}`),
+  dashboard: () => kamdhenuRequest('/dashboard'),
+  report: (type, params) => kamdhenuRequest(`/reports/${type}${qs(params)}`),
+  settings: () => kamdhenuRequest('/settings'),
+  updateSettings: (patch) => kamdhenuRequest('/settings', { method: 'PATCH', body: patch }),
+};
 
 // ---- Auth (public) ----
 export const authApi = {
