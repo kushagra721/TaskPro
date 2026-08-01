@@ -16,6 +16,9 @@ import KamdhenuPoFormPage from './pages/KamdhenuPoFormPage.jsx';
 import KamdhenuPoDetailPage from './pages/KamdhenuPoDetailPage.jsx';
 import KamdhenuMaterialInListPage from './pages/KamdhenuMaterialInListPage.jsx';
 import KamdhenuMaterialInFormPage from './pages/KamdhenuMaterialInFormPage.jsx';
+import KamdhenuMaterialOutListPage from './pages/KamdhenuMaterialOutListPage.jsx';
+import KamdhenuMaterialOutFormPage from './pages/KamdhenuMaterialOutFormPage.jsx';
+import KamdhenuJobWorkViewPage from './pages/KamdhenuJobWorkViewPage.jsx';
 import KamdhenuStockPage from './pages/KamdhenuStockPage.jsx';
 import KamdhenuReportsPage from './pages/KamdhenuReportsPage.jsx';
 import KamdhenuSettingsPage from './pages/KamdhenuSettingsPage.jsx';
@@ -49,10 +52,11 @@ export default function KamdhenuApp() {
         <Route index element={<Navigate to="/kamdhenu/dashboard" replace />} />
         <Route path="dashboard" element={<KamdhenuDashboardPage />} />
 
-        {/* Job Work — the core module (ADMIN + SUPERVISOR write) */}
+        {/* Job Work — the core module (ADMIN + SUPERVISOR write). v2: create →
+            IN_PROGRESS, after-picture upload on the view page → DONE (no edit). */}
         <Route path="job-works" element={adminOrSupervisor(<KamdhenuJobWorkListPage />)} />
         <Route path="job-works/new" element={adminOrSupervisor(<KamdhenuJobWorkFormPage />)} />
-        <Route path="job-works/:id/edit" element={adminOrSupervisor(<KamdhenuJobWorkFormPage />)} />
+        <Route path="job-works/:id" element={adminOrSupervisor(<KamdhenuJobWorkViewPage />)} />
 
         {/* Masters — ADMIN only */}
         <Route path="sites" element={adminOnly(<KamdhenuSitesPage />)} />
@@ -60,7 +64,8 @@ export default function KamdhenuApp() {
         <Route path="members" element={adminOnly(<KamdhenuMembersPage />)} />
         <Route path="materials" element={adminOnly(<KamdhenuMaterialsPage />)} />
 
-        {/* Purchase orders — ADMIN only */}
+        {/* Work orders (routes/API keep the historical "purchase-orders"
+            naming; only UI labels say Work Order) — ADMIN only */}
         <Route path="purchase-orders" element={adminOnly(<KamdhenuPoListPage />)} />
         <Route path="purchase-orders/new" element={adminOnly(<KamdhenuPoFormPage />)} />
         <Route path="purchase-orders/:id" element={adminOnly(<KamdhenuPoDetailPage />)} />
@@ -70,6 +75,11 @@ export default function KamdhenuApp() {
         <Route path="material-in" element={adminOrSupervisor(<KamdhenuMaterialInListPage />)} />
         <Route path="material-in/new" element={adminOrSupervisor(<KamdhenuMaterialInFormPage />)} />
         <Route path="material-in/:id/edit" element={adminOrSupervisor(<KamdhenuMaterialInFormPage />)} />
+
+        {/* Material OUT — ADMIN + SUPERVISOR */}
+        <Route path="material-out" element={adminOrSupervisor(<KamdhenuMaterialOutListPage />)} />
+        <Route path="material-out/new" element={adminOrSupervisor(<KamdhenuMaterialOutFormPage />)} />
+        <Route path="material-out/:id/edit" element={adminOrSupervisor(<KamdhenuMaterialOutFormPage />)} />
 
         <Route path="stock" element={<KamdhenuStockPage />} />
         <Route path="reports" element={adminOrSupervisor(<KamdhenuReportsPage />)} />

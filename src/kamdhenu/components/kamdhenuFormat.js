@@ -1,13 +1,19 @@
 /** Shared display formatters for the Kamdhenu ERP pages. */
 
-const DATE_FMT = new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+// en-GB gives "01 Aug 26" style parts ("Aug" not "Aug." / "aug"); joined with
+// hyphens below for the required dd-MMM-yy display (e.g. "01-Aug-26").
+const DATE_FMT = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
 
-/** ISO string/Date → "31 Jul 2026" (em-dash for empty values). */
+/** ISO string/Date → "01-Aug-26" (dd-MMM-yy; em-dash for empty values). */
 export const fmtDate = (iso) => {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return DATE_FMT.format(d);
+  const parts = { day: '', month: '', year: '' };
+  DATE_FMT.formatToParts(d).forEach((p) => {
+    if (p.type in parts) parts[p.type] = p.value;
+  });
+  return `${parts.day}-${parts.month}-${parts.year}`;
 };
 
 const MONEY_FMT = new Intl.NumberFormat('en-IN', {

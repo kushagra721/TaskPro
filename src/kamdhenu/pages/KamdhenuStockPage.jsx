@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { kamdhenuApi } from '../../api/client.js';
 import { selectKamdhenuAdmin } from '../../store/slices/kamdhenuAuthSlice.js';
 import { useKamdhenuToast } from '../components/KamdhenuToast.jsx';
+import { useKerpIsMobile } from '../components/KamdhenuDataTable.jsx';
 import { fmtQty } from '../components/kamdhenuFormat.js';
 import { exportCsv, printTable } from '../components/kamdhenuExport.js';
 
@@ -25,6 +26,7 @@ const EXPORT_COLUMNS = [
 
 export default function KamdhenuStockPage() {
   const toast = useKamdhenuToast();
+  const isMobile = useKerpIsMobile();
   const admin = useSelector(selectKamdhenuAdmin);
   const isStaff = admin?.role && admin.role !== 'ADMIN';
 
@@ -91,7 +93,7 @@ export default function KamdhenuStockPage() {
       <div className="page__head page__head--row">
         <div className="page__head-text">
           <h1 className="page__title">Material Stock</h1>
-          <p className="page__subtitle">Live stock position — Material IN adds, job works consume.</p>
+          <p className="page__subtitle">Live stock position — Material IN adds, Material OUT consumes.</p>
         </div>
         <div className="kerp-head-actions">
           <button
@@ -126,9 +128,9 @@ export default function KamdhenuStockPage() {
           </select>
         </div>
         <div className="field">
-          <label className="field__label">PO</label>
+          <label className="field__label">Work Order</label>
           <select className="input" value={poId} onChange={(e) => setPoId(e.target.value)}>
-            <option value="">All POs</option>
+            <option value="">All work orders</option>
             {pos.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.poNumber} — {p.siteName}
@@ -170,6 +172,50 @@ export default function KamdhenuStockPage() {
           </div>
         ) : rows.length === 0 ? (
           <div className="panel__empty">No stock rows match these filters.</div>
+        ) : isMobile ? (
+          // Mobile: card per stock row — same data, no horizontal scroll.
+          <div className="kerp-cards">
+            {rows.map((r) => (
+              <div key={`${r.materialId}-${r.siteId || 'all'}`} className="kerp-card">
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">Material</span>
+                  <span className="kerp-card__value task-table__name">{r.materialName}</span>
+                </div>
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">Code</span>
+                  <span className="kerp-card__value">{r.materialCode || '—'}</span>
+                </div>
+                {showSiteColumn && (
+                  <div className="kerp-card__row">
+                    <span className="kerp-card__label">Site</span>
+                    <span className="kerp-card__value">{r.siteName || 'All sites'}</span>
+                  </div>
+                )}
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">IN Qty</span>
+                  <span className="kerp-card__value">{fmtQty(r.inQty)}</span>
+                </div>
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">OUT Qty</span>
+                  <span className="kerp-card__value">{fmtQty(r.outQty)}</span>
+                </div>
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">Stock Quantity</span>
+                  <span className="kerp-card__value">{fmtQty(r.currentQty)}</span>
+                </div>
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">Minimum Stock</span>
+                  <span className="kerp-card__value">{fmtQty(r.minQty)}</span>
+                </div>
+                <div className="kerp-card__row">
+                  <span className="kerp-card__label">Status</span>
+                  <span className="kerp-card__value">
+                    <span className={`tag ${STOCK_TAG[r.status] || ''}`}>{r.status}</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="table-wrap">
             <table className="task-table">

@@ -54,7 +54,7 @@ export default function KamdhenuPoListPage() {
         setRows(res.purchaseOrders || []);
         setTotalPages(res.pagination?.totalPages || 1);
       } catch (err) {
-        if (!cancelled) toast.error(err.message || 'Could not load purchase orders');
+        if (!cancelled) toast.error(err.message || 'Could not load work orders');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -66,9 +66,9 @@ export default function KamdhenuPoListPage() {
   }, [page, q, siteId]);
 
   const columns = [
-    { key: 'poNumber', label: 'PO No.', render: (r) => <span className="task-table__name">{r.poNumber}</span> },
+    { key: 'poNumber', label: 'WO No', render: (r) => <span className="task-table__name">{r.poNumber}</span> },
     { key: 'siteName', label: 'Site' },
-    { key: 'poDate', label: 'PO Date', render: (r) => fmtDate(r.poDate) },
+    { key: 'poDate', label: 'WO Date', render: (r) => fmtDate(r.poDate) },
     { key: 'deliveryDate', label: 'Delivery Date', render: (r) => fmtDate(r.deliveryDate) },
     { key: 'donePercent', label: 'Progress', render: (r) => <KamdhenuProgress percent={r.donePercent} /> },
   ];
@@ -77,11 +77,11 @@ export default function KamdhenuPoListPage() {
     <div className="page">
       <div className="page__head page__head--row">
         <div className="page__head-text">
-          <h1 className="page__title">Purchase Orders</h1>
+          <h1 className="page__title">Work Orders</h1>
           <p className="page__subtitle">Work-type orders per site — progress comes from job work entries.</p>
         </div>
         <button type="button" className="btn btn--sm" onClick={() => navigate('/kamdhenu/purchase-orders/new')}>
-          <PlusIcon size={15} /> Add PO
+          <PlusIcon size={15} /> Create Work Order
         </button>
       </div>
 
@@ -115,9 +115,9 @@ export default function KamdhenuPoListPage() {
         onPageChange={setPage}
         searchValue={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search PO number…"
+        searchPlaceholder="Search WO number…"
         onRowClick={(row) => navigate(`/kamdhenu/purchase-orders/${row.id}`)}
-        emptyText="No purchase orders found."
+        emptyText="No work orders found."
       />
     </div>
   );

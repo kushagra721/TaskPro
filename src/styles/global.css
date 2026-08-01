@@ -10423,3 +10423,234 @@ a.btn {
   letter-spacing: 0.04em;
   margin-bottom: 8px;
 }
+
+/* Kamdhenu Aviation login skin — overrides the auth screen's default purple
+   theme with the landing page's aviation blues, scoped under .kav-auth so no
+   other login (Task Pro / Platform) is affected. */
+.kav-auth .auth__brand {
+  background:
+    radial-gradient(700px 700px at 20% 20%, rgba(33, 150, 243, 0.35), transparent 60%),
+    linear-gradient(160deg, #0a2a52 0%, #0a4da3 55%, #2196f3 100%);
+}
+
+.kav-auth .brand__logo {
+  display: flex;
+  align-items: center;
+}
+
+.kav-auth .auth__mobile-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kav-auth .btn {
+  background: linear-gradient(135deg, #0a4da3, #2196f3);
+  box-shadow: 0 10px 24px -8px rgba(33, 150, 243, 0.55);
+}
+
+.kav-auth .link-btn {
+  color: #1976d2;
+}
+
+.kav-auth .input:focus,
+.kav-auth .otp__box:focus {
+  border-color: #2196f3;
+  box-shadow: 0 0 0 4px rgba(33, 150, 243, 0.15);
+}
+
+.kav-auth .otp__box--filled {
+  border-color: #1976d2;
+}
+
+.kav-auth .verify__email {
+  color: #0a4da3;
+}
+
+/* --- Job-Work v2 / Material OUT / mobile-card additions (kerp block) ----- */
+
+/* Two-step wizard indicator on the Create Job Work page */
+.kerp-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kerp-stepper__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.kerp-stepper__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.kerp-stepper__step--active {
+  color: var(--text);
+}
+
+.kerp-stepper__step--active .kerp-stepper__num {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+.kerp-stepper__step--done .kerp-stepper__num {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+
+.kerp-stepper__bar {
+  flex: 0 0 42px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+/* Worker-assignment checkbox grid (Create Job Work, step 1) */
+.kerp-worker-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.kerp-worker-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.kerp-worker-check__role {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+/* Single-image (before/after picture) upload bits */
+.kerp-file-input {
+  padding-top: 7px;
+  height: auto;
+  max-width: 420px;
+}
+
+.kerp-photo-preview {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.kerp-photo-preview__img {
+  display: block;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.kerp-jw-thumb {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+/* Mobile list cards — KamdhenuDataTable (and the stock page) swap their
+   tables for these stacked "label: value" tiles below 720px, so no list
+   screen ever scrolls horizontally on a phone. */
+.kerp-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kerp-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.kerp-card--click {
+  cursor: pointer;
+}
+
+.kerp-card--click:active {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.kerp-card__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+  min-width: 0;
+}
+
+.kerp-card__label {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.kerp-card__value {
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.kerp-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+}
+
+/* Dashboard mini-tables & other embedded tables must scroll inside their own
+   wrapper on small screens rather than widening the page. */
+.kerp-mini-table {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+@media (max-width: 720px) {
+  .kerp-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .kerp-stepper__bar {
+    flex-basis: 20px;
+  }
+}

@@ -11,18 +11,46 @@ import {
 const RESEND_SECONDS = 30;
 const OTP_LENGTH = 4;
 
-/** Mirrors `PlatformLogin`'s brand panel (same `.auth__brand`/`.brand__*`
- *  classes) — Kamdhenu's own branding only, no Task Pro header. */
+/** The Kamdhenu Aviation K-wing mark (same original artwork as the landing
+ *  page's `AviationLogo`, inlined as plain SVG so this page adds no MUI
+ *  dependency to the portal bundle). */
+function AviationMark({ size = 40 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 48 48"
+      role="img"
+      aria-label="Kamdhenu Aviation logo"
+      style={{ display: 'block', flexShrink: 0 }}
+    >
+      <defs>
+        <linearGradient id="kavLoginGrad" x1="0" y1="48" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#0a4da3" />
+          <stop offset="1" stopColor="#2196f3" />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="1" width="46" height="46" rx="12" fill="#ffffff" />
+      <rect x="11" y="10" width="6.5" height="28" rx="2.5" fill="url(#kavLoginGrad)" />
+      <path d="M19 24.5 L38.5 8.5 C40.5 7 42.5 8.8 41.2 10.9 L30 25.5 Z" fill="url(#kavLoginGrad)" />
+      <path d="M23.5 23.4 L36.5 12.6 L34.6 15.2 L26.4 22.2 Z" fill="#ffffff" opacity="0.85" />
+      <path d="M19 26.5 L28.5 26.5 L38 38.5 C39 39.8 37.6 41.4 36.2 40.5 L19 30 Z" fill="url(#kavLoginGrad)" opacity="0.92" />
+    </svg>
+  );
+}
+
+/** Aviation-branded panel matching the Kamdhenu Aviation landing page's
+ *  light/blue theme — no Task Pro, ERP, or "admin" wording. */
 function KamdhenuBrandPanel() {
   return (
     <aside className="auth__brand">
       <div className="brand__logo">
-        <span className="brand__logo-mark">✓</span>
-        Kamdhenu&nbsp;ERP
+        <AviationMark />
+        <span style={{ marginLeft: 10 }}>Kamdhenu&nbsp;Aviation</span>
       </div>
       <div className="brand__hero">
-        <h1>Kamdhenu admin</h1>
-        <p>Sign in with your email — password or a one-time code, your choice.</p>
+        <h1>Kamdhenu Aviation</h1>
+        <p>Professional Aircraft Painting &amp; Aviation Surface Solutions.</p>
       </div>
     </aside>
   );
@@ -48,6 +76,21 @@ export default function KamdhenuLogin() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [step, cooldown]);
+
+  // Brand the tab like the Kamdhenu Aviation landing page (same favicon).
+  // Deliberately NOT restored on unmount — the whole /kamdhenu portal session
+  // keeps the aviation branding after sign-in.
+  useEffect(() => {
+    document.title = 'Kamdhenu Aviation — Sign in';
+    let link = document.querySelector('link[rel="icon"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = '/kamdhenu-aviation-favicon.svg';
+    link.type = 'image/svg+xml';
+  }, []);
 
   const switchMode = (next) => {
     setMode(next);
@@ -113,15 +156,15 @@ export default function KamdhenuLogin() {
   const onSubmit = mode === 'password' ? submitPassword : step === 'start' ? requestCode : handleOtpSubmit;
 
   return (
-    <div className="auth">
+    <div className="auth kav-auth">
       <KamdhenuBrandPanel />
       <div className="auth__panel">
         <form className="auth__card" onSubmit={onSubmit} noValidate>
           <div className="auth__mobile-logo">
-            <span className="brand__logo-mark">✓</span> Kamdhenu&nbsp;ERP
+            <AviationMark size={30} /> <span style={{ marginLeft: 8 }}>Kamdhenu&nbsp;Aviation</span>
           </div>
 
-          <h2 className="auth__title">{mode === 'otp' && step === 'otp' ? 'Check your email' : 'Admin sign in'}</h2>
+          <h2 className="auth__title">{mode === 'otp' && step === 'otp' ? 'Check your email' : 'Sign in'}</h2>
           <p className="auth__subtitle">
             {mode === 'password'
               ? 'Enter your email and password to sign in.'

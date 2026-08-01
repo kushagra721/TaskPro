@@ -143,7 +143,7 @@ export default function KamdhenuSettingsPage() {
             <h2 className="panel__title">Email</h2>
           </div>
           <div className="field">
-            <label className="field__label">From address (PO emails)</label>
+            <label className="field__label">From address (WO emails)</label>
             <input
               className="input"
               type="email"
@@ -167,7 +167,7 @@ export default function KamdhenuSettingsPage() {
             <textarea
               className="input kerp-textarea"
               rows={3}
-              placeholder="Terms printed at the bottom of POs"
+              placeholder="Terms printed at the bottom of work orders"
               value={form.invoiceNotes}
               onChange={setField('invoiceNotes')}
             />

@@ -5,13 +5,13 @@ import { fmtDate, fmtQty } from '../components/kamdhenuFormat.js';
 
 const CARDS = [
   { key: 'totalSites', label: 'Total Sites', accent: 'indigo' },
-  { key: 'totalPurchaseOrders', label: 'Total Purchase Orders', accent: 'violet' },
+  { key: 'totalPurchaseOrders', label: 'Total Work Orders', accent: 'violet' },
   { key: 'totalEquipment', label: 'Total Equipment', accent: 'indigo' },
   { key: 'totalMaterials', label: 'Total Materials', accent: 'emerald' },
   { key: 'totalMembers', label: 'Total Members', accent: 'emerald' },
   { key: 'totalJobWorks', label: 'Total Job Works', accent: 'violet' },
   { key: 'lowStockMaterials', label: 'Low Stock Materials', accent: 'amber' },
-  { key: 'pendingPoQty', label: 'Pending PO Quantity', accent: 'amber', format: fmtQty },
+  { key: 'pendingPoQty', label: 'Pending WO Quantity', accent: 'amber', format: fmtQty },
 ];
 
 export default function KamdhenuDashboardPage() {
@@ -175,18 +175,18 @@ export default function KamdhenuDashboardPage() {
       <div className="dash-grid">
         <section className="panel">
           <div className="panel__head">
-            <h2 className="panel__title">Latest PO Status</h2>
+            <h2 className="panel__title">Latest Work Order Status</h2>
           </div>
           {latestPoStatus.length === 0 ? (
-            <div className="panel__empty">No purchase orders yet.</div>
+            <div className="panel__empty">No work orders yet.</div>
           ) : (
             <div className="table-wrap kerp-mini-table">
               <table className="task-table">
                 <thead>
                   <tr>
-                    <th>PO No.</th>
+                    <th>WO No</th>
                     <th>Site</th>
-                    <th>PO Qty</th>
+                    <th>WO Qty</th>
                     <th>Done Qty</th>
                     <th>Progress</th>
                   </tr>

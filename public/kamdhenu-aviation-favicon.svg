@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Kamdhenu Aviation favicon: letter K with an upswept aircraft wing. -->
+  <defs>
+    <linearGradient id="kavBlue" x1="8" y1="56" x2="56" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0a4da3"/>
+      <stop offset="1" stop-color="#2196f3"/>
+    </linearGradient>
+  </defs>
+  <!-- K stem -->
+  <rect x="12" y="10" width="9" height="44" rx="3.5" fill="url(#kavBlue)"/>
+  <!-- K lower leg -->
+  <path d="M25 34 L40 54 H51 L33 30 Z" fill="url(#kavBlue)"/>
+  <!-- K upper arm as a swept wing -->
+  <path d="M25 30 L52 8 C55 6 58 8 55.5 11.5 L34 36 L25 36 Z" fill="url(#kavBlue)"/>
+  <!-- wing accent stripe -->
+  <path d="M33 27 L48 14.5 C49.4 13.4 50.8 14.6 49.7 16 L38 30 L33 30 Z" fill="#ffffff" opacity="0.85"/>
+</svg>

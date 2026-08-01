@@ -30,16 +30,35 @@ const hasPortalParam = portalParam !== null;
 // pathname is the reliable signal.
 const isPlatformPath = window.location.pathname.startsWith('/platform');
 
+// Kamdhenu Aviation public landing page — a static marketing page, no auth,
+// no Redux. Shown at the dedicated production hostname's ROOT, or at the
+// EXACT `/kamdhenu` path locally. Exact-match on the path is deliberate:
+// deeper `/kamdhenu/...` paths (login, dashboard, job-works…) belong to the
+// Kamdhenu ERP portal below and must keep working unchanged. A `?portal=`
+// param always wins over the landing so portal entry links keep working.
+const AVIATION_HOSTNAME = 'kamdhenupro.erpthemes.com';
+const pathname = window.location.pathname;
+const isAviationLanding =
+  !hasPortalParam &&
+  ((window.location.hostname === AVIATION_HOSTNAME && pathname === '/') ||
+    pathname === '/kamdhenu' ||
+    pathname === '/kamdhenu/');
+
 // A second, fully separate portal — `?portal=adminkamdhenu` specifically (not
 // any `?portal=` value, which is the existing Platform trigger below) — or
 // its own `/kamdhenu` path, for the same reload-survival reason as above.
 // Checked first so this exact value never also falls into isPlatformMode.
-const isKamdhenuMode = portalParam === 'adminkamdhenu' || window.location.pathname.startsWith('/kamdhenu');
+const isKamdhenuMode =
+  !isAviationLanding && (portalParam === 'adminkamdhenu' || pathname.startsWith('/kamdhenu'));
 
 const isPlatformMode =
-  !isKamdhenuMode && (window.location.hostname === PLATFORM_HOSTNAME || hasPortalParam || isPlatformPath);
+  !isAviationLanding &&
+  !isKamdhenuMode &&
+  (window.location.hostname === PLATFORM_HOSTNAME || hasPortalParam || isPlatformPath);
 
-if (isKamdhenuMode) {
+if (isAviationLanding) {
+  // Static page — no session to hydrate.
+} else if (isKamdhenuMode) {
   store.dispatch(bootstrapKamdhenu());
 } else if (isPlatformMode) {
   store.dispatch(bootstrapPlatform());
@@ -48,11 +67,25 @@ if (isKamdhenuMode) {
   store.dispatch(bootstrap());
 }
 
+// Lazy-loaded so the landing page's code (and MUI) is never fetched for the
+// normal Task Pro app, and vice versa.
+const KamdhenuAviationLanding = React.lazy(() => import('./kamdhenuAviation/KamdhenuAviationLanding.jsx'));
+
 ReactDOM.createRoot(document.getElementById('root')).render(
 
     <Provider store={store}>
       <BrowserRouter>
-        {isKamdhenuMode ? <KamdhenuApp /> : isPlatformMode ? <PlatformApp /> : <App />}
+        {isAviationLanding ? (
+          <React.Suspense fallback={null}>
+            <KamdhenuAviationLanding />
+          </React.Suspense>
+        ) : isKamdhenuMode ? (
+          <KamdhenuApp />
+        ) : isPlatformMode ? (
+          <PlatformApp />
+        ) : (
+          <App />
+        )}
       </BrowserRouter>
     </Provider>
 

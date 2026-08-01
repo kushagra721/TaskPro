@@ -6,12 +6,12 @@ import { exportCsv, printTable } from '../components/kamdhenuExport.js';
 
 const REPORT_TYPES = [
   { value: 'site-progress', label: 'Site Wise Progress Report' },
-  { value: 'po-progress', label: 'PO Progress Report' },
+  { value: 'po-progress', label: 'Work Order Progress Report' },
   { value: 'material-stock', label: 'Material Stock Report' },
   { value: 'material-consumption', label: 'Material Consumption Report' },
   { value: 'job-work', label: 'Job Work Report' },
   { value: 'manpower-hours', label: 'Manpower Hours Report' },
-  { value: 'pending-po', label: 'Pending PO Report' },
+  { value: 'pending-po', label: 'Pending Work Order Report' },
   { value: 'low-stock', label: 'Low Stock Report' },
 ];
 
@@ -112,9 +112,9 @@ export default function KamdhenuReportsPage() {
             </select>
           </div>
           <div className="field">
-            <label className="field__label">PO</label>
+            <label className="field__label">Work Order</label>
             <select className="input" value={poId} onChange={(e) => setPoId(e.target.value)}>
-              <option value="">All POs</option>
+              <option value="">All work orders</option>
               {pos.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.poNumber} — {p.siteName}

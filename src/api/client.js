@@ -218,13 +218,50 @@ export const kamdhenuApi = {
     update: (id, payload) => kamdhenuRequest(`/material-in/${id}`, { method: 'PUT', body: payload }),
     remove: (id) => kamdhenuRequest(`/material-in/${id}`, { method: 'DELETE' }),
   },
+  materialOut: {
+    list: (params) => kamdhenuRequest(`/material-out${qs(params)}`),
+    listAll: (params) => kamdhenuRequest(`/material-out${qs({ ...params, all: 1 })}`),
+    get: (id) => kamdhenuRequest(`/material-out/${id}`),
+    create: (payload) => kamdhenuRequest('/material-out', { method: 'POST', body: payload }),
+    update: (id, payload) => kamdhenuRequest(`/material-out/${id}`, { method: 'PUT', body: payload }),
+    remove: (id) => kamdhenuRequest(`/material-out/${id}`, { method: 'DELETE' }),
+  },
   jobWorks: {
     list: (params) => kamdhenuRequest(`/job-works${qs(params)}`),
     listAll: (params) => kamdhenuRequest(`/job-works${qs({ ...params, all: 1 })}`),
     get: (id) => kamdhenuRequest(`/job-works/${id}`),
     create: (payload) => kamdhenuRequest('/job-works', { method: 'POST', body: payload }),
-    update: (id, payload) => kamdhenuRequest(`/job-works/${id}`, { method: 'PUT', body: payload }),
+    // v3 lifecycle: each unit's after picture completes THAT unit; the job
+    // work flips to DONE once every unit is done (no general PUT).
+    uploadUnitAfter: (id, unitId, afterImageUrl) =>
+      kamdhenuRequest(`/job-works/${id}/units/${unitId}/after`, {
+        method: 'PATCH',
+        body: { afterImageUrl },
+      }),
     remove: (id) => kamdhenuRequest(`/job-works/${id}`, { method: 'DELETE' }),
+  },
+  /** Multipart, so it bypasses `kamdhenuRequest`'s JSON wrapper — same shape as
+   *  `uploadsApi.upload` / `platformApi.upload` but on the kamdhenu lane. */
+  async upload(files) {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    const headers = {};
+    const token = kamdhenuTokenStore.get();
+    if (token) headers.Authorization = `Bearer ${token}`;
+
+    let res;
+    try {
+      res = await fetch(`${API_URL}/kamdhenu/uploads`, { method: 'POST', headers, body: form });
+    } catch {
+      throw new Error('Cannot reach the server. Is the backend running?');
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const error = new Error(data.message || 'Upload failed');
+      error.status = res.status;
+      throw error;
+    }
+    return data;
   },
   stock: (params) => kamdhenuRequest(`/stock${qs(params)}`),
   dashboard: () => kamdhenuRequest('/dashboard'),

@@ -112,7 +112,7 @@ export default function KamdhenuEquipmentPage() {
       <div className="page__head page__head--row">
         <div className="page__head-text">
           <h1 className="page__title">Equipment</h1>
-          <p className="page__subtitle">Work types (Shuttering, Plaster, Flooring, Painting…) used on POs.</p>
+          <p className="page__subtitle">Work types (Shuttering, Plaster, Flooring, Painting…) used on work orders.</p>
         </div>
         <button type="button" className="btn btn--sm" onClick={openAdd}>
           <PlusIcon size={15} /> Add Equipment

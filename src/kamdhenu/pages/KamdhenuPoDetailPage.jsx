@@ -34,7 +34,7 @@ export default function KamdhenuPoDetailPage() {
         if (cancelled) return;
         setPo(res.purchaseOrder);
       } catch (err) {
-        if (!cancelled) setError(err.message || 'Could not load the purchase order');
+        if (!cancelled) setError(err.message || 'Could not load the work order');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -62,10 +62,10 @@ export default function KamdhenuPoDetailPage() {
     setBusy('delete');
     try {
       await kamdhenuApi.purchaseOrders.remove(id);
-      toast.success('Purchase order deleted');
+      toast.success('Work order deleted');
       navigate('/kamdhenu/purchase-orders');
     } catch (err) {
-      toast.error(err.message || 'Could not delete the purchase order');
+      toast.error(err.message || 'Could not delete the work order');
       setBusy('');
       setConfirmDelete(false);
     }
@@ -94,12 +94,12 @@ export default function KamdhenuPoDetailPage() {
         (company.address ? `<div style="font-size:12px">${esc(company.address)}</div>` : '') +
         `</div>` +
         `<table style="margin-bottom:16px"><tbody>` +
-        `<tr><th>PO No.</th><td>${esc(po.poNumber)}</td><th>Site</th><td>${esc(po.siteName)}</td></tr>` +
-        `<tr><th>PO Date</th><td>${esc(fmtDate(po.poDate))}</td><th>Delivery Date</th><td>${esc(
+        `<tr><th>Work Order No</th><td>${esc(po.poNumber)}</td><th>Site</th><td>${esc(po.siteName)}</td></tr>` +
+        `<tr><th>WO Date</th><td>${esc(fmtDate(po.poDate))}</td><th>Delivery Date</th><td>${esc(
           fmtDate(po.deliveryDate)
         )}</td></tr>` +
         `</tbody></table>` +
-        `<table><thead><tr><th>#</th><th>Equipment</th><th>PO Qty</th><th>Done Qty</th><th>Done %</th>` +
+        `<table><thead><tr><th>#</th><th>Equipment</th><th>WO Qty</th><th>Done Qty</th><th>Done %</th>` +
         `<th>Pending Qty</th><th>Pending %</th></tr></thead>` +
         `<tbody>${itemsRows}</tbody><tfoot>` +
         `<tr><td colspan="2" style="font-weight:800">Total</td>` +
@@ -109,7 +109,7 @@ export default function KamdhenuPoDetailPage() {
         `<td style="font-weight:800">${fmtQty(po.totalPendingQty)}</td><td></td></tr>` +
         `</tfoot></table>` +
         (company.invoiceNotes ? `<p style="font-size:11px;margin-top:16px">${esc(company.invoiceNotes)}</p>` : '');
-      printSection(`Purchase Order ${po.poNumber}`, html);
+      printSection(`Work Order ${po.poNumber}`, html);
     } finally {
       setBusy('');
     }
@@ -120,7 +120,7 @@ export default function KamdhenuPoDetailPage() {
       <div className="page">
         <div className="panel">
           <div className="panel__empty">
-            <span className="spinner" /> Loading purchase order…
+            <span className="spinner" /> Loading work order…
           </div>
         </div>
       </div>
@@ -131,9 +131,9 @@ export default function KamdhenuPoDetailPage() {
     return (
       <div className="page">
         <div className="panel">
-          <div className="alert alert--error">{error || 'Purchase order not found'}</div>
+          <div className="alert alert--error">{error || 'Work order not found'}</div>
           <button type="button" className="btn btn--sm" onClick={() => navigate('/kamdhenu/purchase-orders')}>
-            Back to PO list
+            Back to Work Order list
           </button>
         </div>
       </div>
@@ -145,11 +145,11 @@ export default function KamdhenuPoDetailPage() {
       <div className="page__head page__head--row">
         <div className="page__head-text">
           <button type="button" className="link-btn" onClick={() => navigate('/kamdhenu/purchase-orders')}>
-            <ArrowLeftIcon size={14} /> All purchase orders
+            <ArrowLeftIcon size={14} /> All work orders
           </button>
           <h1 className="page__title">{po.poNumber}</h1>
           <p className="page__subtitle">
-            {po.siteName} · PO {fmtDate(po.poDate)}
+            {po.siteName} · WO {fmtDate(po.poDate)}
             {po.deliveryDate ? ` · Delivery ${fmtDate(po.deliveryDate)}` : ''}
           </p>
         </div>
@@ -178,7 +178,7 @@ export default function KamdhenuPoDetailPage() {
 
       <div className="panel">
         <div className="panel__head">
-          <h2 className="panel__title">PO Details</h2>
+          <h2 className="panel__title">Work Order Details</h2>
           <KamdhenuProgress percent={po.donePercent} />
         </div>
         <div className="table-wrap kerp-mini-table">
@@ -186,7 +186,7 @@ export default function KamdhenuPoDetailPage() {
             <thead>
               <tr>
                 <th>Equipment</th>
-                <th>PO Quantity</th>
+                <th>WO Quantity</th>
                 <th>Done Quantity</th>
                 <th>Done %</th>
                 <th>Pending Quantity</th>
@@ -223,7 +223,7 @@ export default function KamdhenuPoDetailPage() {
 
       <div className="panel">
         <div className="panel__head">
-          <h2 className="panel__title">Material IN against this PO</h2>
+          <h2 className="panel__title">Material IN against this Work Order</h2>
         </div>
         {materialIns.length === 0 ? (
           <div className="panel__empty">No material IN vouchers yet.</div>
@@ -253,7 +253,7 @@ export default function KamdhenuPoDetailPage() {
 
       <div className="panel">
         <div className="panel__head">
-          <h2 className="panel__title">Job Works against this PO</h2>
+          <h2 className="panel__title">Job Works against this Work Order</h2>
         </div>
         {jobWorks.length === 0 ? (
           <div className="panel__empty">No job work entries yet.</div>
@@ -262,11 +262,12 @@ export default function KamdhenuPoDetailPage() {
             <table className="task-table">
               <thead>
                 <tr>
-                  <th>JW No.</th>
+                  <th>JW No</th>
                   <th>Date</th>
                   <th>Equipment</th>
+                  <th>Start Qty</th>
                   <th>Done Qty</th>
-                  <th>Hours</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,8 +276,15 @@ export default function KamdhenuPoDetailPage() {
                     <td className="task-table__name">{jw.jwNumber}</td>
                     <td>{fmtDate(jw.workDate)}</td>
                     <td>{jw.equipmentName}</td>
+                    <td>{fmtQty(jw.startQty)}</td>
                     <td>{fmtQty(jw.doneQty)}</td>
-                    <td>{fmtQty(jw.totalHours)}</td>
+                    <td>
+                      {jw.status === 'DONE' ? (
+                        <span className="tag tag--success">Done</span>
+                      ) : (
+                        <span className="tag kerp-tag--warn">In Progress</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -287,7 +295,7 @@ export default function KamdhenuPoDetailPage() {
 
       <KamdhenuConfirmDialog
         open={confirmDelete}
-        title="Delete purchase order"
+        title="Delete work order"
         message={`Delete ${po.poNumber} permanently? This cannot be undone.`}
         confirmLabel="Delete"
         danger

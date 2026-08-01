@@ -41,12 +41,12 @@ const NAV = [
   {
     type: 'group',
     key: 'po',
-    label: 'Purchase Orders',
+    label: 'Work Orders',
     Icon: ReceiptIcon,
     roles: ['ADMIN'],
     children: [
-      { to: '/kamdhenu/purchase-orders/new', label: 'Add PO', roles: ['ADMIN'] },
-      { to: '/kamdhenu/purchase-orders', label: 'PO Details', roles: ['ADMIN'], end: true },
+      { to: '/kamdhenu/purchase-orders/new', label: 'Create Work Order', roles: ['ADMIN'] },
+      { to: '/kamdhenu/purchase-orders', label: 'Work Order List', roles: ['ADMIN'], end: true },
     ],
   },
   {
@@ -58,6 +58,7 @@ const NAV = [
     children: [
       { to: '/kamdhenu/materials', label: 'Material Master', roles: ['ADMIN'] },
       { to: '/kamdhenu/material-in', label: 'Material IN', roles: ['ADMIN', 'SUPERVISOR'] },
+      { to: '/kamdhenu/material-out', label: 'Material OUT', roles: ['ADMIN', 'SUPERVISOR'] },
       { to: '/kamdhenu/stock', label: 'Material Stock', roles: ALL },
     ],
   },
@@ -94,9 +95,10 @@ const CRUMB_LABELS = {
   sites: 'Sites',
   equipment: 'Equipment',
   members: 'Members',
-  'purchase-orders': 'Purchase Orders',
+  'purchase-orders': 'Work Orders',
   materials: 'Material Master',
   'material-in': 'Material IN',
+  'material-out': 'Material OUT',
   stock: 'Material Stock',
   reports: 'Reports',
   settings: 'Settings',
@@ -171,8 +173,14 @@ export default function KamdhenuLayout() {
       <div className={`kerp-shell ${collapsed ? 'kerp-shell--collapsed' : ''} ${dark ? 'kerp-dark' : ''}`}>
         <aside className={`kerp-sidebar ${mobileOpen ? 'kerp-sidebar--open' : ''}`}>
           <div className="kerp-sidebar__brand">
-            <span className="brand__logo-mark">✓</span>
-            <span className="kerp-sidebar__brand-name">Kamdhenu ERP</span>
+            <img
+              src="/kamdhenu-aviation-favicon.svg"
+              alt="Kamdhenu Aviation"
+              width="30"
+              height="30"
+              style={{ display: 'block', flexShrink: 0 }}
+            />
+            <span className="kerp-sidebar__brand-name">Kamdhenu Aviation</span>
             <button
               type="button"
               className="kerp-collapse-btn"

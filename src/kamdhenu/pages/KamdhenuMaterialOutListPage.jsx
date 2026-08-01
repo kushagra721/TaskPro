@@ -8,7 +8,7 @@ import { fmtDate, fmtQty } from '../components/kamdhenuFormat.js';
 import Modal from '../../components/Modal.jsx';
 import { PlusIcon, EyeIcon, EditIcon, TrashIcon } from '../../components/icons.jsx';
 
-export default function KamdhenuMaterialInListPage() {
+export default function KamdhenuMaterialOutListPage() {
   const navigate = useNavigate();
   const toast = useKamdhenuToast();
 
@@ -35,11 +35,11 @@ export default function KamdhenuMaterialInListPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await kamdhenuApi.materialIn.list({ page, q });
-      setRows(res.materialIns || []);
+      const res = await kamdhenuApi.materialOut.list({ page, q });
+      setRows(res.materialOuts || []);
       setTotalPages(res.pagination?.totalPages || 1);
     } catch (err) {
-      toast.error(err.message || 'Could not load material IN vouchers');
+      toast.error(err.message || 'Could not load material OUT vouchers');
     } finally {
       setLoading(false);
     }
@@ -54,8 +54,8 @@ export default function KamdhenuMaterialInListPage() {
     setViewLoading(true);
     setViewing(row);
     try {
-      const res = await kamdhenuApi.materialIn.get(row.id);
-      setViewing(res.materialIn || row);
+      const res = await kamdhenuApi.materialOut.get(row.id);
+      setViewing(res.materialOut || row);
     } catch (err) {
       toast.error(err.message || 'Could not load the voucher');
     } finally {
@@ -66,8 +66,8 @@ export default function KamdhenuMaterialInListPage() {
   const confirmDelete = async () => {
     setDeleteBusy(true);
     try {
-      await kamdhenuApi.materialIn.remove(deleting.id);
-      toast.success('Voucher deleted — stock reduced accordingly');
+      await kamdhenuApi.materialOut.remove(deleting.id);
+      toast.success('Voucher deleted — stock restored accordingly');
       setDeleting(null);
       load();
     } catch (err) {
@@ -83,7 +83,7 @@ export default function KamdhenuMaterialInListPage() {
       label: 'Voucher',
       render: (r) => <span className="task-table__name">{r.voucherNumber}</span>,
     },
-    { key: 'inDate', label: 'Date', render: (r) => fmtDate(r.inDate) },
+    { key: 'outDate', label: 'Date', render: (r) => fmtDate(r.outDate) },
     { key: 'poNumber', label: 'WO No', render: (r) => r.poNumber || '—' },
     { key: 'siteName', label: 'Site' },
     { key: 'items', label: 'Items', render: (r) => (r.items || []).length },
@@ -93,13 +93,13 @@ export default function KamdhenuMaterialInListPage() {
     <div className="page">
       <div className="page__head page__head--row">
         <div className="page__head-text">
-          <h1 className="page__title">Material IN</h1>
+          <h1 className="page__title">Material OUT</h1>
           <p className="page__subtitle">
-            Inward material against a work order — each voucher adds to the work order site's stock.
+            Outward material against a work order — each voucher reduces the site's stock.
           </p>
         </div>
-        <button type="button" className="btn btn--sm" onClick={() => navigate('/kamdhenu/material-in/new')}>
-          <PlusIcon size={15} /> New IN Voucher
+        <button type="button" className="btn btn--sm" onClick={() => navigate('/kamdhenu/material-out/new')}>
+          <PlusIcon size={15} /> New OUT Voucher
         </button>
       </div>
 
@@ -113,7 +113,7 @@ export default function KamdhenuMaterialInListPage() {
         searchValue={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search voucher number…"
-        emptyText="No material IN vouchers yet."
+        emptyText="No material OUT vouchers yet."
         actions={(row) => (
           <>
             <button type="button" className="icon-btn" title="View items" onClick={() => openView(row)}>
@@ -123,7 +123,7 @@ export default function KamdhenuMaterialInListPage() {
               type="button"
               className="icon-btn"
               title="Edit"
-              onClick={() => navigate(`/kamdhenu/material-in/${row.id}/edit`)}
+              onClick={() => navigate(`/kamdhenu/material-out/${row.id}/edit`)}
             >
               <EditIcon size={15} />
             </button>
@@ -144,7 +144,7 @@ export default function KamdhenuMaterialInListPage() {
           <div className="kerp-detail-grid">
             <div>
               <div className="field__label">Date</div>
-              <div>{fmtDate(viewing.inDate)}</div>
+              <div>{fmtDate(viewing.outDate)}</div>
             </div>
             <div>
               <div className="field__label">Site</div>
@@ -184,8 +184,8 @@ export default function KamdhenuMaterialInListPage() {
 
       <KamdhenuConfirmDialog
         open={!!deleting}
-        title="Delete IN voucher"
-        message={`Delete ${deleting?.voucherNumber}? Stock at ${deleting?.siteName} will be reduced accordingly. This cannot be undone.`}
+        title="Delete OUT voucher"
+        message={`Delete ${deleting?.voucherNumber}? Stock at ${deleting?.siteName} will be restored accordingly. This cannot be undone.`}
         confirmLabel="Delete"
         danger
         busy={deleteBusy}

@@ -1,60 +1,66 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { kamdhenuApi } from '../../api/client.js';
 import { useKamdhenuToast } from '../components/KamdhenuToast.jsx';
 import { fmtQty } from '../components/kamdhenuFormat.js';
-import { ArrowLeftIcon, PlusIcon, TrashIcon } from '../../components/icons.jsx';
+import { ArrowLeftIcon, TrashIcon } from '../../components/icons.jsx';
 
-const EMPTY_MATERIAL = { materialId: '', quantity: '' };
-const EMPTY_MEMBER = { memberId: '', hours: '' };
-
-const dateInput = (iso) => (iso ? String(iso).slice(0, 10) : '');
 const today = () => new Date().toISOString().slice(0, 10);
 
+const IMAGE_TYPES = ['image/jpeg', 'image/png'];
+
+const emptyUnit = () => ({ serialNumber: '', beforeImageUrl: '' });
+
 /**
- * One component for `/job-works/new` and `/job-works/:id/edit` — the 4-step
- * flow as sequential sections in a single form:
- *   1. Select PO (drives the site; shows the PO's equipment progress)
- *   2. Equipment (only the PO's lines) + Done Quantity
- *   3. Materials used (with available-stock hints; server is authoritative)
- *   4. Manpower (the PO site's members) + working hours
+ * Create Job Work — two-step wizard (v3 lifecycle: create → IN_PROGRESS; each
+ * unit's after picture on the view page completes that unit, so there is no
+ * edit mode here).
+ *
+ * Step 1: work date, work order → equipment (manual pick) → start quantity
+ *         (whole number of units, validated against the line's availableQty)
+ *         → assign workers (at least one). Everything mandatory.
+ * Step 2: one row PER UNIT (startQty rows) — before picture (single JPEG/PNG;
+ *         camera on mobile via `capture`) + serial number for each unit.
+ * Navigation is free both ways: unit entries survive step switches, and if
+ * startQty changes the unit array is extended/trimmed, preserving what exists.
  */
 export default function KamdhenuJobWorkFormPage() {
-  const { id } = useParams();
-  const isEdit = !!id;
   const navigate = useNavigate();
   const toast = useKamdhenuToast();
 
   const [pos, setPos] = useState([]);
-  const [allMaterials, setAllMaterials] = useState([]);
   const [allMembers, setAllMembers] = useState([]);
 
-  const [loading, setLoading] = useState(isEdit);
-  const [loadError, setLoadError] = useState('');
+  const [step, setStep] = useState(1);
 
+  // Step 1 state
   const [workDate, setWorkDate] = useState(today());
   const [poId, setPoId] = useState('');
-  const [poDetail, setPoDetail] = useState(null); // full PO with items + progress
-  const [stockByMaterial, setStockByMaterial] = useState(new Map()); // materialId → currentQty at PO site
+  const [poDetail, setPoDetail] = useState(null); // full WO with items (availableQty per line)
   const [equipmentId, setEquipmentId] = useState('');
-  const [doneQty, setDoneQty] = useState('');
-  const [materialRows, setMaterialRows] = useState([{ ...EMPTY_MATERIAL }]);
-  const [memberRows, setMemberRows] = useState([{ ...EMPTY_MEMBER }]);
+  const [startQty, setStartQty] = useState('');
+  const [memberIds, setMemberIds] = useState([]);
+
+  // Step 2 state — one entry per equipment unit; lives here (in the parent of
+  // both steps) so it survives Back/Next switches.
+  const [units, setUnits] = useState([]);
+  const [uploadingIdx, setUploadingIdx] = useState(null);
+
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [unitErrors, setUnitErrors] = useState([]); // indexes of incomplete units
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [poRes, mRes, memRes] = await Promise.all([
+        const [poRes, memRes] = await Promise.all([
           kamdhenuApi.purchaseOrders.listAll(),
-          kamdhenuApi.materials.listAll(),
           kamdhenuApi.members.listAll(),
         ]);
         if (cancelled) return;
         setPos(poRes.purchaseOrders || []);
-        setAllMaterials(mRes.materials || []);
         setAllMembers(memRes.members || []);
       } catch (err) {
         if (!cancelled) toast.error(err.message || 'Could not load form data');
@@ -66,145 +72,152 @@ export default function KamdhenuJobWorkFormPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Step 1 — picking a PO loads its detail (equipment + progress) and the PO
-  // site's live stock for the material hints.
-  const pickPo = async (nextPoId, keepSelections = false) => {
+  // Picking a work order loads its detail (per-line availableQty) and resets
+  // the downstream choices. Unit entries are kept — the array is resized to
+  // the (new) start quantity when moving to step 2.
+  const pickPo = async (nextPoId) => {
     setPoId(nextPoId);
     setPoDetail(null);
-    setStockByMaterial(new Map());
-    if (!keepSelections) {
-      setEquipmentId('');
-      setDoneQty('');
-    }
+    setEquipmentId('');
+    setStartQty('');
+    setMemberIds([]);
     if (!nextPoId) return;
     try {
       const res = await kamdhenuApi.purchaseOrders.get(nextPoId);
-      const po = res.purchaseOrder || null;
-      setPoDetail(po);
-      if (po?.siteId) {
-        try {
-          const stockRes = await kamdhenuApi.stock({ siteId: po.siteId });
-          setStockByMaterial(new Map((stockRes.stock || []).map((r) => [r.materialId, r.currentQty])));
-        } catch {
-          /* hints just stay hidden */
-        }
-      }
+      setPoDetail(res.purchaseOrder || null);
     } catch (err) {
-      toast.error(err.message || 'Could not load the purchase order');
+      toast.error(err.message || 'Could not load the work order');
     }
   };
 
-  // Edit mode: pre-load the entry, then hydrate the PO context around it.
-  useEffect(() => {
-    if (!isEdit) return undefined;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setLoadError('');
-      try {
-        const res = await kamdhenuApi.jobWorks.get(id);
-        if (cancelled) return;
-        const jw = res.jobWork;
-        setWorkDate(dateInput(jw.workDate));
-        setEquipmentId(jw.equipmentId || '');
-        setDoneQty(String(jw.doneQty ?? ''));
-        setMaterialRows(
-          jw.materials?.length
-            ? jw.materials.map((m) => ({ materialId: m.materialId, quantity: String(m.quantity) }))
-            : [{ ...EMPTY_MATERIAL }]
-        );
-        setMemberRows(
-          jw.members?.length
-            ? jw.members.map((m) => ({ memberId: m.memberId, hours: String(m.hours) }))
-            : [{ ...EMPTY_MEMBER }]
-        );
-        await pickPo(jw.poId, true);
-      } catch (err) {
-        if (!cancelled) setLoadError(err.message || 'Could not load the job work entry');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
   const poItems = poDetail?.items || [];
   const pickedItem = poItems.find((it) => it.equipmentId === equipmentId) || null;
+  const availableQty = pickedItem ? Number(pickedItem.availableQty) || 0 : 0;
+
   const siteMembers = useMemo(
     () => allMembers.filter((m) => m.siteId && poDetail?.siteId && m.siteId === poDetail.siteId),
     [allMembers, poDetail]
   );
 
-  const setMaterialRow = (index, patch) =>
-    setMaterialRows((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));
-  const setMemberRow = (index, patch) =>
-    setMemberRows((list) => list.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+  const toggleMember = (memberId) =>
+    setMemberIds((list) =>
+      list.includes(memberId) ? list.filter((id) => id !== memberId) : [...list, memberId]
+    );
 
-  const completeMaterials = materialRows.filter((it) => it.materialId && Number(it.quantity) > 0);
-  const completeMembers = memberRows.filter((it) => it.memberId && Number(it.hours) > 0);
-  const canSubmit = !saving && workDate && poId && equipmentId && Number(doneQty) > 0;
+  const qtyNumber = Number(startQty);
+  const qtyEntered = startQty !== '' && Number.isInteger(qtyNumber) && qtyNumber > 0;
+  const qtyTooHigh = qtyEntered && pickedItem && qtyNumber > availableQty;
+
+  const validateStep1 = () => {
+    const errors = {};
+    if (!workDate) errors.workDate = 'Work date is required.';
+    if (!poId || !poDetail) errors.poId = 'Select a work order.';
+    if (poDetail && !equipmentId) errors.equipmentId = 'Select the equipment.';
+    if (equipmentId) {
+      if (startQty === '') errors.startQty = 'Enter the start quantity (number of units).';
+      else if (!qtyEntered) errors.startQty = 'Start quantity must be a whole number greater than 0.';
+      else if (qtyTooHigh)
+        errors.startQty = `Start quantity cannot exceed the pending quantity (${fmtQty(availableQty)}).`;
+    }
+    if (poDetail && memberIds.length === 0) errors.memberIds = 'Assign at least one worker.';
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Resize the unit array to `count`, PRESERVING existing entries (their
+  // uploaded pictures and serials) — extend with empties or trim the tail.
+  const syncUnits = (count) =>
+    setUnits((prev) => {
+      if (prev.length === count) return prev;
+      if (prev.length > count) return prev.slice(0, count);
+      return [...prev, ...Array.from({ length: count - prev.length }, emptyUnit)];
+    });
+
+  const goNext = () => {
+    if (!validateStep1()) return;
+    setFormError('');
+    syncUnits(qtyNumber);
+    setStep(2);
+  };
+
+  const goBack = () => {
+    setFormError('');
+    setUnitErrors([]);
+    setStep(1);
+  };
+
+  const setUnitField = (idx, patch) => {
+    setUnits((list) => list.map((u, i) => (i === idx ? { ...u, ...patch } : u)));
+    setUnitErrors((list) => list.filter((i) => i !== idx));
+  };
+
+  const onPickUnitFile = async (idx, e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-picking the same file after remove
+    if (!file) return;
+    if (!IMAGE_TYPES.includes(file.type)) {
+      toast.error('Only JPEG or PNG images are allowed');
+      return;
+    }
+    setUploadingIdx(idx);
+    try {
+      const res = await kamdhenuApi.upload([file]);
+      const url = res.files?.[0]?.url;
+      if (!url) throw new Error('Upload failed');
+      setUnitField(idx, { beforeImageUrl: url });
+    } catch (err) {
+      toast.error(err.message || 'Could not upload the picture');
+    } finally {
+      setUploadingIdx(null);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
-    if (!canSubmit) {
-      setFormError('Pick a PO, equipment and work date, and enter the done quantity.');
+    if (step !== 2 || saving || uploadingIdx !== null) return;
+
+    // Every unit row must be complete: before picture uploaded + serial filled.
+    const incomplete = units
+      .map((u, i) => (!u.beforeImageUrl || !u.serialNumber.trim() ? i : -1))
+      .filter((i) => i >= 0);
+    if (incomplete.length) {
+      setUnitErrors(incomplete);
+      setFormError(
+        `Complete ${incomplete.map((i) => `Unit ${i + 1}`).join(', ')} — every unit needs a before picture and a serial number.`
+      );
       return;
     }
+
     setSaving(true);
     setFormError('');
     const payload = {
       poId,
       equipmentId,
       workDate,
-      doneQty: Number(doneQty),
-      materials: completeMaterials.map((it) => ({ materialId: it.materialId, quantity: Number(it.quantity) })),
-      members: completeMembers.map((it) => ({ memberId: it.memberId, hours: Number(it.hours) })),
+      startQty: qtyNumber,
+      memberIds,
+      units: units.map((u) => ({
+        serialNumber: u.serialNumber.trim(),
+        beforeImageUrl: u.beforeImageUrl,
+      })),
     };
     try {
-      if (isEdit) {
-        const res = await kamdhenuApi.jobWorks.update(id, payload);
-        toast.success(`Job work ${res.jobWork?.jwNumber || ''} updated`.trim());
-      } else {
-        const res = await kamdhenuApi.jobWorks.create(payload);
-        toast.success(`Job work ${res.jobWork?.jwNumber || ''} created`.trim());
-      }
+      const res = await kamdhenuApi.jobWorks.create(payload);
+      toast.success(`Job work ${res.jobWork?.jwNumber || ''} created`.trim());
       navigate('/kamdhenu/job-works');
     } catch (err) {
-      // Server guards (insufficient stock, member from another site…) come
+      // Server guards (start qty > pending, member from another site…) come
       // back with clear messages — toast + inline.
-      toast.error(err.message || 'Could not save the job work entry');
-      setFormError(err.message || 'Could not save the job work entry');
+      toast.error(err.message || 'Could not create the job work');
+      setFormError(err.message || 'Could not create the job work');
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="panel">
-          <div className="panel__empty">
-            <span className="spinner" /> Loading job work…
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <div className="page">
-        <div className="panel">
-          <div className="alert alert--error">{loadError}</div>
-          <button type="button" className="btn btn--sm" onClick={() => navigate('/kamdhenu/job-works')}>
-            Back to Job Work
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const fieldError = (key) =>
+    fieldErrors[key] ? (
+      <span className="kerp-stock-hint kerp-stock-hint--warn">{fieldErrors[key]}</span>
+    ) : null;
 
   return (
     <div className="page">
@@ -213,277 +226,265 @@ export default function KamdhenuJobWorkFormPage() {
           <button type="button" className="link-btn" onClick={() => navigate('/kamdhenu/job-works')}>
             <ArrowLeftIcon size={14} /> All job works
           </button>
-          <h1 className="page__title">{isEdit ? 'Edit Job Work' : 'New Job Work'}</h1>
+          <h1 className="page__title">Create Job Work</h1>
           <p className="page__subtitle">
-            Record a day's work — done quantity, materials consumed and manpower hours.
+            Start a job — pick the work order, equipment and workers, then attach each unit's serial
+            number and before picture.
           </p>
         </div>
       </div>
 
-      <form onSubmit={submit} noValidate>
-        <div className="panel">
-          <div className="panel__head">
-            <h2 className="panel__title">Step 1 — Purchase order</h2>
-          </div>
-          {formError && <div className="alert alert--error">{formError}</div>}
-          <div className="kerp-form-row">
-            <div className="field">
-              <label className="field__label">Work date</label>
-              <input
-                className="input"
-                type="date"
-                value={workDate}
-                onChange={(e) => setWorkDate(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label className="field__label">Purchase order</label>
-              <select className="input" value={poId} onChange={(e) => pickPo(e.target.value)}>
-                <option value="">— Select PO —</option>
-                {pos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.poNumber} — {p.siteName}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+      {/* Stepper — both chips are clickable so users can move freely; entered
+          data is preserved in both directions. */}
+      <div className="kerp-stepper" aria-label={`Step ${step} of 2`}>
+        <div
+          className={`kerp-stepper__step ${step === 1 ? 'kerp-stepper__step--active' : 'kerp-stepper__step--done'}`}
+          role="button"
+          tabIndex={0}
+          style={{ cursor: 'pointer' }}
+          onClick={() => step === 2 && goBack()}
+          onKeyDown={(e) => e.key === 'Enter' && step === 2 && goBack()}
+        >
+          <span className="kerp-stepper__num">1</span>
+          <span className="kerp-stepper__label">Work details</span>
+        </div>
+        <span className="kerp-stepper__bar" />
+        <div
+          className={`kerp-stepper__step ${step === 2 ? 'kerp-stepper__step--active' : ''}`}
+          role="button"
+          tabIndex={0}
+          style={{ cursor: 'pointer' }}
+          onClick={() => step === 1 && goNext()}
+          onKeyDown={(e) => e.key === 'Enter' && step === 1 && goNext()}
+        >
+          <span className="kerp-stepper__num">2</span>
+          <span className="kerp-stepper__label">Units — before pictures &amp; serials</span>
+        </div>
+      </div>
 
-          {poDetail && (
-            <div className="kerp-po-context">
-              <div className="kerp-po-context__title">Site: {poDetail.siteName}</div>
-              <div className="table-wrap kerp-mini-table">
-                <table className="task-table">
-                  <thead>
-                    <tr>
-                      <th>Equipment</th>
-                      <th>PO Qty</th>
-                      <th>Done Qty</th>
-                      <th>Pending Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {poItems.map((it) => (
-                      <tr key={it.id} className="kerp-table__row--static">
-                        <td>{it.equipmentName}</td>
-                        <td>{fmtQty(it.quantity)}</td>
-                        <td>{fmtQty(it.doneQty)}</td>
-                        <td>{fmtQty(it.pendingQty)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      <form onSubmit={submit} noValidate>
+        {step === 1 && (
+          <div className="panel">
+            <div className="panel__head">
+              <h2 className="panel__title">Step 1 — Work details</h2>
+            </div>
+            {formError && <div className="alert alert--error">{formError}</div>}
+
+            <div className="kerp-form-row">
+              <div className="field">
+                <label className="field__label">Work Date *</label>
+                <input
+                  className="input"
+                  type="date"
+                  required
+                  value={workDate}
+                  onChange={(e) => setWorkDate(e.target.value)}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                />
+                {fieldError('workDate')}
+              </div>
+              <div className="field">
+                <label className="field__label">Select Work Order *</label>
+                <select className="input" value={poId} onChange={(e) => pickPo(e.target.value)}>
+                  <option value="">— Select Work Order —</option>
+                  {pos.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.poNumber} — {p.siteName}
+                    </option>
+                  ))}
+                </select>
+                {fieldError('poId')}
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="panel">
-          <div className="panel__head">
-            <h2 className="panel__title">Step 2 — Equipment &amp; done quantity</h2>
-          </div>
-          <div className="kerp-form-row">
-            <div className="field">
-              <label className="field__label">Equipment (work type)</label>
-              <select
-                className="input"
-                value={equipmentId}
-                onChange={(e) => setEquipmentId(e.target.value)}
-                disabled={!poDetail}
-              >
-                <option value="">{poDetail ? '— Select equipment —' : 'Pick a PO first'}</option>
-                {poItems.map((it) => (
-                  <option key={it.equipmentId} value={it.equipmentId}>
-                    {it.equipmentName}
-                  </option>
-                ))}
-              </select>
+            <div className="kerp-form-row">
+              <div className="field">
+                <label className="field__label">Select Equipment *</label>
+                <select
+                  className="input"
+                  value={equipmentId}
+                  onChange={(e) => {
+                    setEquipmentId(e.target.value);
+                    setStartQty('');
+                  }}
+                  disabled={!poDetail}
+                >
+                  <option value="">{poDetail ? '— Select Equipment —' : 'Pick a work order first'}</option>
+                  {poItems.map((it) => (
+                    <option key={it.equipmentId} value={it.equipmentId}>
+                      {it.equipmentName}
+                    </option>
+                  ))}
+                </select>
+                {fieldError('equipmentId')}
+              </div>
+              <div className="field">
+                <label className="field__label">Start Quantity (number of units) *</label>
+                <input
+                  className="input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={startQty}
+                  onChange={(e) => setStartQty(e.target.value)}
+                  disabled={!equipmentId}
+                />
+                {pickedItem && (
+                  <span className="kerp-stock-hint">Pending Quantity: {fmtQty(availableQty)}</span>
+                )}
+                {qtyTooHigh && (
+                  <span className="kerp-stock-hint kerp-stock-hint--warn">
+                    Start quantity cannot exceed the pending quantity ({fmtQty(availableQty)}).
+                  </span>
+                )}
+                {fieldError('startQty')}
+              </div>
             </div>
+
             <div className="field">
-              <label className="field__label">Done quantity</label>
-              <input
-                className="input"
-                type="number"
-                min="0"
-                step="any"
-                value={doneQty}
-                onChange={(e) => setDoneQty(e.target.value)}
-                disabled={!equipmentId}
-              />
-              {pickedItem && (
-                <span className="kerp-stock-hint">
-                  Pending on this PO: {fmtQty(pickedItem.pendingQty)} of {fmtQty(pickedItem.quantity)}
-                </span>
+              <label className="field__label">Assign Workers *</label>
+              {!poDetail ? (
+                <span className="kerp-stock-hint">Pick a work order first.</span>
+              ) : siteMembers.length === 0 ? (
+                <span className="kerp-stock-hint">No members at this work order's site.</span>
+              ) : (
+                <div className="kerp-worker-checks">
+                  {siteMembers.map((m) => (
+                    <label key={m.id} className="kerp-worker-check">
+                      <input
+                        type="checkbox"
+                        checked={memberIds.includes(m.id)}
+                        onChange={() => toggleMember(m.id)}
+                      />
+                      <span>
+                        {m.name} <span className="kerp-worker-check__role">({m.role})</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
               )}
+              {fieldError('memberIds')}
+            </div>
+
+            <div className="kerp-head-actions">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={() => navigate('/kamdhenu/job-works')}
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn btn--sm" onClick={goNext}>
+                Next
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="panel">
-          <div className="panel__head">
-            <h2 className="panel__title">Step 3 — Materials used</h2>
-          </div>
-          <div className="table-wrap kerp-items-table">
-            <table className="task-table">
-              <thead>
-                <tr>
-                  <th style={{ minWidth: 220 }}>Material</th>
-                  <th>Quantity Used</th>
-                  <th aria-label="Remove" />
-                </tr>
-              </thead>
-              <tbody>
-                {materialRows.map((it, i) => {
-                  const available = it.materialId ? stockByMaterial.get(it.materialId) ?? 0 : null;
-                  const over = it.materialId && Number(it.quantity) > 0 && Number(it.quantity) > available;
-                  return (
-                    <tr key={i} className="kerp-table__row--static">
-                      <td>
-                        <select
-                          className="input"
-                          value={it.materialId}
-                          onChange={(e) => setMaterialRow(i, { materialId: e.target.value })}
-                          disabled={!poDetail}
-                        >
-                          <option value="">{poDetail ? '— Select material —' : 'Pick a PO first'}</option>
-                          {allMaterials.map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.materialName}
-                            </option>
-                          ))}
-                        </select>
-                        {it.materialId && available !== null && (
-                          <span className={`kerp-stock-hint ${over ? 'kerp-stock-hint--warn' : ''}`}>
-                            Available at site: {fmtQty(available)}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <input
-                          className="input"
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={it.quantity}
-                          onChange={(e) => setMaterialRow(i, { quantity: e.target.value })}
-                        />
-                        {over && (
-                          <span className="kerp-stock-hint kerp-stock-hint--warn">
-                            Exceeds available stock — the server will reject if short.
-                          </span>
-                        )}
-                      </td>
-                      <td>
+        {step === 2 && (
+          <div className="panel">
+            <div className="panel__head">
+              <h2 className="panel__title">
+                Step 2 — {units.length} unit{units.length === 1 ? '' : 's'}: before picture &amp;
+                serial number
+              </h2>
+            </div>
+            {formError && <div className="alert alert--error">{formError}</div>}
+
+            {units.map((unit, idx) => (
+              <div
+                key={idx}
+                className="panel"
+                style={{
+                  marginBottom: 12,
+                  ...(unitErrors.includes(idx) ? { borderColor: '#e5484d' } : {}),
+                }}
+              >
+                <div className="panel__head">
+                  <h3 className="panel__title">Unit {idx + 1}</h3>
+                </div>
+                <div className="kerp-form-row">
+                  <div className="field">
+                    <label className="field__label">Before Picture (JPEG/PNG) *</label>
+                    {unit.beforeImageUrl ? (
+                      <div className="kerp-photo-preview">
+                        <a href={unit.beforeImageUrl} target="_blank" rel="noreferrer">
+                          <img
+                            src={unit.beforeImageUrl}
+                            alt={`Unit ${idx + 1} before`}
+                            className="kerp-photo-preview__img"
+                          />
+                        </a>
                         <button
                           type="button"
                           className="icon-btn icon-btn--danger"
-                          title="Remove row"
-                          onClick={() => setMaterialRows((list) => list.filter((_, j) => j !== i))}
-                          disabled={materialRows.length === 1}
+                          title="Change picture"
+                          onClick={() => setUnitField(idx, { beforeImageUrl: '' })}
                         >
                           <TrashIcon size={15} />
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={() => setMaterialRows((list) => [...list, { ...EMPTY_MATERIAL }])}
-          >
-            <PlusIcon size={15} /> Add material
-          </button>
-        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          className="input kerp-file-input"
+                          type="file"
+                          accept="image/jpeg,image/png"
+                          capture="environment"
+                          onChange={(e) => onPickUnitFile(idx, e)}
+                          disabled={uploadingIdx !== null}
+                        />
+                        <span className="kerp-stock-hint">
+                          One image only — the camera opens on mobile; pick a file on desktop.
+                        </span>
+                      </>
+                    )}
+                    {uploadingIdx === idx && (
+                      <span className="kerp-stock-hint">
+                        <span className="spinner" /> Uploading picture…
+                      </span>
+                    )}
+                  </div>
+                  <div className="field">
+                    <label className="field__label">Serial Number *</label>
+                    <input
+                      className="input"
+                      type="text"
+                      value={unit.serialNumber}
+                      onChange={(e) => setUnitField(idx, { serialNumber: e.target.value })}
+                      placeholder="e.g. SN-1024"
+                    />
+                  </div>
+                </div>
+                {unitErrors.includes(idx) && (
+                  <span className="kerp-stock-hint kerp-stock-hint--warn">
+                    This unit needs {!unit.beforeImageUrl ? 'a before picture' : ''}
+                    {!unit.beforeImageUrl && !unit.serialNumber.trim() ? ' and ' : ''}
+                    {!unit.serialNumber.trim() ? 'a serial number' : ''}.
+                  </span>
+                )}
+              </div>
+            ))}
 
-        <div className="panel">
-          <div className="panel__head">
-            <h2 className="panel__title">Step 4 — Manpower</h2>
+            <div className="kerp-head-actions">
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                onClick={goBack}
+                disabled={saving}
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                className="btn btn--sm"
+                disabled={saving || uploadingIdx !== null}
+              >
+                {saving ? <span className="spinner" /> : 'Submit'}
+              </button>
+            </div>
           </div>
-          <div className="table-wrap kerp-items-table">
-            <table className="task-table">
-              <thead>
-                <tr>
-                  <th style={{ minWidth: 220 }}>Member</th>
-                  <th>Working Hours</th>
-                  <th aria-label="Remove" />
-                </tr>
-              </thead>
-              <tbody>
-                {memberRows.map((it, i) => (
-                  <tr key={i} className="kerp-table__row--static">
-                    <td>
-                      <select
-                        className="input"
-                        value={it.memberId}
-                        onChange={(e) => setMemberRow(i, { memberId: e.target.value })}
-                        disabled={!poDetail}
-                      >
-                        <option value="">
-                          {poDetail
-                            ? siteMembers.length
-                              ? '— Select member —'
-                              : 'No members at this site'
-                            : 'Pick a PO first'}
-                        </option>
-                        {siteMembers.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} ({m.role})
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td>
-                      <input
-                        className="input"
-                        type="number"
-                        min="0"
-                        step="any"
-                        value={it.hours}
-                        onChange={(e) => setMemberRow(i, { hours: e.target.value })}
-                      />
-                    </td>
-                    <td>
-                      <button
-                        type="button"
-                        className="icon-btn icon-btn--danger"
-                        title="Remove row"
-                        onClick={() => setMemberRows((list) => list.filter((_, j) => j !== i))}
-                        disabled={memberRows.length === 1}
-                      >
-                        <TrashIcon size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={() => setMemberRows((list) => [...list, { ...EMPTY_MEMBER }])}
-          >
-            <PlusIcon size={15} /> Add member
-          </button>
-        </div>
-
-        <div className="kerp-head-actions">
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            onClick={() => navigate('/kamdhenu/job-works')}
-            disabled={saving}
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn--sm" disabled={!canSubmit}>
-            {saving ? <span className="spinner" /> : isEdit ? 'Save changes' : 'Save job work'}
-          </button>
-        </div>
+        )}
       </form>
     </div>
   );
