@@ -1,4 +1,48 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { isNativeApp } from '../utils/native.js';
+
+/**
+ * Where the API lives.
+ *
+ * Web takes `VITE_API_URL` verbatim. The **native (Capacitor) build** can't:
+ * inside the WebView `localhost` is the phone/emulator itself, so a dev-machine
+ * URL of `http://localhost:5000` resolves to nothing and every request fails
+ * with "Cannot reach the server" — which is exactly what it looked like.
+ *
+ * `VITE_NATIVE_API_URL` is the explicit override (set it to your LAN IP for a
+ * real device, or the deployed https URL). With it unset, a localhost host is
+ * rewritten to **10.0.2.2**, the Android emulator's standing alias for the host
+ * machine — so the default `.env` works in the emulator with no extra setup.
+ * Note any http:// host must also be allowed in the app's
+ * network_security_config.xml, or Android blocks it before we ever see it.
+ */
+const resolveApiUrl = () => {
+  const web = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  if (!isNativeApp()) return web;
+
+  const native = import.meta.env.VITE_NATIVE_API_URL;
+  if (native) return native;
+
+  return web.replace(/^(https?:\/\/)(localhost|127\.0\.0\.1)(?=[:/]|$)/i, '$110.0.2.2');
+};
+
+// Trailing slash trimmed once, here, because every caller below appends a path
+// that already starts with one — `VITE_API_URL=.../api/` was producing
+// `/api//auth/login`. Express happened to route that anyway, so it went
+// unnoticed until the native error message printed the URL in full.
+const API_URL = resolveApiUrl().replace(/\/+$/, '');
+
+/**
+ * Message for a fetch that never reached a server (DNS, refused, blocked).
+ *
+ * The native build names the URL it actually tried, because there the address
+ * is a build-time constant the user can't see: an unreachable dev machine and
+ * an Android-blocked cleartext request look identical on screen otherwise, and
+ * that ambiguity is what made this hard to diagnose the first time.
+ */
+const unreachableMessage = () =>
+  isNativeApp()
+    ? `Cannot reach the server at ${API_URL}. Check VITE_NATIVE_API_URL and that this host is allowed in network_security_config.xml.`
+    : 'Cannot reach the server. Is the backend running?';
 
 const TOKEN_KEY = 'taskpro_token';
 // Separate key from TOKEN_KEY — a platform (Super Admin/Reseller) session and
@@ -27,6 +71,29 @@ export const kamdhenuTokenStore = {
   get: () => localStorage.getItem(KAMDHENU_TOKEN_KEY),
   set: (token) => localStorage.setItem(KAMDHENU_TOKEN_KEY, token),
   clear: () => localStorage.removeItem(KAMDHENU_TOKEN_KEY),
+};
+
+// The tenant the **mobile app** is signed in to, chosen once by company code
+// on first launch (see pages/CompanyCodePage.jsx). Persisted so every later
+// launch — and every request below — carries the right tenant without asking
+// again. Never written by the web app, which resolves its tenant from the
+// hostname instead; `companyStore.get()` returning null there is what keeps
+// the web behaviour untouched.
+const COMPANY_KEY = 'taskpro_company';
+
+export const companyStore = {
+  get: () => {
+    try {
+      const raw = localStorage.getItem(COMPANY_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      // Corrupt/partial value from an interrupted write — treat as "not set"
+      // so the app falls back to asking for the code rather than crashing.
+      return null;
+    }
+  },
+  set: (company) => localStorage.setItem(COMPANY_KEY, JSON.stringify(company)),
+  clear: () => localStorage.removeItem(COMPANY_KEY),
 };
 
 /**
@@ -63,6 +130,12 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
     // organization.controller.js#create.
     'X-App-Host': window.location.hostname,
   };
+  // Mobile only. The backend prefers this over X-App-Host when present, so a
+  // native app identifies its tenant explicitly instead of by a hostname it
+  // doesn't meaningfully have. Absent in the browser, where nothing sets it.
+  const company = companyStore.get();
+  if (company?.companyCode) headers['X-Company-Code'] = company.companyCode;
+
   if (auth) {
     const token = tokenStore.get();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -76,7 +149,7 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error('Cannot reach the server. Is the backend running?');
+    throw new Error(unreachableMessage());
   }
 
   const data = await res.json().catch(() => ({}));
@@ -108,7 +181,7 @@ async function platformRequest(path, { method = 'GET', body, auth = true } = {})
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error('Cannot reach the server. Is the backend running?');
+    throw new Error(unreachableMessage());
   }
 
   const data = await res.json().catch(() => ({}));
@@ -140,7 +213,7 @@ async function kamdhenuRequest(path, { method = 'GET', body, auth = true } = {})
       body: body ? JSON.stringify(body) : undefined,
     });
   } catch {
-    throw new Error('Cannot reach the server. Is the backend running?');
+    throw new Error(unreachableMessage());
   }
 
   const data = await res.json().catch(() => ({}));
@@ -253,7 +326,7 @@ export const kamdhenuApi = {
     try {
       res = await fetch(`${API_URL}/kamdhenu/uploads`, { method: 'POST', headers, body: form });
     } catch {
-      throw new Error('Cannot reach the server. Is the backend running?');
+      throw new Error(unreachableMessage());
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -272,6 +345,9 @@ export const kamdhenuApi = {
 
 // ---- Auth (public) ----
 export const authApi = {
+  // Mobile step 1 — resolve a company code to its tenant before any login.
+  // Encoded because the user types it freely; the server normalises it anyway.
+  company: (code) => request(`/auth/company/${encodeURIComponent(code)}`, { auth: false }),
   signup: (payload) => request('/auth/signup', { method: 'POST', body: payload, auth: false }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload, auth: false }),
   loginWithPassword: (payload) => request('/auth/login/password', { method: 'POST', body: payload, auth: false }),
@@ -441,7 +517,7 @@ export const uploadsApi = {
     try {
       res = await fetch(`${API_URL}/uploads`, { method: 'POST', headers, body: form });
     } catch {
-      throw new Error('Cannot reach the server. Is the backend running?');
+      throw new Error(unreachableMessage());
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -579,7 +655,7 @@ export const platformApi = {
     try {
       res = await fetch(`${API_URL}/platform/uploads`, { method: 'POST', headers, body: form });
     } catch {
-      throw new Error('Cannot reach the server. Is the backend running?');
+      throw new Error(unreachableMessage());
     }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

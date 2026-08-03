@@ -7623,6 +7623,55 @@ a.btn {
   border-color: var(--primary);
 }
 
+.domain-wizard__hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Mobile login: which company this device is signed in to, above the email
+   field, with the escape hatch for a mistyped code. Never rendered on web. */
+.company-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-size: 13px;
+}
+
+.company-strip__text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The code entry itself — spaced caps, so a transcribed code is easy to
+   proof-read on a phone. */
+.input--code {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Company code — shown monospaced wherever it's read back, since it's a value
+   people transcribe into a phone rather than prose. */
+.code-chip {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+}
+
 .domain-wizard__record {
   background: var(--surface-2);
   border: 1px solid var(--border);

@@ -101,6 +101,7 @@ export default function CustomDomainsPage() {
                 <thead>
                   <tr>
                     <th>Domain</th>
+                    <th>Company code</th>
                     <th>Reseller</th>
                     <th>Status</th>
                     <th>Created</th>
@@ -128,6 +129,7 @@ export default function CustomDomainsPage() {
                           </a>
                         )}
                       </td>
+                      <td><code className="code-chip">{d.companyCode}</code></td>
                       <td>{d.reseller?.name || '—'}</td>
                       <td><span className={`status-pill ${STATUS_PILL[d.status]}`}>{STATUS_LABEL[d.status]}</span></td>
                       <td className="nowrap">{formatDate(d.createdAt)}</td>
@@ -169,6 +171,7 @@ export default function CustomDomainsPage() {
                     <span className={`status-pill ${STATUS_PILL[d.status]} tcard__del`}>{STATUS_LABEL[d.status]}</span>
                   </div>
                   <div className="tcard__tags">
+                    <span><code className="code-chip">{d.companyCode}</code></span>
                     <span>{d.reseller?.name || 'No reseller'}</span>
                     {d.status === 'LIVE' && (
                       <a

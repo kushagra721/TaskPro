@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TaskPro</string>
+    <string name="title_activity_main">TaskPro</string>
+    <string name="package_name">com.taskpro.app</string>
+    <string name="custom_url_scheme">com.taskpro.app</string>
+</resources>

@@ -9,7 +9,19 @@ import { bootstrapKamdhenu } from './store/slices/kamdhenuAuthSlice.js';
 import App from './App.jsx';
 import PlatformApp from './platform/PlatformApp.jsx';
 import KamdhenuApp from './kamdhenu/KamdhenuApp.jsx';
+import NativeApp from './native/NativeApp.jsx';
+import { isNativeApp } from './utils/native.js';
 import './styles/global.css';
+
+// The Android/iOS build takes an entirely separate path and is checked FIRST,
+// because none of the web signals below can work there: a WebView has no
+// meaningful hostname and never carries a `?portal=` param, so every native
+// launch would otherwise fall through to the plain <App/> and its marketing
+// home page. <NativeApp/> owns the mobile launch sequence instead — company
+// code, then product selection, then session validation. It also does its own
+// bootstrapping, since which session to restore isn't known until the company
+// code has picked a product.
+const isNative = isNativeApp();
 
 // Platform (Super Admin / Reseller) mode: the platform's own dedicated
 // hostname, OR a `?portal=` query param — on ANY hostname, by explicit
@@ -56,7 +68,10 @@ const isPlatformMode =
   !isKamdhenuMode &&
   (window.location.hostname === PLATFORM_HOSTNAME || hasPortalParam || isPlatformPath);
 
-if (isAviationLanding) {
+if (isNative) {
+  // <NativeApp/> hydrates the right session once the company code names a
+  // product — bootstrapping here would restore the wrong one.
+} else if (isAviationLanding) {
   // Static page — no session to hydrate.
 } else if (isKamdhenuMode) {
   store.dispatch(bootstrapKamdhenu());
@@ -75,7 +90,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
     <Provider store={store}>
       <BrowserRouter>
-        {isAviationLanding ? (
+        {isNative ? (
+          <NativeApp />
+        ) : isAviationLanding ? (
           <React.Suspense fallback={null}>
             <KamdhenuAviationLanding />
           </React.Suspense>

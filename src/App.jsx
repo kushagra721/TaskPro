@@ -59,10 +59,18 @@ function PublicOnly({ children }) {
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
-export default function App() {
+/**
+ * `nativeEntryPath` is supplied only by the mobile shell (`native/NativeApp`),
+ * which has already resolved the company code and verified the session. It
+ * replaces the marketing home page as the app's entry point: the native app
+ * has no home screen, so `/` becomes a redirect to either the dashboard or
+ * login, decided before render. On web the prop is absent and `/` renders
+ * `HomeLanding` exactly as before.
+ */
+export default function App({ nativeEntryPath }) {
   return (
     <Routes>
-      <Route path="/" element={<HomeLanding />} />
+      <Route path="/" element={nativeEntryPath ? <Navigate to={nativeEntryPath} replace /> : <HomeLanding />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/product" element={<ProductPage />} />
       <Route path="/pricing" element={<PricingPage />} />

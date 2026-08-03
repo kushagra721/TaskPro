@@ -36,10 +36,17 @@ const adminOrSupervisor = (page) => <RequireRole roles={['ADMIN', 'SUPERVISOR']}
 
 /** Entirely separate route tree from <App/> and <PlatformApp/> — mounted
  *  instead of them (never alongside) by main.jsx's `?portal=adminkamdhenu`
- *  check, so it can't interfere with either existing app's routing. */
-export default function KamdhenuApp() {
+ *  check, so it can't interfere with either existing app's routing.
+ *
+ *  `nativeEntryPath` is supplied only by the mobile shell
+ *  (`native/NativeApp`), which reaches this tree when the company code maps to
+ *  Kamdhenu. The app launches at `/`, which on web has no meaning here (the
+ *  catch-all sends it to login); natively it becomes the already-decided entry
+ *  route — dashboard for a verified session, login otherwise. */
+export default function KamdhenuApp({ nativeEntryPath }) {
   return (
     <Routes>
+      {nativeEntryPath && <Route path="/" element={<Navigate to={nativeEntryPath} replace />} />}
       <Route path="/kamdhenu/login" element={<KamdhenuLogin />} />
       <Route
         path="/kamdhenu"

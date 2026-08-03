@@ -93,6 +93,8 @@ export default function AddDomainPage() {
   const [step, setStep] = useState(0);
 
   const [domainInput, setDomainInput] = useState('');
+  const [companyCode, setCompanyCode] = useState('');
+  const [codeTouched, setCodeTouched] = useState(false);
   const [resellerId, setResellerId] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -117,6 +119,16 @@ export default function AddDomainPage() {
     });
   }, [id]);
 
+  // Suggest a code from the brand part of the domain ("app.brandx.com" →
+  // "BRANDX") — a convenience only; it's still validated and uniqueness-checked
+  // server-side. Stops the moment the admin types in the field themselves.
+  useEffect(() => {
+    if (codeTouched) return;
+    const labels = domainInput.trim().toLowerCase().split('.').filter(Boolean);
+    const base = labels.length > 1 ? labels[labels.length - 2] : labels[0] || '';
+    setCompanyCode(base.replace(/[^a-z0-9]/g, '').toUpperCase().slice(0, 20));
+  }, [domainInput, codeTouched]);
+
   // Auto-poll DNS every 8s while waiting on step 2, same interval the
   // reference design's "Auto-checking every 8s" copy promises.
   useEffect(() => {
@@ -131,7 +143,7 @@ export default function AddDomainPage() {
     setError('');
     setBusy(true);
     try {
-      const res = await platformApi.domains.create({ domain: domainInput, resellerId });
+      const res = await platformApi.domains.create({ domain: domainInput, companyCode, resellerId });
       setDomain(res.domain);
       setStep(1);
       // So a refresh mid-wizard resumes here instead of re-creating a domain.
@@ -224,6 +236,28 @@ export default function AddDomainPage() {
               />
             </div>
             <div className="domain-wizard__field">
+              <label htmlFor="companyCode">
+                Company code <span className="req">*</span>
+              </label>
+              <input
+                id="companyCode"
+                className="domain-wizard__input"
+                value={companyCode}
+                onChange={(e) => {
+                  setCodeTouched(true);
+                  // Normalised as you type, exactly as the server will store
+                  // it — so what the admin reads back is what a user types in.
+                  setCompanyCode(e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase());
+                }}
+                placeholder="BRANDX"
+                maxLength={20}
+              />
+              <p className="domain-wizard__hint">
+                What users type in the Android/iOS app instead of a web address. Unique across the platform, 4–20
+                letters and numbers.
+              </p>
+            </div>
+            <div className="domain-wizard__field">
               <label>
                 Reseller <span className="req">*</span>
               </label>
@@ -235,7 +269,11 @@ export default function AddDomainPage() {
               />
             </div>
             <div className="domain-wizard__actions">
-              <button className="btn" type="submit" disabled={busy || !domainInput.trim() || !resellerId}>
+              <button
+                className="btn"
+                type="submit"
+                disabled={busy || !domainInput.trim() || companyCode.length < 4 || !resellerId}
+              >
                 {busy ? <span className="spinner" /> : (<>Continue <ArrowRightIcon size={16} /></>)}
               </button>
             </div>

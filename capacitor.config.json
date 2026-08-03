@@ -1,0 +1,8 @@
+{
+  "appId": "com.taskpro.app",
+  "appName": "TaskPro",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "http"
+  }
+}
