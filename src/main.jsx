@@ -6,10 +6,6 @@ import { store } from './store/store.js';
 import { bootstrap } from './store/slices/authSlice.js';
 import { bootstrapPlatform } from './store/slices/platformAuthSlice.js';
 import { bootstrapKamdhenu } from './store/slices/kamdhenuAuthSlice.js';
-import App from './App.jsx';
-import PlatformApp from './platform/PlatformApp.jsx';
-import KamdhenuApp from './kamdhenu/KamdhenuApp.jsx';
-import NativeApp from './native/NativeApp.jsx';
 import { isNativeApp } from './utils/native.js';
 import './styles/global.css';
 
@@ -84,25 +80,44 @@ if (isNative) {
 
 // Lazy-loaded so the landing page's code (and MUI) is never fetched for the
 // normal Task Pro app, and vice versa.
+// Every root tree is lazy, not just the landing page.
+//
+// Exactly ONE of these ever renders in a given page load (the branch is decided
+// above, before render), but a static import ships all of them to every
+// visitor: a Task Pro user was downloading the Super Admin portal and the
+// Kamdhenu ERP as well. Splitting here means each visitor fetches only the
+// product they actually opened.
 const KamdhenuAviationLanding = React.lazy(() => import('./kamdhenuAviation/KamdhenuAviationLanding.jsx'));
+const App = React.lazy(() => import('./App.jsx'));
+const PlatformApp = React.lazy(() => import('./platform/PlatformApp.jsx'));
+const KamdhenuApp = React.lazy(() => import('./kamdhenu/KamdhenuApp.jsx'));
+const NativeApp = React.lazy(() => import('./native/NativeApp.jsx'));
+
+/** Shown only while a root chunk is in flight — a blank screen here reads as a
+ *  crash, and on a cold mobile connection that gap is visible. */
+const RootFallback = () => (
+  <div style={{ display: 'grid', placeItems: 'center', minHeight: '100vh' }}>
+    <span className="spinner" />
+  </div>
+);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
 
     <Provider store={store}>
       <BrowserRouter>
-        {isNative ? (
-          <NativeApp />
-        ) : isAviationLanding ? (
-          <React.Suspense fallback={null}>
+        <React.Suspense fallback={<RootFallback />}>
+          {isNative ? (
+            <NativeApp />
+          ) : isAviationLanding ? (
             <KamdhenuAviationLanding />
-          </React.Suspense>
-        ) : isKamdhenuMode ? (
-          <KamdhenuApp />
-        ) : isPlatformMode ? (
-          <PlatformApp />
-        ) : (
-          <App />
-        )}
+          ) : isKamdhenuMode ? (
+            <KamdhenuApp />
+          ) : isPlatformMode ? (
+            <PlatformApp />
+          ) : (
+            <App />
+          )}
+        </React.Suspense>
       </BrowserRouter>
     </Provider>
 

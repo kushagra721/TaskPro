@@ -1,37 +1,43 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectAuth } from './store/slices/authSlice.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AppLayout from './layout/AppLayout.jsx';
-import HomeLanding from './pages/HomeLanding.jsx';
-import AboutPage from './pages/AboutPage.jsx';
-import ProductPage from './pages/ProductPage.jsx';
-import PricingPage from './pages/PricingPage.jsx';
-import Login from './pages/Login.jsx';
-import Signup from './pages/Signup.jsx';
-import Verify from './pages/Verify.jsx';
-import DeclineInvitePage from './pages/DeclineInvitePage.jsx';
-import AcceptInvitePage from './pages/AcceptInvitePage.jsx';
-import DashboardHome from './pages/DashboardHome.jsx';
-import GroupsPage from './pages/GroupsPage.jsx';
-import ChannelPage from './pages/channel/ChannelPage.jsx';
-import ChatsLayout from './pages/ChatsLayout.jsx';
-import ChatViewPage from './pages/chat/ChatViewPage.jsx';
-import ReportsPage from './pages/ReportsPage.jsx';
-import MorePage from './pages/more/MorePage.jsx';
-import ProfilePage from './pages/more/ProfilePage.jsx';
-import UserProfilePage from './pages/more/UserProfilePage.jsx';
-import StorageReportPage from './pages/more/StorageReportPage.jsx';
-import BillingPage from './pages/more/BillingPage.jsx';
-import ManagePlanPage from './pages/more/ManagePlanPage.jsx';
-import ManageOrganizationsPage from './pages/more/ManageOrganizationsPage.jsx';
-import ManageProjectsPage from './pages/more/ManageProjectsPage.jsx';
-import ManageTasksPage from './pages/more/ManageTasksPage.jsx';
-import ActivitiesPage from './pages/more/ActivitiesPage.jsx';
-import InvitationsPage from './pages/more/InvitationsPage.jsx';
-import TaskDetailPage from './pages/TaskDetailPage.jsx';
-import ProjectDetailPage from './pages/ProjectDetailPage.jsx';
-import ClientDetailPage from './pages/ClientDetailPage.jsx';
+
+/* Route-level code splitting: each page is fetched the first time it is
+   opened rather than shipping in the initial bundle. The layout and route
+   guards stay eager — they are on the critical path for every load, so
+   deferring them would only add a round trip. */
+const HomeLanding = lazy(() => import('./pages/HomeLanding.jsx'));
+const AboutPage = lazy(() => import('./pages/AboutPage.jsx'));
+const ProductPage = lazy(() => import('./pages/ProductPage.jsx'));
+const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
+const Login = lazy(() => import('./pages/Login.jsx'));
+const Signup = lazy(() => import('./pages/Signup.jsx'));
+const Verify = lazy(() => import('./pages/Verify.jsx'));
+const DeclineInvitePage = lazy(() => import('./pages/DeclineInvitePage.jsx'));
+const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage.jsx'));
+const DashboardHome = lazy(() => import('./pages/DashboardHome.jsx'));
+const GroupsPage = lazy(() => import('./pages/GroupsPage.jsx'));
+const ChannelPage = lazy(() => import('./pages/channel/ChannelPage.jsx'));
+const ChatsLayout = lazy(() => import('./pages/ChatsLayout.jsx'));
+const ChatViewPage = lazy(() => import('./pages/chat/ChatViewPage.jsx'));
+const ReportsPage = lazy(() => import('./pages/ReportsPage.jsx'));
+const MorePage = lazy(() => import('./pages/more/MorePage.jsx'));
+const ProfilePage = lazy(() => import('./pages/more/ProfilePage.jsx'));
+const UserProfilePage = lazy(() => import('./pages/more/UserProfilePage.jsx'));
+const StorageReportPage = lazy(() => import('./pages/more/StorageReportPage.jsx'));
+const BillingPage = lazy(() => import('./pages/more/BillingPage.jsx'));
+const ManagePlanPage = lazy(() => import('./pages/more/ManagePlanPage.jsx'));
+const ManageOrganizationsPage = lazy(() => import('./pages/more/ManageOrganizationsPage.jsx'));
+const ManageProjectsPage = lazy(() => import('./pages/more/ManageProjectsPage.jsx'));
+const ManageTasksPage = lazy(() => import('./pages/more/ManageTasksPage.jsx'));
+const ActivitiesPage = lazy(() => import('./pages/more/ActivitiesPage.jsx'));
+const InvitationsPage = lazy(() => import('./pages/more/InvitationsPage.jsx'));
+const TaskDetailPage = lazy(() => import('./pages/TaskDetailPage.jsx'));
+const ProjectDetailPage = lazy(() => import('./pages/ProjectDetailPage.jsx'));
+const ClientDetailPage = lazy(() => import('./pages/ClientDetailPage.jsx'));
 
 // Manage Tasks moved from More to the main Tasks tab. Old links (and the
 // dashboard's deep-links) must keep their query string through the redirect.
@@ -69,6 +75,7 @@ function PublicOnly({ children }) {
  */
 export default function App({ nativeEntryPath }) {
   return (
+    <Suspense fallback={<div className="page"><div className="panel__empty"><span className="spinner" /></div></div>}>
     <Routes>
       <Route path="/" element={nativeEntryPath ? <Navigate to={nativeEntryPath} replace /> : <HomeLanding />} />
       <Route path="/about" element={<AboutPage />} />
@@ -119,5 +126,6 @@ export default function App({ nativeEntryPath }) {
 
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
+    </Suspense>
   );
 }

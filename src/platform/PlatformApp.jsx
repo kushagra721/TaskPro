@@ -1,26 +1,8 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import PlatformLogin from './PlatformLogin.jsx';
-import PlatformSignup from './PlatformSignup.jsx';
-import PlatformOnboarding from './PlatformOnboarding.jsx';
 import PlatformProtectedRoute from './PlatformProtectedRoute.jsx';
 import PlatformLayout from './PlatformLayout.jsx';
-import PlatformPlaceholderPage from './PlatformPlaceholderPage.jsx';
-import PlatformProfilePage from './PlatformProfilePage.jsx';
-import ResellersPage from './admin/ResellersPage.jsx';
-import CreateResellerPage from './admin/CreateResellerPage.jsx';
-import ResellerDetailPage from './admin/ResellerDetailPage.jsx';
-import CustomDomainsPage from './admin/CustomDomainsPage.jsx';
-import AddDomainPage from './admin/AddDomainPage.jsx';
-import DomainDetailPage from './admin/DomainDetailPage.jsx';
-import AdminWorkspacesPage from './admin/WorkspacesPage.jsx';
-import AdminMembersPage from './admin/MembersPage.jsx';
-import ResellerWorkspacesPage from './reseller/ResellerWorkspacesPage.jsx';
-import ResellerMembersPage from './reseller/MembersPage.jsx';
-import MandatesPage from './reseller/MandatesPage.jsx';
-import TransactionsPage from './reseller/TransactionsPage.jsx';
-import PaymentGatewayPage from './reseller/PaymentGatewayPage.jsx';
-import DocumentsPage from './reseller/DocumentsPage.jsx';
-import ProjectionsPage from './reseller/ProjectionsPage.jsx';
 // Shared by both portals — see plansBase.js for how one component serves both
 // route trees (global plans for a Super Admin, own plans for a Reseller).
 import PlansPage from './PlansPage.jsx';
@@ -33,6 +15,29 @@ import {
   CreditCardIcon,
   ReceiptIcon,
 } from '../components/icons.jsx';
+
+/* Route-level code splitting — see the note in App.jsx. The two portals
+   share this tree, so a reseller no longer downloads the Super Admin
+   pages (and vice versa) just to reach their own. */
+const PlatformSignup = lazy(() => import('./PlatformSignup.jsx'));
+const PlatformOnboarding = lazy(() => import('./PlatformOnboarding.jsx'));
+const PlatformPlaceholderPage = lazy(() => import('./PlatformPlaceholderPage.jsx'));
+const PlatformProfilePage = lazy(() => import('./PlatformProfilePage.jsx'));
+const ResellersPage = lazy(() => import('./admin/ResellersPage.jsx'));
+const CreateResellerPage = lazy(() => import('./admin/CreateResellerPage.jsx'));
+const ResellerDetailPage = lazy(() => import('./admin/ResellerDetailPage.jsx'));
+const CustomDomainsPage = lazy(() => import('./admin/CustomDomainsPage.jsx'));
+const AddDomainPage = lazy(() => import('./admin/AddDomainPage.jsx'));
+const DomainDetailPage = lazy(() => import('./admin/DomainDetailPage.jsx'));
+const AdminWorkspacesPage = lazy(() => import('./admin/WorkspacesPage.jsx'));
+const AdminMembersPage = lazy(() => import('./admin/MembersPage.jsx'));
+const ResellerWorkspacesPage = lazy(() => import('./reseller/ResellerWorkspacesPage.jsx'));
+const ResellerMembersPage = lazy(() => import('./reseller/MembersPage.jsx'));
+const MandatesPage = lazy(() => import('./reseller/MandatesPage.jsx'));
+const TransactionsPage = lazy(() => import('./reseller/TransactionsPage.jsx'));
+const PaymentGatewayPage = lazy(() => import('./reseller/PaymentGatewayPage.jsx'));
+const DocumentsPage = lazy(() => import('./reseller/DocumentsPage.jsx'));
+const ProjectionsPage = lazy(() => import('./reseller/ProjectionsPage.jsx'));
 
 // Two parent sections (rendered down the Super Admin sidebar); each parent's
 // children render as a horizontal tab row (Hub-style) above the page content.
@@ -112,6 +117,7 @@ const RESELLER_NAV_GROUPS = [
  *  interfere with the existing app's routing at all. */
 export default function PlatformApp() {
   return (
+    <Suspense fallback={<div className="page"><div className="panel__empty"><span className="spinner" /></div></div>}>
     <Routes>
       <Route path="/platform/login" element={<PlatformLogin />} />
       <Route path="/platform/signup" element={<PlatformSignup />} />
@@ -203,5 +209,6 @@ export default function PlatformApp() {
 
       <Route path="*" element={<Navigate to="/platform/login" replace />} />
     </Routes>
+    </Suspense>
   );
 }
