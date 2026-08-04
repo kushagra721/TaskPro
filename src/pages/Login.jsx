@@ -2,19 +2,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import BrandPanel from '../components/BrandPanel.jsx';
-import CompanyCodePage from './CompanyCodePage.jsx';
-import { authApi, companyStore } from '../api/client.js';
-import { isNativeApp } from '../utils/native.js';
+import { authApi } from '../api/client.js';
 import { setCredentials } from '../store/slices/authSlice.js';
 
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  // Mobile only: which company this device is signed in to, and the escape
-  // hatch for someone who entered the wrong code. Null on web, where the
-  // tenant comes from the hostname and there is nothing to switch.
-  const [company, setCompany] = useState(() => (isNativeApp() ? companyStore.get() : null));
-  const [changingCompany, setChangingCompany] = useState(false);
   const [mode, setMode] = useState('password'); // 'password' | 'otp'
   const [form, setForm] = useState({ email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState({});
@@ -70,19 +63,6 @@ export default function Login() {
     }
   };
 
-  if (changingCompany) {
-    return (
-      <CompanyCodePage
-        defaultCode={company?.companyCode}
-        onCancel={() => setChangingCompany(false)}
-        onResolved={(next) => {
-          setCompany(next);
-          setChangingCompany(false);
-        }}
-      />
-    );
-  }
-
   return (
     <div className="auth">
       <BrandPanel />
@@ -98,17 +78,6 @@ export default function Login() {
               ? 'Enter your email and password to sign in.'
               : "Enter your email and we'll send you a login code."}
           </p>
-
-          {company && (
-            <div className="company-strip">
-              <span className="company-strip__text">
-                Signing in to <strong>{company.name}</strong> <code className="code-chip">{company.companyCode}</code>
-              </span>
-              <button type="button" className="link-btn" onClick={() => setChangingCompany(true)}>
-                Change
-              </button>
-            </div>
-          )}
 
           {error && <div className="alert alert--error">{error}</div>}
 

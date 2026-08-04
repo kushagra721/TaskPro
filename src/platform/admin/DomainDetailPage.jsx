@@ -59,7 +59,7 @@ export default function DomainDetailPage() {
   const [loadError, setLoadError] = useState('');
 
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ domain: '', companyCode: '', resellerId: '' });
+  const [form, setForm] = useState({ domain: '', resellerId: '' });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
@@ -80,7 +80,7 @@ export default function DomainDetailPage() {
   }, []);
 
   const openEdit = () => {
-    setForm({ domain: domain.domain, companyCode: domain.companyCode, resellerId: domain.resellerId });
+    setForm({ domain: domain.domain, resellerId: domain.resellerId });
     setSaveError('');
     setEditing(true);
   };
@@ -180,7 +180,6 @@ export default function DomainDetailPage() {
         </div>
         <dl className="pdetail__list">
           <Row label="Domain" value={domain.domain} />
-          <Row label="Company code" value={<code className="code-chip">{domain.companyCode}</code>} />
           <Row label="Status" value={<span className={`status-pill ${STATUS_PILL[domain.status]}`}>{STATUS_LABEL[domain.status]}</span>} />
           <Row label="Required A record" value={`${domain.domain} → ${domain.targetIp}`} />
           <Row label="Reseller" value={domain.reseller?.name} />
@@ -207,24 +206,6 @@ export default function DomainDetailPage() {
             </div>
             <div className="field">
               <label className="field__label">
-                Company code <span className="req">*</span>
-              </label>
-              <input
-                className="input"
-                value={form.companyCode}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, companyCode: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() }))
-                }
-                placeholder="BRANDX"
-                maxLength={20}
-              />
-              <p className="field__hint">
-                What users type in the Android/iOS app to reach this company. Changing it means anyone who has already
-                signed in on mobile must enter the new code.
-              </p>
-            </div>
-            <div className="field">
-              <label className="field__label">
                 Reseller <span className="req">*</span>
               </label>
               <Select
@@ -244,7 +225,7 @@ export default function DomainDetailPage() {
               <button type="button" className="btn btn--ghost" onClick={() => setEditing(false)} disabled={saving}>
                 Cancel
               </button>
-              <button className="btn" type="submit" disabled={saving || !form.domain.trim() || form.companyCode.length < 4 || !form.resellerId}>
+              <button className="btn" type="submit" disabled={saving || !form.domain.trim() || !form.resellerId}>
                 {saving ? <span className="spinner" /> : <><CheckIcon size={15} /> Save changes</>}
               </button>
             </div>

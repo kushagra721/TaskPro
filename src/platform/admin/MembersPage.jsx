@@ -108,7 +108,7 @@ export default function MembersPage() {
                     <th>Email</th>
                     <th>Workspaces</th>
                     <th>Groups</th>
-                    {/* <th>Domain</th> */}
+                    <th>Domain</th>
                     <th>Brand</th>
                     <th>Status</th>
                     <th>Joined</th>
@@ -121,7 +121,7 @@ export default function MembersPage() {
                       <td>{m.email || '—'}</td>
                       <td>{m.workspaceCount}</td>
                       <td>{m.groupCount}</td>
-                      {/* <td>{m.domain || '—'}</td> */}
+                      <td>{m.domain || '—'}</td>
                       <td>
                         {m.reseller ? (
                           <span className="status-pill status-pill--completed">{m.reseller.name}</span>

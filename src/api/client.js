@@ -73,28 +73,23 @@ export const kamdhenuTokenStore = {
   clear: () => localStorage.removeItem(KAMDHENU_TOKEN_KEY),
 };
 
-// The tenant the **mobile app** is signed in to, chosen once by company code
-// on first launch (see pages/CompanyCodePage.jsx). Persisted so every later
-// launch — and every request below — carries the right tenant without asking
-// again. Never written by the web app, which resolves its tenant from the
-// hostname instead; `companyStore.get()` returning null there is what keeps
-// the web behaviour untouched.
+// The mobile app no longer identifies its tenant by company code — the server
+// resolves it from the host instead (see `Test_domain` in the API config), so
+// nothing writes this key any more.
+//
+// It is still CLEARED on load, once, and that is the point: an app upgraded
+// from a build that did ask for a code still has the old value in
+// localStorage, and the API **prefers `X-Company-Code` over `X-App-Host`**.
+// Leaving it would mean the stale code kept deciding the tenant and silently
+// overrode the new behaviour — the upgrade would look like it did nothing.
 const COMPANY_KEY = 'taskpro_company';
 
-export const companyStore = {
-  get: () => {
-    try {
-      const raw = localStorage.getItem(COMPANY_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      // Corrupt/partial value from an interrupted write — treat as "not set"
-      // so the app falls back to asking for the code rather than crashing.
-      return null;
-    }
-  },
-  set: (company) => localStorage.setItem(COMPANY_KEY, JSON.stringify(company)),
-  clear: () => localStorage.removeItem(COMPANY_KEY),
-};
+try {
+  localStorage.removeItem(COMPANY_KEY);
+} catch {
+  // Private-mode/quota failures are irrelevant here: if we cannot read or write
+  // localStorage there is no stale value to worry about either.
+}
 
 /**
  * Absolute URL for a server-rendered document (invoice/receipt), from the
@@ -130,12 +125,6 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
     // organization.controller.js#create.
     'X-App-Host': window.location.hostname,
   };
-  // Mobile only. The backend prefers this over X-App-Host when present, so a
-  // native app identifies its tenant explicitly instead of by a hostname it
-  // doesn't meaningfully have. Absent in the browser, where nothing sets it.
-  const company = companyStore.get();
-  if (company?.companyCode) headers['X-Company-Code'] = company.companyCode;
-
   if (auth) {
     const token = tokenStore.get();
     if (token) headers.Authorization = `Bearer ${token}`;
