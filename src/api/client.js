@@ -492,6 +492,12 @@ export const clientsApi = {
     request(`/organizations/${orgId}/clients/${clientId}`, { method: 'PATCH', body: payload }),
   remove: (orgId, clientId, confirmName) =>
     request(`/organizations/${orgId}/clients/${clientId}`, { method: 'DELETE', body: { confirmName } }),
+  // The people inside a client space.
+  members: (orgId, clientId) => request(`/organizations/${orgId}/clients/${clientId}/members`),
+  addMember: (orgId, clientId, userId) =>
+    request(`/organizations/${orgId}/clients/${clientId}/members`, { method: 'POST', body: { userId } }),
+  removeMember: (orgId, clientId, userId) =>
+    request(`/organizations/${orgId}/clients/${clientId}/members/${userId}`, { method: 'DELETE' }),
 };
 
 // ---- Invitations (invitee side) ----

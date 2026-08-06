@@ -14,7 +14,7 @@ import { fetchGroup, selectGroupDetail, selectGroups } from '../store/slices/gro
 import { fetchAllProjects, selectAllProjects } from '../store/slices/projectSlice.js';
 import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
-import { isAdminRole } from '../utils/role.js';
+import { isAdminRole, isClientRole } from '../utils/role.js';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 
 /** The workspace's default channel — where invited clients land, and the group
@@ -58,7 +58,7 @@ export default function CreateTaskModal({
    * assigned yet. A disabled picker would still imply a choice exists; stating
    * the value says plainly that it does not.
    */
-  lock = {},
+  lock: lockProp = {},
   onClose,
   onCreated,
 }) {
@@ -66,6 +66,19 @@ export default function CreateTaskModal({
   const orgId = useSelector(selectCurrentOrgId);
   const org = useSelector(selectCurrentOrg);
   const isAdmin = isAdminRole(org?.role);
+
+  /**
+   * A CLIENT never chooses a group, an assignee or a client — whichever screen
+   * they raise the task from.
+   *
+   * Enforced HERE rather than at each call site so no entry point can forget:
+   * the Tasks page, a client space's page and anything added later all inherit
+   * it. The values are the only ones that make sense for them — the default
+   * client channel, their own space, and nobody assigned yet, since deciding
+   * who does the work is the supplier's call.
+   */
+  const isClient = isClientRole(org?.role);
+  const lock = isClient ? { group: true, client: true, assignee: true } : lockProp;
   const detail = useSelector(selectGroupDetail);
   const myGroups = useSelector(selectGroups);
   const projects = useSelector(selectAllProjects);
@@ -83,7 +96,12 @@ export default function CreateTaskModal({
   const [form, setForm] = useState({
     title: '', description: '', priority: 'MEDIUM', assigneeId: '',
     // Due date defaults to tomorrow.
-    dueDate: tomorrow(), projectId: defaultProjectId, clientId: defaultClientId,
+    dueDate: tomorrow(),
+    projectId: defaultProjectId,
+    // A client's space wins over whatever the caller supplied — from the Tasks
+    // page there is no `defaultClientId` at all, and it is the only client they
+    // could legitimately file against.
+    clientId: (isClientRole(org?.role) && org?.clientId) || defaultClientId,
   });
   // The locked client's name, for display. Declared AFTER `form` — its deps
   // array reads `form.clientId`, which is evaluated during render, so placing

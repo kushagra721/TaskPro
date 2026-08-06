@@ -21,7 +21,10 @@ import { isAdminRole, isClientRole } from '../utils/role.js';
 const TAB_META = {
   groups: { title: 'Groups', subtitle: 'Chat and manage tasks with your team.' },
   projects: { title: 'Projects', subtitle: 'Organize tasks into projects. Anyone can add one.' },
-  clients: { title: 'Clients', subtitle: 'Group tasks by client. Anyone can add one.' },
+  clients: {
+    title: 'Clients Space',
+    subtitle: 'A space per client. Their tasks and the people who can see them live here.',
+  },
   members: { title: 'Members', subtitle: 'Members, roles and invitations for this workspace.' },
 };
 
@@ -128,7 +131,7 @@ export default function GroupsPage() {
             Projects <span className="tab__count">{tabCounts.projects}</span>
           </button>
           <button className={`tab ${tab === 'clients' ? 'tab--active' : ''}`} onClick={() => setTab('clients')}>
-            Clients <span className="tab__count">{tabCounts.clients}</span>
+            Clients Space <span className="tab__count">{tabCounts.clients}</span>
           </button>
           {isAdmin && (
             <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>

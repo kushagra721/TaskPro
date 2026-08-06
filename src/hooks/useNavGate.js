@@ -25,9 +25,11 @@ export function useNavGate() {
   const LOCKED_PATHS = ['/tasks', '/chats', '/more'];
   const isLocked = (to) => locked && LOCKED_PATHS.includes(to);
 
-  // A client's work reaches them through their client's page, so the org-wide
-  // task list is not theirs to browse.
-  const HIDDEN_FOR_CLIENT = ['/tasks'];
+  // A client GETS Tasks — the list is scoped server-side to their own client
+  // space, so it shows their work and nothing else (see
+  // `task.service.js#taskScopeFor`). Chats is hidden instead: channels are the
+  // supplier's internal conversation, and a client is not a channel member.
+  const HIDDEN_FOR_CLIENT = ['/chats'];
   const isHidden = (to) => isClientRole(org?.role) && HIDDEN_FOR_CLIENT.includes(to);
 
   return { locked, isLocked, isHidden };

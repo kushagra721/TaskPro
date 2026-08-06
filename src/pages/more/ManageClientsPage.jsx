@@ -5,6 +5,7 @@ import { selectCurrentOrg, selectCurrentOrgId, selectMembers, fetchMembers } fro
 import { fetchClients, selectClients, selectClientsPagination } from '../../store/slices/clientSlice.js';
 import { organizationsApi } from '../../api/client.js';
 import EmptyState from '../../components/EmptyState.jsx';
+import { isClientRole } from '../../utils/role.js';
 import Pagination from '../../components/Pagination.jsx';
 import TaskSearchBar from '../../components/TaskSearchBar.jsx';
 import ClientFilterDrawer from '../../components/ClientFilterDrawer.jsx';
@@ -21,7 +22,7 @@ const EMPTY_FILTERS = { createdById: '', createdFrom: '', createdTo: '' };
 /**
  * `embedded`: hides this page's own title/subtitle when it's nested inside
  * another page's tab (the Groups page's Clients tab) so there isn't a
- * duplicate heading; the "New client" button moves into the search row instead.
+ * duplicate heading; the "New client space" button moves into the search row instead.
  * `raiseFab`: lifts the FAB above the bottom nav in that same embedded context.
  */
 export default function ManageClientsPage({ raiseFab = false, embedded = false } = {}) {
@@ -97,19 +98,24 @@ export default function ManageClientsPage({ raiseFab = false, embedded = false }
     );
   }
 
-  const newClientBtn = (
+  // A client belongs to exactly one space and cannot create others — the list
+  // they see is their own space alone, so a create button here would only ever
+  // produce a space they immediately lose sight of.
+  const canCreate = !isClientRole(org?.role);
+
+  const newClientBtn = canCreate ? (
     <button className="btn btn--sm" onClick={() => setCreating(true)}>
-      <PlusIcon size={16} /> New client
+      <PlusIcon size={16} /> New client space
     </button>
-  );
+  ) : null;
 
   return (
     <div className="page">
       {!embedded && (
         <div className="page__head page__head--row">
           <div className="page__head-text">
-            <h1 className="page__title">Manage Clients</h1>
-            <p className="page__subtitle">Clients in {org.name}. Anyone can add one.</p>
+            <h1 className="page__title">Client Spaces</h1>
+            <p className="page__subtitle">A space per client in {org.name}. Anyone can add one.</p>
           </div>
           {/* Desktop keeps the inline button; mobile uses the FAB below. */}
           {!isMobile && <div className="head-actions">{newClientBtn}</div>}
@@ -169,7 +175,11 @@ export default function ManageClientsPage({ raiseFab = false, embedded = false }
       {/* Sub-page (no bottom nav) — the FAB sits at the bottom, not raised.
           `raiseFab` lifts it above the bottom nav when embedded in a root
           page (e.g. the Groups page's Clients tab). */}
-      <Fab raised={raiseFab} label="New client" onClick={() => setCreating(true)} />
+      {/* The FAB is the mobile route to the same action, so it needs the same
+          gate — otherwise a client could still create a space from a phone. */}
+      {canCreate && (
+        <Fab raised={raiseFab} label="New client space" onClick={() => setCreating(true)} />
+      )}
 
       <ClientFilterDrawer
         open={drawerOpen}
