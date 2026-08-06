@@ -8,6 +8,7 @@ const ROLES = [
   { value: 'OWNER', label: 'Owner' },
   { value: 'ADMIN', label: 'Admin' },
   { value: 'MEMBER', label: 'Member' },
+  { value: 'CLIENT', label: 'Client' },
 ];
 
 /** Filter drawer for the Members list — just role, mirrors the other drawers' shape. */

@@ -32,6 +32,19 @@ const resolveApiUrl = () => {
 const API_URL = resolveApiUrl().replace(/\/+$/, '');
 
 /**
+ * The resolved API base, exported so anything else that talks to the same
+ * server derives its address from the same logic.
+ *
+ * `realtime/socket.js` used to build its own URL straight from
+ * `VITE_API_URL`, which skipped the native rewrite above — so inside the
+ * Android app the socket dialled `http://localhost:5000`, i.e. the phone
+ * itself, and never connected. Everything realtime (live chat, task updates,
+ * read receipts, typing) was silently dead on mobile, and it looked like a
+ * server problem rather than an address problem.
+ */
+export const apiBaseUrl = API_URL;
+
+/**
  * Message for a fetch that never reached a server (DNS, refused, blocked).
  *
  * The native build names the URL it actually tried, because there the address
@@ -84,6 +97,41 @@ export const kamdhenuTokenStore = {
 // overrode the new behaviour — the upgrade would look like it did nothing.
 const COMPANY_KEY = 'taskpro_company';
 
+/**
+ * The domain the NATIVE app is signing in on, chosen by the user when their
+ * email has an account on more than one.
+ *
+ * Native only. A browser is already on a domain, so `X-App-Host` answers the
+ * question and this is never set there. Persisted so the choice survives an app
+ * restart — being asked to pick your brand on every launch would be worse than
+ * the problem it solves.
+ */
+const DOMAIN_KEY = 'taskpro_domain_id';
+
+export const domainStore = {
+  get: () => {
+    try {
+      return localStorage.getItem(DOMAIN_KEY);
+    } catch {
+      return null;
+    }
+  },
+  set: (id) => {
+    try {
+      localStorage.setItem(DOMAIN_KEY, id);
+    } catch {
+      /* private mode — the picker still works for this session */
+    }
+  },
+  clear: () => {
+    try {
+      localStorage.removeItem(DOMAIN_KEY);
+    } catch {
+      /* nothing to clear */
+    }
+  },
+};
+
 try {
   localStorage.removeItem(COMPANY_KEY);
 } catch {
@@ -125,6 +173,11 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
     // organization.controller.js#create.
     'X-App-Host': window.location.hostname,
   };
+  // Native only: the WebView's hostname means nothing to the server, so the
+  // domain the user picked at login decides the tenant instead. Web never sets
+  // this, so its behaviour is untouched.
+  const chosenDomain = isNativeApp() ? domainStore.get() : null;
+  if (chosenDomain) headers['X-Domain-Id'] = chosenDomain;
   if (auth) {
     const token = tokenStore.get();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -334,6 +387,10 @@ export const kamdhenuApi = {
 
 // ---- Auth (public) ----
 export const authApi = {
+  /** Domains an email can sign in on — the native app's post-login picker.
+   *  Returns an empty list for an unknown address, so it cannot be used to
+   *  enumerate accounts (see listLoginDomains on the server). */
+  loginDomains: (email) => request(`/auth/login-domains?email=${encodeURIComponent(email)}`),
   // Mobile step 1 — resolve a company code to its tenant before any login.
   // Encoded because the user types it freely; the server normalises it anyway.
   company: (code) => request(`/auth/company/${encodeURIComponent(code)}`, { auth: false }),
@@ -459,6 +516,13 @@ export const notificationsApi = {
   list: () => request('/notifications'),
   markRead: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllRead: () => request('/notifications/read-all', { method: 'POST' }),
+  // Push device tokens. The account is taken from the JWT server-side — these
+  // never send a user id, by design.
+  registerToken: (payload) => request('/notifications/token', { method: 'POST', body: payload }),
+  unregisterToken: (token) =>
+    request('/notifications/token', { method: 'DELETE', body: token ? { token } : {} }),
+  /** Sends a push to the caller's own device — the end-to-end self-test. */
+  testPush: () => request('/notifications/test', { method: 'POST' }),
 };
 
 // ---- Groups / channels + chat ----
@@ -475,8 +539,11 @@ export const groupsApi = {
   messages: (groupId, cursor) =>
     request(`/groups/${groupId}/messages${cursor ? `?cursor=${cursor}` : ''}`),
   markRead: (groupId) => request(`/groups/${groupId}/read`, { method: 'POST' }),
-  sendMessage: (groupId, content, attachments) =>
-    request(`/groups/${groupId}/messages`, { method: 'POST', body: { content, attachments } }),
+  sendMessage: (groupId, content, attachments, replyToId) =>
+    request(`/groups/${groupId}/messages`, {
+      method: 'POST',
+      body: { content, attachments, ...(replyToId ? { replyToId } : {}) },
+    }),
   react: (groupId, messageId, emoji) =>
     request(`/groups/${groupId}/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } }),
   editMessage: (groupId, messageId, content) =>

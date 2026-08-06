@@ -220,6 +220,22 @@ input {
   color: var(--text-faint);
 }
 
+/* A value the form states rather than asks for — same box as an `.input` so the
+   row keeps its rhythm beside real fields, but visibly inert: no white fill, no
+   focus ring, not tabbable. Used where a choice has already been made elsewhere
+   (a channel's client deciding its tasks' client). */
+.field__static {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+}
+
 .field__label {
   display: block;
   font-size: 13px;
@@ -2001,6 +2017,14 @@ a.btn {
   color: var(--text-muted);
 }
 
+/* CLIENT is an external participant, so it gets its own colour rather than
+   sharing MEMBER's grey — telling the two apart at a glance in the roster is
+   the whole point of showing the pill. */
+.role-pill--client {
+  background: rgba(20, 184, 166, 0.12);
+  color: #0f766e;
+}
+
 .role-pill--pending {
   background: rgba(245, 158, 11, 0.16);
   color: #b45309;
@@ -2613,6 +2637,8 @@ a.btn {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  /* Anchors the floating "that message is further back" notice. */
+  position: relative;
 }
 
 /* The Chats detail pane: one unified bordered panel — a fixed (non-scrolling)
@@ -10702,4 +10728,295 @@ a.btn {
   .kerp-stepper__bar {
     flex-basis: 20px;
   }
+}
+
+/* ============================================================================
+   Chat: day separators, history paging, quoted replies
+   ========================================================================== */
+
+/* --- Date badge between days, WhatsApp-style --- */
+.chat__day {
+  display: flex;
+  justify-content: center;
+  margin: 14px 0 10px;
+  /* Sticky so the day stays visible while scrolling through a long day's
+     messages — otherwise you lose track of where you are in a back-scroll. */
+  position: sticky;
+  top: 6px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chat__day-badge {
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+}
+
+/* --- Loading older messages / start of history --- */
+.chat__loading-older,
+.chat__history-start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 0 6px;
+  font-size: 12.5px;
+  color: var(--muted, #64748b);
+}
+
+.chat__history-start {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* ---------------------------------------------------------------------------
+   Quoted message (`MessageQuote`)
+
+   One block, two homes: inside a sent bubble and above the composer while the
+   reply is still being written. The two used to be separate markup with
+   separate CSS and drifted apart, so both now render the same component and
+   differ only by the `--bubble` / `--composer` modifier.
+
+   The shape is the messaging convention: a solid accent rule down the left, a
+   tinted panel, the author in that same accent, and the quoted text under it.
+   It must read as "this is not the message" before a single word is parsed.
+--------------------------------------------------------------------------- */
+.msg-quote {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  /* Fills the bubble's width rather than shrink-wrapping the text: a quote
+     narrower than the reply under it reads as a stray label, not a quotation. */
+  box-sizing: border-box;
+}
+
+.msg-quote--bubble {
+  margin-bottom: 5px;
+  /* Tinted with the brand, not with white. Both bubbles in this app are light
+     (the outgoing one is a pale indigo wash, not a saturated fill), so a white
+     panel is invisible on one and a white-on-white quote is unreadable — which
+     is exactly what shipped. */
+  background: rgba(99, 102, 241, 0.1);
+  cursor: pointer;
+}
+
+/* The accent rule. A real element, not a border, so its colour can differ from
+   the panel's and it can keep full height regardless of the padding. */
+.msg-quote__bar {
+  width: 4px;
+  flex-shrink: 0;
+  border-radius: 8px 0 0 8px;
+  background: var(--primary, #0a4da3);
+}
+
+.msg-quote__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0; /* without this the text below cannot truncate inside the flex row */
+  padding: 6px 8px 6px 0;
+}
+
+.msg-quote__author {
+  font-weight: 700;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--primary, #0a4da3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-quote__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* a long quote must not dwarf the reply under it */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.4;
+  /* Both bubbles are light, so the quote text is the normal ink, softened with
+     opacity. It must never inherit a pale colour meant for a dark bubble —
+     white here rendered the quote invisible on the outgoing side. */
+  color: var(--text, #0f172a);
+  opacity: 0.75;
+}
+
+/* The icon sits on the text baseline when a media message has no caption. */
+.msg-quote__text svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+
+.msg-quote__thumb {
+  width: 40px;
+  flex-shrink: 0;
+  align-self: stretch;
+  overflow: hidden;
+}
+
+.msg-quote__thumb img,
+.msg-quote__thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* The outgoing bubble is already a pale indigo wash, so the quote inside it
+   needs to be a touch deeper than the bubble to separate from it — the same
+   relationship the incoming bubble gets for free against white. */
+.msg--mine .msg-quote--bubble {
+  background: rgba(99, 102, 241, 0.18);
+}
+
+
+.msg-quote--gone .msg-quote__text {
+  font-style: italic;
+  opacity: 0.6;
+}
+
+.msg-quote--gone .msg-quote__body {
+  padding-left: 8px;
+}
+
+/* --- Above the composer, while the reply is being written --- */
+.msg-quote--composer {
+  margin-bottom: 6px;
+  background: var(--surface-2, #f1f5f9);
+  align-items: center;
+}
+
+.msg-quote--composer .msg-quote__text {
+  -webkit-line-clamp: 1;
+  color: var(--muted, #64748b);
+  opacity: 1;
+}
+
+.msg-quote__cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  border: 0;
+  background: none;
+  color: var(--muted, #64748b);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.msg-quote__cancel:hover {
+  color: var(--text, #0f172a);
+}
+
+/* Where a tapped quote lands. The flash is the whole point — arriving silently
+   in the middle of a conversation leaves you unsure anything happened. */
+.msg--highlight .msg__bubble {
+  animation: quoteFlash 1.6s ease-out;
+}
+
+@keyframes quoteFlash {
+  0%,
+  55% {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0);
+  }
+}
+
+.chat__jump-miss {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+  font-size: 12.5px;
+  box-shadow: 0 8px 24px -12px rgba(15, 23, 42, 0.5);
+}
+
+/* --- Native domain picker (shown only when an email has >1 account) --- */
+.domain-picker__list {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.domain-picker__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.domain-picker__item:hover:not(:disabled),
+.domain-picker__item:focus-visible {
+  border-color: var(--primary, #0a4da3);
+  box-shadow: 0 6px 18px rgba(10, 77, 163, 0.12);
+  transform: translateY(-1px);
+}
+
+.domain-picker__item:disabled { opacity: 0.6; cursor: default; }
+
+.domain-picker__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.domain-picker__brand { font-weight: 700; font-size: 15px; }
+
+.domain-picker__host {
+  font-size: 12.5px;
+  color: var(--muted, #64748b);
+  /* Hostnames are long and a phone is narrow — truncate rather than wrap into
+     a second line that pushes the row height around. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.domain-picker__pending {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
 }

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Status-bar icon for push notifications.
+
+  IT MUST BE A WHITE-ON-TRANSPARENT SILHOUETTE. From Android 5 the system
+  discards every colour in a small notification icon and keeps only the alpha
+  channel, then tints what is left. A full-colour icon (the launcher icon, say)
+  therefore has every pixel of its background square counted as opaque and
+  renders as a featureless grey blob — the single most common way this looks
+  broken. Only the shape below is opaque; everything around it is transparent.
+
+  The tick is drawn as a FILLED path rather than a stroked one. `strokeColor`
+  survives in a vector drawable, but the alpha-extraction the system performs
+  is more predictable when the shape is a fill, and a stroked path at 24dp can
+  thin out to nothing once the system scales it for the status bar.
+
+  24dp is the documented size for `android.R.dimen.notification_large_icon` /
+  small-icon assets; the tint comes from
+  `com.google.firebase.messaging.default_notification_color` in the manifest
+  and from `android.notification.color` on each message.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Rounded-square outline: the brand mark, hollowed so the tick reads at
+         status-bar size. Drawn as an even-odd fill (outer rect minus inner
+         rect) rather than a stroke, for the reason in the comment above. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M6.5,2.5 L17.5,2.5 C19.71,2.5 21.5,4.29 21.5,6.5 L21.5,17.5 C21.5,19.71 19.71,21.5 17.5,21.5 L6.5,21.5 C4.29,21.5 2.5,19.71 2.5,17.5 L2.5,6.5 C2.5,4.29 4.29,2.5 6.5,2.5 Z M6.5,4.5 C5.4,4.5 4.5,5.4 4.5,6.5 L4.5,17.5 C4.5,18.6 5.4,19.5 6.5,19.5 L17.5,19.5 C18.6,19.5 19.5,18.6 19.5,17.5 L19.5,6.5 C19.5,5.4 18.6,4.5 17.5,4.5 Z" />
+
+    <!-- The tick itself, as a closed filled shape. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M10.6,16.2 L6.9,12.5 L8.4,11.0 L10.6,13.2 L15.6,8.2 L17.1,9.7 Z" />
+</vector>

@@ -1,4 +1,5 @@
 import { connectSocket, disconnectSocket } from '../realtime/socket.js';
+import { teardownPush } from '../hooks/usePushNotifications.js';
 import { notificationReceived } from './slices/notificationSlice.js';
 import { fetchMyInvitations } from './slices/invitationSlice.js';
 import { activityReceived, fetchMyOrgs } from './slices/orgSlice.js';
@@ -21,6 +22,17 @@ import { clientChanged } from './slices/clientSlice.js';
  * translates incoming socket events into slice dispatches, disconnects on logout.
  */
 export const socketMiddleware = (store) => (next) => (action) => {
+  // BEFORE the reducer runs, not after: `auth/logout` clears the JWT from
+  // localStorage, and unregistering the device is an authenticated API call.
+  // Run it afterwards and the request goes out with no token, 401s, and the
+  // phone stays subscribed to an account nobody is signed into.
+  //
+  // `teardownPush` reads the token synchronously (through `request`) before its
+  // first await, so firing it here captures a valid one.
+  if (action.type === 'auth/logout') {
+    teardownPush();
+  }
+
   const result = next(action);
 
   const isAuthEvent =

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <color name="colorPrimary">#6366F1</color>
+    <color name="colorPrimaryDark">#4F46E5</color>
+    <color name="colorAccent">#8B5CF6</color>
+    <!-- NOTE: ic_launcher_background is deliberately NOT declared here — it
+         already lives in values/ic_launcher_background.xml, and declaring it
+         twice is a duplicate-resource build failure. -->
+    <!-- Android 12+ splash background. White, matching the legacy splash.png so
+         both API paths look identical. -->
+    <color name="splashBackground">#FFFFFF</color>
+</resources>

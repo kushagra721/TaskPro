@@ -56,7 +56,11 @@ export default function DateRangeControl({ onChange, initial, defaultMode = 'mon
 
   useEffect(() => {
     if (mode === 'month') onChangeRef.current(monthRange(month));
-    else if (mode === 'all') onChangeRef.current({ from: '', to: '' });
+    // `range: 'all'` is sent because empty from/to alone is ambiguous: the API
+    // client drops empty values, so "All" and "no preference" reach the server
+    // as the identical parameter-less request, and the server then applied its
+    // own default — which is why picking All used to return the current month.
+    else if (mode === 'all') onChangeRef.current({ from: '', to: '', range: 'all' });
     else onChangeRef.current({ from: range.from, to: range.to });
   }, [mode, month, range]);
 
@@ -76,7 +80,7 @@ export default function DateRangeControl({ onChange, initial, defaultMode = 'mon
   return (
     <div className="daterange">
       <div className="daterange__seg">
-        {['month', 'all', 'range'].map((m) => (
+        {['all', 'month', 'range'].map((m) => (
           <button
             key={m}
             className={`daterange__seg-btn ${mode === m ? 'daterange__seg-btn--active' : ''}`}

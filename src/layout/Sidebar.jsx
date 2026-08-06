@@ -17,7 +17,7 @@ const NAV = [
 // sidebar now lives in Topbar.jsx's top-right corner (desktop only) —
 // see Topbar.jsx's `topbar__user` block.
 export default function Sidebar({ onCreateOrg }) {
-  const { isLocked } = useNavGate();
+  const { isLocked, isHidden } = useNavGate();
   const unread = useSelector(selectTotalUnread);
 
   return (
@@ -29,7 +29,7 @@ export default function Sidebar({ onCreateOrg }) {
       <OrgSwitcher onCreate={onCreateOrg} />
 
       <nav className="nav">
-        {NAV.map(({ to, label, Icon }) =>
+        {NAV.filter(({ to }) => !isHidden(to)).map(({ to, label, Icon }) =>
           isLocked(to) ? (
             <span key={to} className="nav__item nav__item--locked" title="Create a group first" aria-disabled="true">
               <span className="nav__icon-wrap"><Icon size={20} /></span>

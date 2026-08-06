@@ -16,7 +16,7 @@ import ManageOrgPage from './more/ManageOrgPage.jsx';
 import { useRegisterHeaderActions } from '../layout/HeaderActions.jsx';
 import { useIsMobile } from '../hooks/useIsMobile.js';
 import { GroupsIcon, PlusIcon } from '../components/icons.jsx';
-import { isAdminRole } from '../utils/role.js';
+import { isAdminRole, isClientRole } from '../utils/role.js';
 
 const TAB_META = {
   groups: { title: 'Groups', subtitle: 'Chat and manage tasks with your team.' },
@@ -34,13 +34,22 @@ export default function GroupsPage() {
   const org = useSelector(selectCurrentOrg);
   const groups = useSelector(selectGroups);
   const isAdmin = isAdminRole(org?.role);
+  // A CLIENT is an external participant, and everything they came for hangs off
+  // their own client's page — so the Hub collapses to the CLIENTS tab alone.
+  // The workspace's channels, projects, other clients and member roster are
+  // none of their business; the clients endpoint independently returns only the
+  // one they were invited for, so this is presentation over a real boundary
+  // rather than the boundary itself.
+  const isClient = isClientRole(org?.role);
   const [createOpen, setCreateOpen] = useState(false);
   // The selected tab lives in the URL (not local state) so it survives
   // navigating away to a group/project/client detail page and back — local
   // state would reset to 'groups' every time this page remounts.
   const [searchParams, setSearchParams] = useSearchParams();
   const rawTab = searchParams.get('tab');
-  const tab = TAB_META[rawTab] ? rawTab : 'groups'; // 'groups' | 'projects' | 'clients' | 'members'
+  // A client is pinned to Clients however they arrived — a bookmarked or
+  // hand-typed `?tab=` must not reach a tab that is hidden from them.
+  const tab = isClient ? 'clients' : TAB_META[rawTab] ? rawTab : 'groups';
   const setTab = useCallback(
     (t) => setSearchParams(t === 'groups' ? {} : { tab: t }, { replace: true }),
     [setSearchParams]
@@ -108,22 +117,26 @@ export default function GroupsPage() {
         )}
       </div>
 
-      <div className="groups-tabbar">
-        <button className={`tab ${tab === 'groups' ? 'tab--active' : ''}`} onClick={() => setTab('groups')}>
-          Groups <span className="tab__count">{groups.length}</span>
-        </button>
-        <button className={`tab ${tab === 'projects' ? 'tab--active' : ''}`} onClick={() => setTab('projects')}>
-          Projects <span className="tab__count">{tabCounts.projects}</span>
-        </button>
-        <button className={`tab ${tab === 'clients' ? 'tab--active' : ''}`} onClick={() => setTab('clients')}>
-          Clients <span className="tab__count">{tabCounts.clients}</span>
-        </button>
-        {isAdmin && (
-          <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>
-            Members <span className="tab__count">{tabCounts.members}</span>
+      {/* A client sees Clients only — with nothing to switch to, the whole tab
+          bar is noise, so it is omitted rather than rendered with one item. */}
+      {!isClient && (
+        <div className="groups-tabbar">
+          <button className={`tab ${tab === 'groups' ? 'tab--active' : ''}`} onClick={() => setTab('groups')}>
+            Groups <span className="tab__count">{groups.length}</span>
           </button>
-        )}
-      </div>
+          <button className={`tab ${tab === 'projects' ? 'tab--active' : ''}`} onClick={() => setTab('projects')}>
+            Projects <span className="tab__count">{tabCounts.projects}</span>
+          </button>
+          <button className={`tab ${tab === 'clients' ? 'tab--active' : ''}`} onClick={() => setTab('clients')}>
+            Clients <span className="tab__count">{tabCounts.clients}</span>
+          </button>
+          {isAdmin && (
+            <button className={`tab ${tab === 'members' ? 'tab--active' : ''}`} onClick={() => setTab('members')}>
+              Members <span className="tab__count">{tabCounts.members}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {tab === 'groups' ? (
         <>

@@ -10,7 +10,7 @@ import Modal from '../../components/Modal.jsx';
 import { formatDate } from '../../utils/status.js';
 import { prettySize } from '../../utils/fileSize.js';
 import { BuildingIcon, ShieldIcon, TrashIcon } from '../../components/icons.jsx';
-import { isAdminRole } from '../../utils/role.js';
+import { isAdminRole, ASSIGNABLE_ROLES, ROLE_LABEL } from '../../utils/role.js';
 
 export default function UserProfilePage() {
   const { userId } = useParams();
@@ -142,13 +142,16 @@ export default function UserProfilePage() {
               <div className="panel__head">
                 <h2 className="panel__title">Admin actions</h2>
               </div>
+              {/* One button per role rather than a toggle: with three
+                  assignable roles there is no longer a single "other" state for
+                  a toggle to flip to. The member's current role is omitted —
+                  offering it would be a no-op. */}
               <div className="modal__actions" style={{ marginTop: 0 }}>
-                <button
-                  className="btn btn--ghost"
-                  onClick={() => setRoleTarget(member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN')}
-                >
-                  <ShieldIcon size={15} /> {member.role === 'ADMIN' ? 'Make member' : 'Make admin'}
-                </button>
+                {ASSIGNABLE_ROLES.filter((r) => r !== member.role).map((r) => (
+                  <button key={r} className="btn btn--ghost" onClick={() => setRoleTarget(r)}>
+                    <ShieldIcon size={15} /> Make {ROLE_LABEL[r].toLowerCase()}
+                  </button>
+                ))}
                 <button className="btn btn--danger" onClick={() => setRemoveOpen(true)}>
                   <TrashIcon size={15} /> Remove from workspace
                 </button>
@@ -163,7 +166,9 @@ export default function UserProfilePage() {
           <p className="modal__intro">
             {roleTarget === 'ADMIN'
               ? `Make ${member.name || member.email} an admin? They'll be able to manage members, invitations and every group.`
-              : `Make ${member.name || member.email} a regular member? They'll lose admin access.`}
+              : roleTarget === 'CLIENT'
+                ? `Make ${member.name || member.email} a client? They'll keep member-level access to the groups they're in, but the Projects, Clients and Members tabs will be hidden from them.`
+                : `Make ${member.name || member.email} a regular member? They'll lose admin access.`}
           </p>
           <div className="modal__actions">
             <button className="btn btn--ghost" onClick={() => setRoleTarget(null)} disabled={busy}>Cancel</button>

@@ -312,6 +312,14 @@ export const DoubleCheckIcon = ({ size, ...p }) => (
   </svg>
 );
 
+/** Curved arrow turning back — the standard "reply" glyph. */
+export const ReplyIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M9 14 4 9l5-5" />
+    <path d="M4 9h9a7 7 0 0 1 7 7v4" />
+  </svg>
+);
+
 export const InfoIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <circle cx="12" cy="12" r="9" />

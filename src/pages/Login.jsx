@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import BrandPanel from '../components/BrandPanel.jsx';
-import { authApi } from '../api/client.js';
+import { authApi, domainStore } from '../api/client.js';
 import { setCredentials } from '../store/slices/authSlice.js';
+import { isNativeApp } from '../utils/native.js';
+import DomainPicker from '../components/DomainPicker.jsx';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,6 +15,10 @@ export default function Login() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Native only: the domains this email can sign in on, once there is more than
+  // one. Null means "not asked / nothing to choose" and the form renders as
+  // normal — which is every web session and most native ones.
+  const [domainChoices, setDomainChoices] = useState(null);
 
   const update = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -29,8 +35,58 @@ export default function Login() {
     navigate('/verify', { state: { email: res.email, purpose, devCode: res.devCode } });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  /**
+   * Native pre-step: settle which domain this login is for.
+   *
+   * Runs BEFORE the credential check, not after, because the domain decides
+   * which account is being authenticated — two accounts on two domains can have
+   * different passwords. Returns true when the caller should stop and let the
+   * user pick.
+   *
+   * Web skips this entirely: the browser is already on a domain.
+   * Zero or one domain also skips it — one option is not a choice, and an
+   * unknown email falls through to the normal "no account" handling.
+   */
+  /**
+   * Native pre-step: settle which domain this login is for.
+   *
+   * Runs BEFORE the credential check because the domain decides WHICH account
+   * is being authenticated — the same email on two domains is two accounts and
+   * can have two different passwords (kushagra@dialerp.in has a password on one
+   * and none on the other).
+   *
+   * Returns the domain list only when there is a real choice to make. Web skips
+   * it entirely (the browser is already on a domain); zero or one domain skips
+   * it too, since one option is not a choice.
+   */
+  const resolveDomains = async () => {
+    if (!isNativeApp()) return null;
+    try {
+      const res = await authApi.loginDomains(form.email);
+      const list = res.domains || [];
+      if (list.length > 1) return list;
+      // Pin the single domain so every later request is scoped to it; without
+      // this the app falls back to the server's default-host mapping.
+      if (list.length === 1) domainStore.set(list[0].id);
+      else domainStore.clear();
+      return null;
+    } catch {
+      // A failed lookup must not block sign-in: fall through to the normal
+      // flow, which resolves the tenant the way it did before this existed.
+      return null;
+    }
+  };
+
+  /**
+   * The actual sign-in, split out so it can be driven from two places: the form
+   * submit, and the domain picker once a domain has been chosen.
+   *
+   * Separating these is what fixes the loop this originally shipped with. The
+   * gate used to live inside the submit handler and re-ran on every submit with
+   * no memory of the choice, so picking a domain returned to the form and the
+   * next submit showed the picker again — no way forward.
+   */
+  const performLogin = async () => {
     setError('');
     setLoading(true);
     try {
@@ -63,10 +119,51 @@ export default function Login() {
     }
   };
 
+  /** Pin the chosen domain and CONTINUE — not back to the form. The credentials
+   *  were already entered; sending the user back to re-enter them is what made
+   *  this look broken. */
+  const chooseDomain = async (domain) => {
+    domainStore.set(domain.id);
+    setDomainChoices(null);
+    await performLogin();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    const choices = await resolveDomains();
+    setLoading(false);
+    // More than one account for this address — let the user say which, then
+    // `chooseDomain` resumes from here.
+    if (choices) {
+      setDomainChoices(choices);
+      return;
+    }
+    await performLogin();
+  };
+
   return (
     <div className="auth">
       <BrandPanel />
       <div className="auth__panel">
+        {/* Native only, and only when the email really has more than one
+            account. Replaces the form rather than stacking above it — the
+            credential fields are meaningless until the tenant is settled. */}
+        {domainChoices ? (
+          <div className="auth__card">
+            <DomainPicker
+              email={form.email}
+              domains={domainChoices}
+              busy={loading}
+              onSelect={chooseDomain}
+              onBack={() => {
+                setDomainChoices(null);
+                domainStore.clear();
+              }}
+            />
+          </div>
+        ) : (
         <form className="auth__card" onSubmit={handleSubmit} noValidate>
           <div className="auth__mobile-logo">
             <span className="brand__logo-mark">✓</span> Task&nbsp;Pro
@@ -131,6 +228,7 @@ export default function Login() {
             Don&apos;t have an account? <Link className="link" to="/signup">Sign up</Link>
           </p>
         </form>
+        )}
       </div>
     </div>
   );

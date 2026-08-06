@@ -3,13 +3,15 @@ import { groupsApi } from '../../api/client.js';
 
 export const fetchMessages = createAsyncThunk('messages/fetch', async ({ groupId, cursor }) => {
   const res = await groupsApi.messages(groupId, cursor);
-  return { groupId, messages: res.messages, nextCursor: res.nextCursor };
+  // `older` distinguishes the two very different calls that share this thunk:
+  // opening a channel (replace) and scrolling up for history (prepend).
+  return { groupId, messages: res.messages, nextCursor: res.nextCursor, older: !!cursor };
 });
 
 export const sendMessage = createAsyncThunk(
   'messages/send',
-  async ({ groupId, content, attachments, clientId }) => {
-    const res = await groupsApi.sendMessage(groupId, content, attachments);
+  async ({ groupId, content, attachments, clientId, replyToId }) => {
+    const res = await groupsApi.sendMessage(groupId, content, attachments, replyToId);
     return { groupId, message: res.message, clientId };
   }
 );
@@ -37,7 +39,16 @@ export const hideMessage = createAsyncThunk('messages/hide', async ({ groupId, m
 
 const ensure = (state, groupId) => {
   if (!state.byGroup[groupId]) {
-    state.byGroup[groupId] = { items: [], pending: [], nextCursor: null, loading: false };
+    state.byGroup[groupId] = {
+      items: [],
+      pending: [],
+      nextCursor: null,
+      loading: false,
+      // Tracked apart from `loading` so the scroll handler can tell "opening
+      // the channel" from "fetching older messages" — the first shows a full
+      // panel spinner, the second a small one above the list.
+      loadingOlder: false,
+    };
   }
   return state.byGroup[groupId];
 };
@@ -94,13 +105,34 @@ const messageSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchMessages.pending, (state, action) => {
-        ensure(state, action.meta.arg.groupId).loading = true;
+        const bucket = ensure(state, action.meta.arg.groupId);
+        if (action.meta.arg.cursor) bucket.loadingOlder = true;
+        else bucket.loading = true;
       })
       .addCase(fetchMessages.fulfilled, (state, action) => {
         const bucket = ensure(state, action.payload.groupId);
         bucket.loading = false;
-        bucket.items = action.payload.messages;
+        bucket.loadingOlder = false;
+        if (action.payload.older) {
+          // PREPEND. This used to replace `items` outright, which is why paging
+          // back was never wired up — the first older page would have wiped the
+          // conversation the user was reading. Dedupe by id: a message that
+          // arrived over the socket while the request was in flight can also be
+          // in the page that comes back.
+          const have = new Set(bucket.items.map((m) => m.id));
+          const older = action.payload.messages.filter((m) => !have.has(m.id));
+          bucket.items = [...older, ...bucket.items];
+        } else {
+          bucket.items = action.payload.messages;
+        }
+        // Only the *oldest* page's cursor is meaningful — it is where the next
+        // scroll-up continues from. A first-page fetch resets it.
         bucket.nextCursor = action.payload.nextCursor;
+      })
+      .addCase(fetchMessages.rejected, (state, action) => {
+        const bucket = ensure(state, action.meta.arg.groupId);
+        bucket.loading = false;
+        bucket.loadingOlder = false;
       })
       .addCase(sendMessage.fulfilled, (state, action) => {
         const bucket = ensure(state, action.payload.groupId);
@@ -144,6 +176,14 @@ export const selectMessages = (groupId) => (s) => s.messages.byGroup[groupId]?.i
 export const selectPendingMessages = (groupId) => (s) => s.messages.byGroup[groupId]?.pending || [];
 export const selectMessagesLoading = (groupId) => (s) =>
   s.messages.byGroup[groupId]?.loading || false;
+/** Cursor for the NEXT older page, or null when the start of the conversation
+ *  has been reached — the scroll handler stops asking on null. */
+export const selectNextCursor = (groupId) => (s) => s.messages.byGroup[groupId]?.nextCursor || null;
+
+/** True only while a HISTORY page is in flight (distinct from `loading`, which
+ *  covers opening the channel). */
+export const selectLoadingOlder = (groupId) => (s) => !!s.messages.byGroup[groupId]?.loadingOlder;
+
 export const selectTypingNames = (groupId) => (s) => Object.values(s.messages.typing[groupId] || {});
 // Raw {userId: name} map — used where the typing user's identity (to look up
 // their avatar in the group's member list) is needed, not just their name.

@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Adaptive-icon BACKGROUND layer. The brand indigo/violet mid-tone, so the
+         masked tile is the brand colour with a white tick on it — the same
+         reading as the web logo. The foreground layer is the tick ALONE for
+         exactly this reason: drawing the full rounded square there too would
+         stack a square on a coloured tile and look muddy. -->
+    <color name="ic_launcher_background">#7A5DF4</color>
 </resources>

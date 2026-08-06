@@ -34,9 +34,42 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Firebase Cloud Messaging defaults.
+
+             These apply to a notification the SYSTEM draws while the app is
+             backgrounded or killed — at that point our JavaScript is not
+             running, so the icon, tint and channel have to come from the
+             manifest. The backend sends the same three values on every message
+             (`config/database.js#FCM`); these are the fallback when it does not.
+
+             `default_notification_channel_id` must name a channel the app has
+             actually created. Android silently DROPS a message naming an
+             unknown channel, which is indistinguishable from a delivery
+             failure — `pushClient.js` creates `taskpro_default` on startup. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_taskpro" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/colorPrimary" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="taskpro_default" />
     </application>
 
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Android 13 (API 33) made showing notifications a RUNTIME permission.
+         Without this declared, the app cannot even ask, and every push is
+         delivered to the device and then silently dropped — which looks
+         identical to the token never having been registered. The app requests
+         it at sign-in (see `push/pushClient.js`). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Lets a notification wake the screen with a heads-up banner rather than
+         waiting silently in the shade. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

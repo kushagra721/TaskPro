@@ -25,12 +25,25 @@ import { BuildingIcon, PlusIcon } from '../components/icons.jsx';
 import { timeAgo } from '../utils/time.js';
 import { STATUS_META } from '../utils/status.js';
 
+/**
+ * The workspace at a glance.
+ *
+ * Task counts move with the selected period (they are events); members, groups,
+ * projects and clients are standing state and the API returns them whole
+ * regardless of period — see `dashboard.service.js` for why that distinction
+ * matters.
+ */
 const STAT_CARDS = [
   { key: 'members', label: 'Members', accent: 'indigo', to: '/more/members' },
   { key: 'groups', label: 'Groups', accent: 'violet', to: '/groups' },
   { key: 'openTasks', label: 'Open tasks', accent: 'amber', to: '/tasks?status=OPEN' },
   { key: 'myOpenTasks', label: 'Assigned to me', accent: 'emerald', to: '/tasks?assignee=me' },
 ];
+
+/** Period params that are pure state, not events — appending them to a link to
+ *  a list of members/groups/projects would filter by join or creation date,
+ *  which is not what the card counted. */
+const STATE_KEYS = new Set(['members', 'groups', 'projects', 'clients']);
 
 // Append the current period so the destination page filters identically.
 const withPeriod = (to, period) => {
@@ -51,11 +64,20 @@ export default function DashboardHome() {
   const currentOrg = useSelector(selectCurrentOrg);
   const currentId = useSelector(selectCurrentOrgId);
   const dashboard = useSelector(selectDashboard);
-  const [period, setPeriod] = useState({ from: '', to: '' });
+  // Seeded to match what `DateRangeControl defaultMode="all"` emits on mount, so
+  // the first paint is already the ALL view — no month-shaped flash, and no
+  // second request when the control announces the same period a tick later.
+  const [period, setPeriod] = useState({ from: '', to: '', range: 'all' });
+
+  // Keyed on the period's *value*: the control hands back a fresh object on
+  // every render pass, and depending on the object itself refetched the
+  // identical query each time.
+  const periodKey = `${period.from}|${period.to}|${period.range || ''}`;
 
   useEffect(() => {
     if (currentId) dispatch(fetchDashboard({ orgId: currentId, params: period }));
-  }, [currentId, period, dispatch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId, periodKey, dispatch]);
 
   if (orgs.length === 0) {
     return (
@@ -91,7 +113,7 @@ export default function DashboardHome() {
           <h1 className="page__title">Welcome back{firstName ? `, ${firstName}` : ''} 👋</h1>
           <p className="page__subtitle">Here&apos;s what&apos;s happening in {currentOrg?.name}.</p>
         </div>
-        <DateRangeControl onChange={setPeriod} />
+        <DateRangeControl onChange={setPeriod} defaultMode="all" />
       </div>
 
       <div className="stat-grid">
@@ -99,7 +121,7 @@ export default function DashboardHome() {
           <button
             key={c.key}
             className={`stat-card stat-card--${c.accent} stat-card--link`}
-            onClick={() => navigate(withPeriod(c.to, period))}
+            onClick={() => navigate(STATE_KEYS.has(c.key) ? c.to : withPeriod(c.to, period))}
           >
             <div className="stat-card__value">{stats[c.key] ?? 0}</div>
             <div className="stat-card__label">{c.label}</div>
@@ -110,7 +132,12 @@ export default function DashboardHome() {
       <div className="dash-grid">
         <section className="panel">
           <div className="panel__head">
-            <h2 className="panel__title">Tasks created (last 7 days)</h2>
+            {/* The series is whatever period is selected, bucketed by day or by
+                month depending on its length — the old fixed "last 7 days"
+                described neither. */}
+            <h2 className="panel__title">
+              Tasks created {dashboard?.trendUnit === 'month' ? '(by month)' : '(by day)'}
+            </h2>
           </div>
           <div style={{ height: 200 }}>
             <ResponsiveContainer width="100%" height="100%">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import Modal from './Modal.jsx';
 import QuotaGate from './QuotaGate.jsx';
@@ -16,6 +16,12 @@ import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.j
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { isAdminRole } from '../utils/role.js';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
+
+/** The workspace's default channel — where invited clients land, and the group
+ *  a task raised from a client's page belongs to. Kept in step with
+ *  `organization.service.js#DEFAULT_GROUP_NAME` by hand; there is no shared
+ *  package between the two projects. */
+const DEFAULT_GROUP_NAME = 'Client';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
@@ -43,6 +49,16 @@ export default function CreateTaskModal({
   askGroup,
   defaultProjectId = '',
   defaultClientId = '',
+  /**
+   * Fields the caller has already decided, shown as read-only statements
+   * instead of pickers: `{ group, client, assignee }`.
+   *
+   * Used by a client's detail page, where all three follow from *where* the
+   * task is being raised — the default client channel, that client, and nobody
+   * assigned yet. A disabled picker would still imply a choice exists; stating
+   * the value says plainly that it does not.
+   */
+  lock = {},
   onClose,
   onCreated,
 }) {
@@ -56,11 +72,28 @@ export default function CreateTaskModal({
   const clients = useSelector(selectAllClients);
 
   const [pickedGroupId, setPickedGroupId] = useState(groupId || '');
+  // The workspace's default channel, resolved by name — the same channel the
+  // server puts invited clients into. Matched case-insensitively because it is
+  // a user-editable name, and a workspace that renamed it simply falls back to
+  // the ordinary picker rather than breaking.
+  const defaultGroup = useMemo(
+    () => myGroups.find((g) => (g.name || '').trim().toLowerCase() === DEFAULT_GROUP_NAME.toLowerCase()),
+    [myGroups]
+  );
   const [form, setForm] = useState({
     title: '', description: '', priority: 'MEDIUM', assigneeId: '',
     // Due date defaults to tomorrow.
     dueDate: tomorrow(), projectId: defaultProjectId, clientId: defaultClientId,
   });
+  // The locked client's name, for display. Declared AFTER `form` — its deps
+  // array reads `form.clientId`, which is evaluated during render, so placing
+  // it above the `useState` throws "Cannot access 'form' before initialization"
+  // at runtime while every build and lint step stays green.
+  const lockedClientName = useMemo(
+    () => (lock.client ? clients.find((c) => c.id === form.clientId)?.name : null),
+    [lock.client, clients, form.clientId]
+  );
+
   const [attachments, setAttachments] = useState([]);
   const [error, setError] = useState('');
   // Set when the API refuses on quota — swaps the form for the upgrade dialog.
@@ -89,13 +122,33 @@ export default function CreateTaskModal({
   // org-wide list passed in for the group picker itself — load that group's
   // detail (for its members[]) whenever the picked group changes, and drop
   // any previously chosen assignee since they may not belong to the new group.
+  // With the group locked, pick the default channel as soon as the group list
+  // has loaded — the caller cannot supply the id because only this component
+  // knows which channel is the default one.
+  useEffect(() => {
+    if (lock.group && !pickedGroupId && defaultGroup) setPickedGroupId(defaultGroup.id);
+  }, [lock.group, pickedGroupId, defaultGroup]);
+
   useEffect(() => {
     if (pickedGroupId) dispatch(fetchGroup(pickedGroupId));
+    // Always cleared on a group change — and with the assignee locked it stays
+    // cleared, which is exactly the "Unassigned" the caller asked for.
     setForm((f) => (f.assigneeId ? { ...f, assigneeId: '' } : f));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickedGroupId, dispatch]);
 
   const members = detail?.id === pickedGroupId ? detail.members || [] : [];
+
+  /**
+   * The client this channel is dedicated to, if it has one.
+   *
+   * When set, the task's client is decided by the channel and the picker is
+   * replaced by a read-only line naming it — asking would imply a choice that
+   * does not exist, and `task.service.js#createTask` overrides the submitted
+   * value anyway. Read from the loaded detail rather than the group list, so it
+   * is only trusted once the *picked* group's own record has arrived.
+   */
+  const channelClient = detail?.id === pickedGroupId ? detail.client : null;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -151,15 +204,23 @@ export default function CreateTaskModal({
 
         {askGroup && (
           <div className="field">
-            <label className="field__label">Group <span className="req">*</span></label>
-            <Select
-              value={pickedGroupId}
-              onChange={setPickedGroupId}
-              placeholder={myGroups.length ? 'Choose a group' : 'You are not in any group yet'}
-              options={myGroups.map((g) => ({ value: g.id, label: `#${g.name}` }))}
-              // Only admins can create groups.
-              onCreateNew={isAdmin ? (query) => setNewGroupName(query) : undefined}
-            />
+            <label className="field__label">
+              Group {!lock.group && <span className="req">*</span>}
+            </label>
+            {lock.group ? (
+              <div className="field__static">
+                {defaultGroup ? `#${defaultGroup.name}` : 'Loading…'}
+              </div>
+            ) : (
+              <Select
+                value={pickedGroupId}
+                onChange={setPickedGroupId}
+                placeholder={myGroups.length ? 'Choose a group' : 'You are not in any group yet'}
+                options={myGroups.map((g) => ({ value: g.id, label: `#${g.name}` }))}
+                // Only admins can create groups.
+                onCreateNew={isAdmin ? (query) => setNewGroupName(query) : undefined}
+              />
+            )}
           </div>
         )}
 
@@ -178,19 +239,37 @@ export default function CreateTaskModal({
             />
           </div>
 
-          <div className="field">
-            <label className="field__label">Client (optional)</label>
-            <Select
-              value={form.clientId}
-              onChange={set('clientId')}
-              placeholder={clients.length ? 'No client' : 'No clients yet'}
-              options={[
-                { value: '', label: 'No client' },
-                ...clients.map((c) => ({ value: c.id, label: c.name })),
-              ]}
-              onCreateNew={(query) => setNewClientName(query)}
-            />
-          </div>
+          {/* Two ways the client stops being a question, with different
+              reasons: the channel owns one (the server would overrule any other
+              value), or the caller raised this task from a client's own page.
+              Both render a statement of fact rather than a picker. */}
+          {channelClient || lock.client ? (
+            <div className="field">
+              <label className="field__label">Client</label>
+              <div className="field__static">
+                {channelClient?.name || lockedClientName || '—'}
+              </div>
+              <p className="field__hint">
+                {channelClient
+                  ? 'Set by this group — every task here is filed under it.'
+                  : 'This task belongs to the client whose page you opened it from.'}
+              </p>
+            </div>
+          ) : (
+            <div className="field">
+              <label className="field__label">Client (optional)</label>
+              <Select
+                value={form.clientId}
+                onChange={set('clientId')}
+                placeholder={clients.length ? 'No client' : 'No clients yet'}
+                options={[
+                  { value: '', label: 'No client' },
+                  ...clients.map((c) => ({ value: c.id, label: c.name })),
+                ]}
+                onCreateNew={(query) => setNewClientName(query)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="field">
@@ -205,16 +284,20 @@ export default function CreateTaskModal({
           </div>
           <div className="field">
             <label className="field__label">Assignee</label>
-            <Select
-              value={form.assigneeId}
-              onChange={set('assigneeId')}
-              disabled={askGroup && !pickedGroupId}
-              placeholder={askGroup && !pickedGroupId ? 'Choose a group first' : 'Unassigned'}
-              options={[
-                { value: '', label: 'Unassigned' },
-                ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
-              ]}
-            />
+            {lock.assignee ? (
+              <div className="field__static">Unassigned</div>
+            ) : (
+              <Select
+                value={form.assigneeId}
+                onChange={set('assigneeId')}
+                disabled={askGroup && !pickedGroupId}
+                placeholder={askGroup && !pickedGroupId ? 'Choose a group first' : 'Unassigned'}
+                options={[
+                  { value: '', label: 'Unassigned' },
+                  ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
+                ]}
+              />
+            )}
           </div>
         </div>
 

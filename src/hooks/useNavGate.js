@@ -1,18 +1,34 @@
 import { useSelector } from 'react-redux';
 import { selectCurrentOrg } from '../store/slices/orgSlice.js';
 import { selectGroups } from '../store/slices/groupSlice.js';
-import { isAdminRole } from '../utils/role.js';
+import { isAdminRole, isClientRole } from '../utils/role.js';
 
 /**
- * A fresh admin who just created an org has no groups yet — they must create
- * one before anything else is useful. Until then, lock Tasks / Chats / More
- * so only Home and Groups are reachable.
+ * What the navigation offers, and what it withholds.
+ *
+ * TWO DIFFERENT MECHANISMS, deliberately, because they answer different
+ * questions:
+ *
+ * - **Locked** — "not yet". A fresh admin who just created a workspace has no
+ *   groups, so Tasks / Chats / More would all dead-end. They render as inert
+ *   items so the user can see the app has more to it once they create a group.
+ *
+ * - **Hidden** — "not for you". A CLIENT has no use for the org-wide task list;
+ *   it is not a step they have yet to unlock, so showing it greyed out would
+ *   just be a permanent tease. It is removed from the nav entirely.
  */
 export function useNavGate() {
   const org = useSelector(selectCurrentOrg);
   const groups = useSelector(selectGroups);
+
   const locked = isAdminRole(org?.role) && groups.length === 0;
   const LOCKED_PATHS = ['/tasks', '/chats', '/more'];
   const isLocked = (to) => locked && LOCKED_PATHS.includes(to);
-  return { locked, isLocked };
+
+  // A client's work reaches them through their client's page, so the org-wide
+  // task list is not theirs to browse.
+  const HIDDEN_FOR_CLIENT = ['/tasks'];
+  const isHidden = (to) => isClientRole(org?.role) && HIDDEN_FOR_CLIENT.includes(to);
+
+  return { locked, isLocked, isHidden };
 }

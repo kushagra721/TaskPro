@@ -88,7 +88,7 @@ export default function ResellerWorkspacesPage() {
                   <tr>
                     <th>Workspace</th>
                     <th>Owner</th>
-                    {/* <th>Domain</th> */}
+                    <th>Domain</th>
                     {/* <th>Reseller</th> */}
                     <th>Members</th>
                     <th>Plan</th>
@@ -104,7 +104,7 @@ export default function ResellerWorkspacesPage() {
                         <div>{c.owner?.name || '—'}</div>
                         {/* <div className="muted" style={{ fontSize: 12.5 }}>{c.owner?.email}</div> */}
                       </td>
-                      {/* <td>{c.domain || '—'}</td> */}
+                      <td>{c.domain || '—'}</td>
                       {/* <td>
                         {c.reseller ? (
                           <span className="status-pill status-pill--completed">{c.reseller.name}</span>

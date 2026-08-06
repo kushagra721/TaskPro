@@ -13,12 +13,12 @@ const NAV = [
 ];
 
 export default function BottomNav() {
-  const { isLocked } = useNavGate();
+  const { isLocked, isHidden } = useNavGate();
   const unread = useSelector(selectTotalUnread);
 
   return (
     <nav className="bottom-nav">
-      {NAV.map(({ to, label, Icon }) =>
+      {NAV.filter(({ to }) => !isHidden(to)).map(({ to, label, Icon }) =>
         isLocked(to) ? (
           <span
             key={to}

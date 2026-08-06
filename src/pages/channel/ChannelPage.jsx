@@ -12,7 +12,9 @@ import AddMemberModal from '../../components/AddMemberModal.jsx';
 import CreateTaskModal from '../../components/CreateTaskModal.jsx';
 import Modal from '../../components/Modal.jsx';
 import ConfirmNameModal from '../../components/ConfirmNameModal.jsx';
+import Select from '../../components/Select.jsx';
 import Fab from '../../components/Fab.jsx';
+import { fetchAllClients, selectAllClients } from '../../store/slices/clientSlice.js';
 import { PlusIcon, EditIcon, TrashIcon } from '../../components/icons.jsx';
 import { isAdminRole } from '../../utils/role.js';
 
@@ -155,22 +157,35 @@ export default function ChannelPage() {
   );
 }
 
-/** Edit a channel's name/description (creator/admin only). */
+/**
+ * Edit a channel's name and the client it belongs to (creator/admin only).
+ *
+ * Description is deliberately not offered: it was never shown anywhere in the
+ * product, so the field only invited people to write text nobody would read.
+ * Existing descriptions are left untouched in the database — this form simply
+ * does not send the key, and the API still accepts it for anything that does.
+ */
 function EditGroupModal({ group, onClose, onSaved }) {
   const dispatch = useDispatch();
+  const orgId = useSelector(selectCurrentOrgId);
+  const clients = useSelector(selectAllClients);
   const [name, setName] = useState(group.name || '');
-  const [description, setDescription] = useState(group.description || '');
+  const [clientId, setClientId] = useState(group.clientId || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  // The picker needs the org's clients; this modal can be the first thing
+  // opened in a session, so it cannot assume another page already loaded them.
+  useEffect(() => {
+    if (orgId && clients.length === 0) dispatch(fetchAllClients(orgId));
+  }, [orgId, clients.length, dispatch]);
 
   const submit = async (e) => {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
-      await dispatch(
-        updateGroup({ groupId: group.id, name: name.trim(), description: description.trim() })
-      ).unwrap();
+      await dispatch(updateGroup({ groupId: group.id, name: name.trim(), clientId })).unwrap();
       onSaved?.();
     } catch (err) {
       setError(err.message || 'Could not update the channel');
@@ -187,14 +202,20 @@ function EditGroupModal({ group, onClose, onSaved }) {
           <input className="input" autoFocus value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div className="field">
-          <label className="field__label">Description</label>
-          <textarea
-            className="input textarea"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="What's this channel for?"
+          <label className="field__label">Assign client</label>
+          <Select
+            value={clientId}
+            onChange={setClientId}
+            placeholder={clients.length ? 'No client' : 'No clients yet'}
+            options={[
+              { value: '', label: 'No client' },
+              ...clients.map((c) => ({ value: c.id, label: c.name })),
+            ]}
           />
+          <p className="field__hint">
+            Every task raised in this channel is filed under this client automatically, and the
+            task form stops asking.
+          </p>
         </div>
         <div className="modal__actions">
           <button type="button" className="btn btn--ghost" onClick={onClose} disabled={busy}>

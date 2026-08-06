@@ -20,7 +20,7 @@ import TaskSearchBar from '../../components/TaskSearchBar.jsx';
 import MemberFilterDrawer from '../../components/MemberFilterDrawer.jsx';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { BuildingIcon, PlusIcon, XIcon } from '../../components/icons.jsx';
-import { isAdminRole } from '../../utils/role.js';
+import { isAdminRole, ASSIGNABLE_ROLES, ROLE_LABEL } from '../../utils/role.js';
 
 const EMPTY_FILTERS = { role: '' };
 
@@ -217,7 +217,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
             <div className="field">
               <label className="field__label">Role</label>
               <div className="radio-group">
-                {['MEMBER', 'ADMIN'].map((r) => (
+                {ASSIGNABLE_ROLES.map((r) => (
                   <button
                     type="button"
                     key={r}
@@ -225,7 +225,7 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
                     onClick={() => setRole(r)}
                   >
                     <span className="radio-pill__dot" />
-                    {r === 'MEMBER' ? 'Member' : 'Admin'}
+                    {ROLE_LABEL[r]}
                   </button>
                 ))}
               </div>

@@ -19,6 +19,7 @@ import TaskStatusTabs from '../components/TaskStatusTabs.jsx';
 import TaskSearchBar from '../components/TaskSearchBar.jsx';
 import TaskFilterDrawer from '../components/TaskFilterDrawer.jsx';
 import CreateTaskModal from '../components/CreateTaskModal.jsx';
+import InviteClientModal from '../components/InviteClientModal.jsx';
 import Pagination from '../components/Pagination.jsx';
 import Fab from '../components/Fab.jsx';
 import { relativeDay } from '../utils/time.js';
@@ -44,6 +45,7 @@ export default function ClientDetailPage() {
   const [counts, setCounts] = useState(emptyCounts);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState('');
@@ -139,9 +141,19 @@ export default function ClientDetailPage() {
             <p className="project-detail__meta">
               Created by {client.createdBy?.name || client.createdBy?.email || 'someone'} · {relativeDay(client.createdAt)}
             </p>
-            <button className="btn btn--sm project-detail__new-task hide-mobile" onClick={() => setCreateOpen(true)}>
-              <PlusIcon size={14} /> New task
-            </button>
+            <div className="project-detail__new-task hide-mobile client-detail__actions">
+              <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
+                <PlusIcon size={14} /> New task
+              </button>
+              {/* Admin-only: inviting someone into the workspace is member
+                  management, and this is the one screen where it can be done
+                  without also choosing a role, a group or a client. */}
+              {isAdmin && (
+                <button className="btn btn--sm btn--ghost" onClick={() => setInviteOpen(true)}>
+                  <PlusIcon size={14} /> Invite member
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="list-controls">
@@ -182,12 +194,26 @@ export default function ClientDetailPage() {
           {/* Sub-page (no bottom nav) — the FAB sits at the bottom, not raised. */}
           <Fab label="New task" onClick={() => setCreateOpen(true)} />
 
+          {/* Everything about this task is already decided by where it is being
+              raised from, so the form states the three fields rather than
+              asking: the default client channel, this client, and nobody
+              assigned. See `CreateTaskModal`'s `lock` prop. */}
           {createOpen && (
             <CreateTaskModal
               askGroup
               defaultClientId={clientId}
+              lock={{ group: true, client: true, assignee: true }}
               onClose={() => setCreateOpen(false)}
               onCreated={reload}
+            />
+          )}
+
+          {inviteOpen && (
+            <InviteClientModal
+              orgId={orgId}
+              clientId={clientId}
+              clientName={client.name}
+              onClose={() => setInviteOpen(false)}
             />
           )}
 

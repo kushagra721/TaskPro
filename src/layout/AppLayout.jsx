@@ -13,6 +13,7 @@ import { fetchChats } from '../store/slices/chatSlice.js';
 import { fetchNotifications } from '../store/slices/notificationSlice.js';
 import { fetchMyInvitations } from '../store/slices/invitationSlice.js';
 import { fetchIncomingJoinRequests } from '../store/slices/joinRequestSlice.js';
+import { usePushNotifications } from '../hooks/usePushNotifications.js';
 
 const TITLES = [
   { match: '/dashboard', title: 'Home' },
@@ -43,6 +44,10 @@ const ROOT_PATHS = ['/dashboard', '/groups', '/tasks', '/chats', '/more'];
 export default function AppLayout() {
   const dispatch = useDispatch();
   const location = useLocation();
+  // Android push. Mounted here rather than at the app root because
+  // registration binds the device to the SIGNED-IN account, and this layout is
+  // the first thing that only renders once there is one. A no-op on web.
+  usePushNotifications();
   const currentOrgId = useSelector(selectCurrentOrgId);
   const [createOpen, setCreateOpen] = useState(false);
 

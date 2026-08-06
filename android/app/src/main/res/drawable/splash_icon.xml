@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Task Pro mark for the Android 12+ splash screen — the same rounded square +
+  tick as the web logo (public/favicon.svg) and the launcher icon.
+
+  THE MARK IS SMALL ON PURPOSE (48dp inside a 108dp canvas).
+
+  The splash API masks the icon to a CIRCLE of roughly 72dp diameter, so a
+  centred square only survives if its half-diagonal fits inside r=36. The first
+  attempt used the full 66dp square (half-diagonal 46.7dp); the mask sliced its
+  four corners off and the logo rendered as an octagon on-device. 48dp gives a
+  half-diagonal of 33.9dp, comfortably inside the mask, so the corners are the
+  ones drawn here rather than the ones the system cuts.
+
+  Corners are cubic Beziers (k = r * 0.5523), not `A` arc commands — Android
+  renders small arcs coarsely and the splash scales the icon up.
+
+  Flat brand mid-tone rather than a gradient: gradients on a splash vector need
+  an aapt attr the splash API does not reliably honour, and a black fallback
+  would be far worse than a solid colour from the same family.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="#7A5DF4"
+        android:pathData="M43,30 L65,30 C72.18,30 78,35.82 78,43 L78,65 C78,72.18 72.18,78 65,78 L43,78 C35.82,78 30,72.18 30,65 L30,43 C30,35.82 35.82,30 43,30 Z" />
+
+    <!-- Tick, scaled to the smaller square: favicon's M20,33 L28,41 L44,23 on a
+         64 viewBox, mapped into the 48dp box at x/y 30..78. -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M45,54.75 L51,60.75 L63,47.25" />
+</vector>
