@@ -16,6 +16,7 @@ import NotificationsBell from './NotificationsBell.jsx';
 import Avatar from '../components/Avatar.jsx';
 import OrgBadge from '../components/OrgBadge.jsx';
 import { useHeaderActions } from './HeaderActions.jsx';
+import { useIsMobile } from '../hooks/useIsMobile.js';
 import {
   ChevronDownIcon,
   PlusIcon,
@@ -32,6 +33,7 @@ import {
 export default function Topbar({ title, isRoot, onCreateOrg }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   // The account menu behind the chevron on the desktop user chip.
   const [userOpen, setUserOpen] = useState(false);
   const org = useSelector(selectCurrentOrg);
@@ -91,14 +93,26 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
               <span className="topbar__user-name">{user?.name || user?.email || 'You'}</span>
               {org?.role && <span className={`role-pill role-pill--${org.role.toLowerCase()}`}>{org.role}</span>}
             </div>
-            {/* Secondary line: the organisation (a switcher button on mobile). */}
-            <button className="topbar__org topbar__org--btn" onClick={() => setOpen((o) => !o)}>
-              <span className="topbar__org-name">{org?.name || 'No workspace'}</span>
-              <ChevronDownIcon size={14} />
-            </button>
+            {/* Secondary line: the current workspace.
+                On MOBILE this is a plain label — switching happens on the More
+                page, which now carries the workspace card. A dropdown here put
+                a second, easy-to-mis-tap route to the same action right beside
+                the page title, on the breakpoint where mis-taps are most
+                likely. Desktop keeps the quick switcher, since the sidebar's
+                one moved to More and this is the only one left there. */}
+            {isMobile ? (
+              <div className="topbar__org">
+                <span className="topbar__org-name">{org?.name || 'No workspace'}</span>
+              </div>
+            ) : (
+              <button className="topbar__org topbar__org--btn" onClick={() => setOpen((o) => !o)}>
+                <span className="topbar__org-name">{org?.name || 'No workspace'}</span>
+                <ChevronDownIcon size={14} />
+              </button>
+            )}
           </div>
 
-          {open && (
+          {open && !isMobile && (
             <>
               <div className="dropdown-backdrop" onClick={() => setOpen(false)} />
               <div className="dropdown topbar__org-menu">
