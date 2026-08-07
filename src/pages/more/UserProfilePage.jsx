@@ -7,6 +7,7 @@ import { selectGroups } from '../../store/slices/groupSlice.js';
 import { organizationsApi } from '../../api/client.js';
 import { useTaskQuery } from '../../hooks/useTaskQuery.js';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import Avatar from '../../components/Avatar.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Modal from '../../components/Modal.jsx';
@@ -32,6 +33,7 @@ export default function UserProfilePage() {
   const groups = useSelector(selectGroups);
   const members = useSelector(selectMembers);
   const isAdmin = isAdminRole(org?.role);
+  const isMobile = useIsMobile();
   const isSelf = userId === me?.id;
 
   const [member, setMember] = useState(null);
@@ -151,8 +153,11 @@ export default function UserProfilePage() {
   const canManage = isAdmin && !isSelf && member?.role !== 'OWNER';
 
   return (
-    <div className="page">
-      <button className="link-btn" onClick={() => navigate(-1)}>← Back</button>
+    // `.channel`, not `.page` — this page now wears the group/project detail
+    // shell: one card holding the identity row and the tabs, with the content
+    // below it. See `.channel`'s note about keeping its width in step.
+    <div className="channel">
+      <button className="link-btn channel__back" onClick={() => navigate(-1)}>← Back</button>
 
       {error && <div className="alert alert--error">{error}</div>}
 
@@ -162,32 +167,62 @@ export default function UserProfilePage() {
         </div>
       ) : (
         <>
-          <div className="user-profile__card">
-            <Avatar name={member.name} email={member.email} src={member.avatarUrl} size={64} viewable />
-            <h1 className="user-profile__name">{member.name || member.email}</h1>
-            <p className="user-profile__email">{member.email}</p>
-            <div className="user-profile__tags">
+          <div className="channel__header">
+            <div className="channel__title-row">
+              <Avatar name={member.name} email={member.email} src={member.avatarUrl} size={40} viewable />
+              <h1 className="channel__title">{member.name || member.email}</h1>
               <span className={`role-pill role-pill--${member.role.toLowerCase()}`}>{member.role}</span>
               {isSelf && <span className="tag">You</span>}
-            </div>
-            <p className="user-profile__meta">Member since {formatDate(member.joinedAt)}</p>
-          </div>
+              <span className="channel__members">
+                {member.taskCount} task{member.taskCount === 1 ? '' : 's'}
+              </span>
 
-          {/* Same tab bar as the channel and client-space pages. */}
-          <div className="channel__bar">
-            <div className="channel__tabs">
-              <button
-                className={`tab ${section === 'tasks' ? 'tab--active' : ''}`}
-                onClick={() => setSection('tasks')}
-              >
-                Tasks <span className="tab__count">{member.taskCount}</span>
-              </button>
-              <button
-                className={`tab ${section === 'profile' ? 'tab--active' : ''}`}
-                onClick={() => setSection('profile')}
-              >
-                Profile
-              </button>
+              {/* Inline, beside the person it acts on — the same slot the other
+                  detail pages give Edit/Delete. There is nothing to "edit"
+                  about a member, so removal is the only icon here. */}
+              {canManage && (
+                <div className="task-detail__actions task-detail__actions--inline">
+                  <button
+                    className="icon-btn icon-btn--danger"
+                    onClick={() => setRemoveOpen(true)}
+                    title="Remove from workspace"
+                    aria-label="Remove from workspace"
+                  >
+                    <TrashIcon size={15} />
+                  </button>
+                </div>
+              )}
+
+              {/* The page's actions, pinned right. One button per role rather
+                  than a toggle: with three assignable roles there is no single
+                  "other" state to flip to. A CLIENT gets none — see
+                  `roleOptions`. */}
+              {canManage && roleOptions.length > 0 && (
+                <div className="detail-head__actions hide-mobile">
+                  {roleOptions.map((r) => (
+                    <button key={r} className="btn btn--ghost btn--sm" onClick={() => setRoleTarget(r)}>
+                      <ShieldIcon size={14} /> Make {ROLE_LABEL[r].toLowerCase()}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="channel__tabbar">
+              <div className="channel__tabs">
+                <button
+                  className={`tab ${section === 'tasks' ? 'tab--active' : ''}`}
+                  onClick={() => setSection('tasks')}
+                >
+                  Tasks <span className="tab__count">{member.taskCount}</span>
+                </button>
+                <button
+                  className={`tab ${section === 'profile' ? 'tab--active' : ''}`}
+                  onClick={() => setSection('profile')}
+                >
+                  Profile
+                </button>
+              </div>
             </div>
           </div>
 
@@ -247,6 +282,20 @@ export default function UserProfilePage() {
 
           {section === 'profile' && (
             <>
+              {/* Email and join date moved off the head row — it now carries
+                  name, role and the actions, and adding two more lines to it
+                  would have pushed the tabs down. They belong on the Profile
+                  tab anyway, which is what that tab is for. */}
+              <section className="panel">
+                <div className="panel__head">
+                  <h2 className="panel__title">Details</h2>
+                </div>
+                <div className="task-detail__grid">
+                  <div className="kv"><span className="kv__k">Email</span><span className="kv__v">{member.email}</span></div>
+                  <div className="kv"><span className="kv__k">Member since</span><span className="kv__v">{formatDate(member.joinedAt)}</span></div>
+                </div>
+              </section>
+
               <div className="stat-grid stat-grid--3">
                 <div className="stat-card stat-card--indigo">
                   <div className="stat-card__value">{member.groups.length}</div>
@@ -282,7 +331,11 @@ export default function UserProfilePage() {
                 )}
               </section>
 
-              {canManage && (
+              {/* MOBILE ONLY. The same role buttons live in the head row, but
+                  that copy is `hide-mobile` — without this panel a phone would
+                  have no way to change anyone's role. Rendering both on desktop
+                  would just be the same two buttons twice. */}
+              {canManage && isMobile && (
                 <section className="panel">
                   <div className="panel__head">
                     <h2 className="panel__title">Admin actions</h2>

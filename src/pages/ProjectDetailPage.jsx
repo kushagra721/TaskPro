@@ -125,8 +125,11 @@ export default function ProjectDetailPage() {
               <span className="channel__members">
                 {project.taskCount} task{project.taskCount === 1 ? '' : 's'}
               </span>
+              {/* Inline, immediately after the name and its task count: these
+                  edit and delete THAT project, so they belong beside it. The
+                  far-right slot is the page's own action instead. */}
               {isAdmin && (
-                <div className="task-detail__actions">
+                <div className="task-detail__actions task-detail__actions--inline">
                   <button className="icon-btn" onClick={() => setEditOpen(true)} title="Edit project" aria-label="Edit project">
                     <EditIcon size={15} />
                   </button>
@@ -135,13 +138,15 @@ export default function ProjectDetailPage() {
                   </button>
                 </div>
               )}
+              <div className="detail-head__actions hide-mobile">
+                <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
+                  <PlusIcon size={14} /> New task
+                </button>
+              </div>
             </div>
             <p className="project-detail__meta">
               Created by {project.createdBy?.name || project.createdBy?.email || 'someone'} · {relativeDay(project.createdAt)}
             </p>
-            <button className="btn btn--sm project-detail__new-task hide-mobile" onClick={() => setCreateOpen(true)}>
-              <PlusIcon size={14} /> New task
-            </button>
           </div>
 
           <div className="list-controls">

@@ -65,14 +65,32 @@ export default function ChannelPage() {
         <div className="channel__title-row">
           <h1 className="channel__title">#{loaded ? group.name : '…'}</h1>
           {loaded && <span className="channel__members">{group.members?.length || 0} members</span>}
+          {/* Inline, right after the name and member count: these edit and
+              delete THAT group, so they belong beside it. The page's own
+              actions take the far-right slot — same head layout as the Project
+              and Client Space detail pages. */}
           {loaded && canManage && (
-            <div className="task-detail__actions">
+            <div className="task-detail__actions task-detail__actions--inline">
               <button className="icon-btn" onClick={() => setEditGroupOpen(true)} title="Edit group" aria-label="Edit group">
                 <EditIcon size={15} />
               </button>
               <button className="icon-btn icon-btn--danger" onClick={() => setDeleteGroupOpen(true)} title="Delete group" aria-label="Delete group">
                 <TrashIcon size={15} />
               </button>
+            </div>
+          )}
+          {/* New task / Add member are inline on desktop; on mobile the FAB
+              below does whichever action fits the selected tab. */}
+          {loaded && (
+            <div className="detail-head__actions hide-mobile">
+              <button className="btn btn--sm" onClick={() => setCreateTaskOpen(true)}>
+                <PlusIcon size={14} /> New task
+              </button>
+              {canManage && (
+                <button className="btn btn--ghost btn--sm" onClick={() => setAddMemberOpen(true)}>
+                  <PlusIcon size={14} /> Add member
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -84,18 +102,6 @@ export default function ChannelPage() {
             <button className={`tab ${tab === 'chat' ? 'tab--active' : ''}`} onClick={() => setTab('chat')}>
               Chat{loaded && group.messageCount != null ? ` (${group.messageCount})` : ''}
             </button>
-          </div>
-          <div className="channel__actions">
-            {/* New task/Add member are inline on desktop; on mobile the FAB
-                below does whichever action fits the selected tab. */}
-            <button className="btn btn--sm channel__new-task hide-mobile" onClick={() => setCreateTaskOpen(true)}>
-              <PlusIcon size={14} /> New task
-            </button>
-            {canManage && (
-              <button className="btn btn--ghost btn--sm hide-mobile" onClick={() => setAddMemberOpen(true)}>
-                <PlusIcon size={14} /> Add member
-              </button>
-            )}
           </div>
         </div>
       </div>

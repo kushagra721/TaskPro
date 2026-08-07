@@ -30,6 +30,8 @@ import {
   CheckIcon,
   EditIcon,
   XIcon,
+  CopyIcon,
+  ChevronDownIcon,
 } from '../../components/icons.jsx';
 import DocIcon from '../../components/DocIcon.jsx';
 import MessageQuote, { DeletedQuote } from '../../components/MessageQuote.jsx';
@@ -100,12 +102,26 @@ export default function ChannelChat({ groupId, canManage, group }) {
   const [attachments, setAttachments] = useState([]);
   // { messageId, scope: 'me' | 'everyone' } — the confirm modal's copy and the
   // action it fires both key off `scope`.
-  const [deleteTarget, setDeleteTarget] = useState(null);
   const [infoTarget, setInfoTarget] = useState(null);
   // The message currently being edited, or null for the normal "new message"
   // composer. Editing reuses the same composer rather than opening a modal.
   const [editing, setEditing] = useState(null);
   const [menu, setMenu] = useState(null); // { messageId, x, y }
+  /**
+   * Selection mode — WhatsApp's model, and the reason the menu now offers one
+   * "Delete" instead of two.
+   *
+   * Choosing the scope (for me / for everyone) up front made the menu ask a
+   * question before the user had said what they were deleting, and it only ever
+   * acted on one message. Delete now switches the whole thread into selection
+   * mode with that message ticked; the scope is asked once, at the end, for
+   * everything selected.
+   */
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
   // The message being replied to, or null. Cleared on send/cancel.
   const [replyTo, setReplyTo] = useState(null);
   // Briefly set after jumping to a quoted message, so the destination flashes
@@ -378,15 +394,50 @@ export default function ChannelChat({ groupId, canManage, group }) {
     [groupId]
   );
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    const { messageId, scope } = deleteTarget;
-    dispatch(
-      scope === 'everyone'
-        ? deleteMessage({ groupId, messageId })
-        : hideMessage({ groupId, messageId })
+  /** Enter selection mode with one message already ticked. */
+  const beginSelect = useCallback((messageId) => {
+    setMenu(null);
+    setSelectMode(true);
+    setSelectedIds(new Set([messageId]));
+  }, []);
+
+  const exitSelect = useCallback(() => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const toggleSelected = useCallback((messageId) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(messageId)) next.delete(messageId);
+      else next.add(messageId);
+      return next;
+    });
+  }, []);
+
+  /**
+   * Apply the chosen scope to every selected message.
+   *
+   * There is no bulk endpoint — the API deletes and hides one message at a
+   * time — so this fans out. `allSettled`, not `all`: one refusal must not
+   * abandon the rest, which is exactly what would happen on a mixed selection
+   * the guard above somehow let through.
+   */
+  const applyBulkDelete = async (scope) => {
+    setBulkBusy(true);
+    const ids = [...selectedIds];
+    await Promise.allSettled(
+      ids.map((messageId) =>
+        dispatch(
+          scope === 'everyone'
+            ? deleteMessage({ groupId, messageId })
+            : hideMessage({ groupId, messageId })
+        )
+      )
     );
-    setDeleteTarget(null);
+    setBulkBusy(false);
+    setBulkOpen(false);
+    exitSelect();
   };
 
   // Every message opens the menu — the emoji row (react) is available on
@@ -399,7 +450,9 @@ export default function ChannelChat({ groupId, canManage, group }) {
     const point = e.touches?.[0] || e;
     const x = Math.max(8, Math.min(point.clientX, window.innerWidth - 244));
     const y = Math.max(8, Math.min(point.clientY, window.innerHeight - 280));
-    setMenu({ messageId, x, y, mine, canDelete: mine || canManage });
+    // No `canDelete` flag any more — the menu's single Delete just starts a
+    // selection, and eligibility is decided once, over the whole selection.
+    setMenu({ messageId, x, y, mine });
   }, [canManage]);
 
   const onBubbleContextMenu = useCallback(
@@ -448,6 +501,53 @@ export default function ChannelChat({ groupId, canManage, group }) {
 
   const allItems = useMemo(() => [...messages, ...pending], [messages, pending]);
 
+  /* The two below read `allItems`, so they MUST stay under it. A `useMemo`/
+     `useCallback` dependency array is evaluated during render, so referencing a
+     `const` declared further down throws "Cannot access 'allItems' before
+     initialization" — a blank chat page, and a runtime-only failure that a
+     clean build says nothing about. */
+
+  /**
+   * May EVERY selected message be deleted for everyone?
+   *
+   * The server allows that only for your own message, or any message if you
+   * manage the channel. A mixed selection would otherwise offer a button that
+   * half-succeeds and leaves the rest in place with no explanation — so the
+   * option is withheld unless it applies to all of them. "Delete for me" is
+   * always available: it only ever hides rows from the caller.
+   */
+  const canDeleteAllForEveryone = useMemo(() => {
+    if (selectedIds.size === 0) return false;
+    return [...selectedIds].every((id) => {
+      const m = allItems.find((x) => x.id === id);
+      // A message that has scrolled out of the loaded window cannot be judged;
+      // treat that as "not allowed" rather than assuming.
+      return Boolean(m) && (m.author.id === user?.id || canManage);
+    });
+  }, [selectedIds, allItems, user?.id, canManage]);
+
+  /**
+   * Copy a message's text to the clipboard.
+   *
+   * `htmlToPlainText`, not `htmlToText` — the latter drops <br> with no
+   * separator, so a two-line message would be copied as one run-on word.
+   * `navigator.clipboard` needs a secure context; the catch keeps a failure
+   * silent rather than throwing at a user who just wanted to copy something.
+   */
+  const copyMessage = useCallback((messageId) => {
+    const target = allItems.find((m) => m.id === messageId);
+    setMenu(null);
+    if (!target?.content) return;
+    navigator.clipboard
+      ?.writeText(htmlToPlainText(target.content))
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1600);
+      })
+      .catch(() => {});
+  }, [allItems]);
+
+
   // Which items need a date badge above them: the first, and any whose day
   // differs from the previous one. Computed once per render rather than inside
   // the map so each row does not re-derive its neighbour's date.
@@ -492,21 +592,48 @@ export default function ChannelChat({ groupId, canManage, group }) {
                 id={`msg-${m.id}`}
                 className={`msg ${mine ? 'msg--mine' : 'msg--theirs'} ${
                   highlightId === m.id ? 'msg--highlight' : ''
+                } ${selectMode ? 'msg--selectable' : ''} ${
+                  selectMode && selectedIds.has(m.id) ? 'msg--selected' : ''
                 }`}
+                onClick={selectMode ? () => toggleSelected(m.id) : undefined}
               >
+                {/* In selection mode the WHOLE row is the hit target — a
+                    checkbox alone is a small thing to aim at on a phone. */}
+                {selectMode && (
+                  <span className={`msg__check ${selectedIds.has(m.id) ? 'msg__check--on' : ''}`} aria-hidden="true">
+                    {selectedIds.has(m.id) && <CheckIcon size={13} />}
+                  </span>
+                )}
                 {!mine && <Avatar name={m.author.name} email={m.author.email} src={m.author.avatarUrl} size={32} />}
                 <div className="msg__body">
                   <div
                     className="msg__bubble"
-                    onContextMenu={(e) => onBubbleContextMenu(e, m.id, mine)}
-                    onTouchStart={(e) => onPressStart(e, m.id, mine)}
-                    onTouchEnd={onPressEnd}
-                    onTouchMove={onPressEnd}
-                    onMouseDown={(e) => e.button === 0 && onPressStart(e, m.id, mine)}
-                    onMouseUp={onPressEnd}
-                    onMouseLeave={onPressEnd}
-                    onClick={onBubbleClick}
+                    onContextMenu={selectMode ? undefined : (e) => onBubbleContextMenu(e, m.id, mine)}
+                    onTouchStart={selectMode ? undefined : (e) => onPressStart(e, m.id, mine)}
+                    onTouchEnd={selectMode ? undefined : onPressEnd}
+                    onTouchMove={selectMode ? undefined : onPressEnd}
+                    onMouseDown={selectMode ? undefined : (e) => e.button === 0 && onPressStart(e, m.id, mine)}
+                    onMouseUp={selectMode ? undefined : onPressEnd}
+                    onMouseLeave={selectMode ? undefined : onPressEnd}
+                    onClick={selectMode ? undefined : onBubbleClick}
                   >
+                    {/* Hover affordance (desktop) — long-press still opens the
+                        same menu on touch, where there is no hover to reveal
+                        it. Hidden entirely in selection mode, where a tap
+                        means "tick this", not "open a menu". */}
+                    {!selectMode && (
+                      <button
+                        type="button"
+                        className="msg__menu-btn"
+                        aria-label="Message options"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openMenu(e, m.id, mine);
+                        }}
+                      >
+                        <ChevronDownIcon size={14} />
+                      </button>
+                    )}
                     {!mine && <span className="msg__author">{m.author.name || m.author.email}</span>}
                     {/* The quoted message.
                         Deleting the original nulls `replyToId` itself (the FK is
@@ -596,8 +723,11 @@ export default function ChannelChat({ groupId, canManage, group }) {
               </Fragment>
             );
       }),
+    // `selectMode`/`selectedIds` belong here: the rows render checkboxes and a
+    // selected state, so leaving them out would memoise a stale tick.
     [allItems, dayBreaks, user?.id, group?.members, highlightId, react, jumpToMessage,
-     onBubbleContextMenu, onPressStart, onPressEnd, onBubbleClick]
+     onBubbleContextMenu, onPressStart, onPressEnd, onBubbleClick,
+     selectMode, selectedIds, toggleSelected, openMenu]
   );
 
   return (
@@ -640,6 +770,26 @@ export default function ChannelChat({ groupId, canManage, group }) {
         })}
         <div ref={endRef} />
       </div>
+
+      {/* Selection bar — replaces the composer's role while choosing what to
+          delete: a count, a way out, and the action. */}
+      {selectMode && (
+        <div className="chat__selectbar">
+          <button type="button" className="icon-btn" onClick={exitSelect} aria-label="Cancel selection">
+            <XIcon size={18} />
+          </button>
+          <span className="chat__selectbar-count">{selectedIds.size} selected</span>
+          <button
+            type="button"
+            className="icon-btn icon-btn--danger"
+            onClick={() => setBulkOpen(true)}
+            disabled={selectedIds.size === 0}
+            aria-label="Delete selected"
+          >
+            <TrashIcon size={18} />
+          </button>
+        </div>
+      )}
 
       <form className="composer composer--column" onSubmit={send}>
         {editing && (
@@ -759,52 +909,55 @@ export default function ChannelChat({ groupId, canManage, group }) {
                 <InfoIcon size={16} /> Info
               </button>
             )}
-            {/* "Delete for me" is always available — it only hides the message
-                from you. "Delete for everyone" is the hard delete, so it's
-                gated on being the author or an admin/channel creator. */}
-            <button
-              className="msg-menu__item"
-              onClick={() => {
-                setDeleteTarget({ messageId: menu.messageId, scope: 'me' });
-                setMenu(null);
-              }}
-            >
-              <TrashIcon size={16} /> Delete for me
-            </button>
-            {menu.canDelete && (
-              <button
-                className="msg-menu__item msg-menu__item--danger"
-                onClick={() => {
-                  setDeleteTarget({ messageId: menu.messageId, scope: 'everyone' });
-                  setMenu(null);
-                }}
-              >
-                <TrashIcon size={16} /> Delete for everyone
+            {/* Copy only appears when there is text to copy — an
+                attachment-only message would silently do nothing. */}
+            {!!allItems.find((m) => m.id === menu.messageId)?.content && (
+              <button className="msg-menu__item" onClick={() => copyMessage(menu.messageId)}>
+                <CopyIcon size={16} /> Copy
               </button>
             )}
+            {/* ONE Delete, not two.
+                It no longer deletes anything by itself — it starts a selection
+                with this message ticked, and the scope (for me / for everyone)
+                is asked once at the end, for everything chosen. Picking the
+                scope first meant answering a question before saying what you
+                were deleting, and could only ever act on a single message. */}
+            <button className="msg-menu__item msg-menu__item--danger" onClick={() => beginSelect(menu.messageId)}>
+              <TrashIcon size={16} /> Delete
+            </button>
           </div>,
           document.body
         )}
 
-      {deleteTarget && (
-        <Modal
-          title={deleteTarget.scope === 'everyone' ? 'Delete for everyone' : 'Delete for me'}
-          onClose={() => setDeleteTarget(null)}
-        >
-          <p className="modal__intro">
-            {deleteTarget.scope === 'everyone'
-              ? "This message will be permanently deleted for everyone in this channel. This can't be undone."
-              : "This message will be removed from your view only — everyone else in the channel will still see it. This can't be undone."}
-          </p>
-          <div className="modal__actions">
-            <button className="btn btn--ghost" onClick={() => setDeleteTarget(null)}>Cancel</button>
-            <button className="btn btn--danger" onClick={confirmDelete}>
-              <TrashIcon size={16} />{' '}
-              {deleteTarget.scope === 'everyone' ? 'Delete for everyone' : 'Delete for me'}
+      {/* The scope is asked ONCE, at the end, for everything selected —
+          matching the reference: Delete for everyone / Delete for me / Cancel. */}
+      {bulkOpen && (
+        <Modal title={selectedIds.size === 1 ? 'Delete message?' : `Delete ${selectedIds.size} messages?`} onClose={() => !bulkBusy && setBulkOpen(false)}>
+          <div className="msg-delete-choices">
+            {/* Withheld unless EVERY selected message qualifies — see
+                `canDeleteAllForEveryone`. Offering it on a mixed selection
+                would half-succeed and leave the rest with no explanation. */}
+            {canDeleteAllForEveryone && (
+              <button className="btn btn--danger" disabled={bulkBusy} onClick={() => applyBulkDelete('everyone')}>
+                {bulkBusy ? <span className="spinner" /> : 'Delete for everyone'}
+              </button>
+            )}
+            <button className="btn btn--ghost" disabled={bulkBusy} onClick={() => applyBulkDelete('me')}>
+              Delete for me
+            </button>
+            <button className="btn btn--ghost" disabled={bulkBusy} onClick={() => setBulkOpen(false)}>
+              Cancel
             </button>
           </div>
+          {!canDeleteAllForEveryone && (
+            <p className="modal__intro" style={{ marginTop: 12 }}>
+              Some of these were sent by other people, so they can only be removed from your own view.
+            </p>
+          )}
         </Modal>
       )}
+
+      {copied && <div className="chat__toast" role="status">Copied</div>}
 
       {infoMessage && (
         <Modal title="Message info" onClose={() => setInfoTarget(null)}>

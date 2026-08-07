@@ -1039,12 +1039,20 @@ a.btn {
   flex-shrink: 0;
 }
 
-/* Search/filter icons, the user line and the back button only exist on mobile —
-   the desktop sidebar shows the user, and pages keep their own inline toolbar. */
-.topbar__action,
+/* The user line and the back button only exist on mobile — the desktop sidebar
+   shows the user, and pages keep their own inline toolbar. */
 .topbar__userline,
 .topbar__userstrip,
 .topbar__back {
+  display: none;
+}
+
+/* Search/filter icons: mobile only, and the parent selector is LOAD-BEARING.
+   These buttons also carry `.icon-btn`, whose `display: grid` is declared later
+   in this file — at equal specificity the later rule wins, so a bare
+   `.topbar__action { display: none }` silently lost and both icons showed on
+   desktop beside the bell. The mobile rule below is scoped to match. */
+.topbar__right .topbar__action {
   display: none;
 }
 
@@ -2291,12 +2299,17 @@ a.btn {
   margin-top: 8px;
 }
 
-/* Channel view */
+/* Channel view.
+   This page does NOT use `.page` — it is its own flex column — so it keeps a
+   private copy of the reading-column width. **Keep this equal to `.page`'s
+   `max-width`**: when that went 1080px -> 1440px, this was the one page left
+   behind, and the group detail view sat in visibly wider gutters than every
+   other page. */
 .channel {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-width: 1080px;
+  max-width: 1440px;
   margin: 0 auto;
 }
 
@@ -4112,6 +4125,23 @@ a.btn {
   gap: 8px;
 }
 
+/* Edit/Delete sitting INLINE beside the title and its task count, rather than
+   pushed to the far edge — they act on the thing named right next to them, so
+   distance made them read as page-level actions. Dropping `margin-left` is the
+   whole change; the far-right slot is now the page's own action (New task). */
+.task-detail__actions--inline {
+  margin-left: 0;
+}
+
+/* The page's primary action(s), pinned to the right of the head row. */
+.detail-head__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .task-detail__actions .icon-btn {
   width: 34px;
   height: 34px;
@@ -4145,23 +4175,6 @@ a.btn {
   font-weight: 600;
   color: var(--text-muted);
   flex-shrink: 0;
-}
-
-.project-detail__new-task {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 14px;
-  /* Right-aligned, under the edit/delete icons at the top-right of the card. */
-  margin-left: auto;
-}
-
-.channel__new-task {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
 }
 
 .storage-files {
@@ -4219,31 +4232,6 @@ a.btn {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.user-profile__card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 4px;
-  padding: 28px 20px;
-  margin-top: 12px;
-  margin-bottom: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.user-profile__name {
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: 10px;
-}
-
-.user-profile__email {
-  color: var(--text-muted);
-  font-size: 13.5px;
 }
 
 .user-profile__tags {
@@ -5383,8 +5371,9 @@ a.btn {
     white-space: nowrap;
   }
 
-  /* Mobile header: compact icon actions + a "who am I" strip. */
-  .topbar__action {
+  /* Mobile header: compact icon actions + a "who am I" strip.
+     Scoped to `.topbar__right` to match the hide rule's specificity above. */
+  .topbar__right .topbar__action {
     display: grid;
     position: relative;
     width: 34px;
@@ -11042,36 +11031,7 @@ a.btn {
   font-weight: 700;
 }
 
-/* --- Client space detail: right-hand action column ------------------------ */
-
-/* Edit/Delete icons, with the page's two actions stacked directly beneath.
-   `margin-left: auto` pins the whole column right inside `.task-detail__head`'s
-   flex row; `align-items: flex-end` keeps both rows flush to the edge even
-   though the icon row is narrower than the buttons. */
-.client-detail__side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.client-detail__actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
 @media (max-width: 720px) {
-  /* The buttons are hidden here (`hide-mobile`) and the FAB carries New task,
-     so the column collapses to just the icon row and must not reserve the
-     gap. */
-  .client-detail__side {
-    gap: 0;
-  }
 }
 
 /* --- Native build: no long-press text selection ---------------------------- */
@@ -11252,4 +11212,133 @@ a.btn {
   .composer__field .composer__input {
     font-size: 16px;
   }
+}
+
+/* --- Chat: message options, selection mode -------------------------------- */
+
+/* The hover chevron. Absolutely positioned inside the bubble so it never
+   reflows the text when it appears. `.msg__bubble` is already `position:
+   relative` for the reaction row; if that ever changes this must set it. */
+.msg__menu-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s;
+}
+
+.msg__bubble:hover .msg__menu-btn,
+.msg__menu-btn:focus-visible {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* TOUCH DEVICES HAVE NO HOVER, so the chevron would never appear — but
+   `:hover` on a touch screen is worse than useless: it sticks after a tap.
+   Long-press already opens the same menu there, and this keeps the chevron
+   permanently visible (faint) as a discoverable second route. */
+@media (hover: none) {
+  .msg__menu-btn {
+    opacity: 0.55;
+  }
+}
+
+/* Selection mode ----------------------------------------------------------- */
+
+.msg--selectable {
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.msg--selectable:hover {
+  background: rgba(99, 102, 241, 0.06);
+}
+
+.msg--selected {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+/* The tick. `align-self: center` so it sits against the middle of a tall
+   bubble rather than floating at its top. */
+.msg__check {
+  align-self: center;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-strong);
+  border-radius: 50%;
+  color: #fff;
+  background: transparent;
+}
+
+.msg__check--on {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* `.msg--mine` is `row-reverse`, which would put the tick on the right of your
+   own messages and the left of everyone else's — a ragged column that is hard
+   to scan. `order: -1` pins it to the visual start on both sides. */
+.msg--mine .msg__check {
+  order: -1;
+}
+
+/* Sits where the composer would be: count, a way out, and the action. */
+.chat__selectbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+
+.chat__selectbar-count {
+  font-weight: 600;
+  font-size: 14px;
+  /* Pushes the delete button to the far end. */
+  margin-right: auto;
+}
+
+/* The delete-scope dialog's buttons: stacked and full width, matching the
+   reference — three same-width targets read as a choice, a row of three reads
+   as a toolbar. */
+.msg-delete-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msg-delete-choices .btn {
+  width: 100%;
+}
+
+/* "Copied" confirmation. A toast rather than a menu state, because the menu is
+   already closed by the time the clipboard write resolves. */
+.chat__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #fff;
+  font-size: 13px;
+  pointer-events: none;
+  animation: rise 0.16s ease both;
 }

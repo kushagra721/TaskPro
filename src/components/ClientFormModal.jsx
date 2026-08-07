@@ -32,7 +32,7 @@ export default function ClientFormModal({ orgId, client, initialName = '', onClo
   };
 
   return (
-    <Modal title={client ? 'Edit client' : 'New client'} onClose={onClose}>
+    <Modal title={client ? 'Edit client space' : 'New client space'} onClose={onClose}>
       <form onSubmit={submit}>
         {error && <div className="alert alert--error">{error}</div>}
         <div className="field">

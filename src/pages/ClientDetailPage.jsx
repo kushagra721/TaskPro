@@ -24,7 +24,6 @@ import CreateTaskModal from '../components/CreateTaskModal.jsx';
 import AddClientMemberModal from '../components/AddClientMemberModal.jsx';
 import Pagination from '../components/Pagination.jsx';
 import Fab from '../components/Fab.jsx';
-import { relativeDay } from '../utils/time.js';
 import { STATUS_META } from '../utils/status.js';
 import { BuildingIcon, PlusIcon, EditIcon, TrashIcon, TaskIcon } from '../components/icons.jsx';
 import { isAdminRole, isClientRole } from '../utils/role.js';
@@ -176,40 +175,37 @@ export default function ClientDetailPage() {
               <span className="channel__members">
                 {client.taskCount} task{client.taskCount === 1 ? '' : 's'}
               </span>
-              {/* Right-hand column: the icon row, and the page's two actions
-                  stacked directly beneath it. Both live here so everything that
-                  ACTS on this space sits together, away from the tabs, which
-                  only change what is being looked at. */}
-              <div className="client-detail__side">
-                {isAdmin && (
-                  <div className="task-detail__actions">
-                    <button className="icon-btn" onClick={() => setEditOpen(true)} title="Edit client space" aria-label="Edit client space">
-                      <EditIcon size={15} />
-                    </button>
-                    <button className="icon-btn icon-btn--danger" onClick={() => setDeleteOpen(true)} title="Delete client space" aria-label="Delete client space">
-                      <TrashIcon size={15} />
-                    </button>
-                  </div>
-                )}
-                <div className="client-detail__actions hide-mobile">
-                  <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
-                    <PlusIcon size={14} /> New task
+              {/* Inline, immediately after the name and its task count: these
+                  edit and delete THAT space, so they belong beside it. The
+                  page's own actions take the far-right slot instead. */}
+              {isAdmin && (
+                <div className="task-detail__actions task-detail__actions--inline">
+                  <button className="icon-btn" onClick={() => setEditOpen(true)} title="Edit client space" aria-label="Edit client space">
+                    <EditIcon size={15} />
                   </button>
-                  {/* A CLIENT may bring in their own colleagues, so this is not
-                      admin-only — the space is theirs to populate. */}
-                  {(isAdmin || isClient) && (
-                    <button className="btn btn--sm btn--ghost" onClick={() => setInviteOpen(true)}>
-                      <PlusIcon size={14} /> Invite client
-                    </button>
-                  )}
+                  <button className="icon-btn icon-btn--danger" onClick={() => setDeleteOpen(true)} title="Delete client space" aria-label="Delete client space">
+                    <TrashIcon size={15} />
+                  </button>
                 </div>
+              )}
+              <div className="detail-head__actions hide-mobile">
+                <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
+                  <PlusIcon size={14} /> New task
+                </button>
+                {/* A CLIENT may bring in their own colleagues, so this is not
+                    admin-only — the space is theirs to populate. */}
+                {(isAdmin || isClient) && (
+                  <button className="btn btn--sm btn--ghost" onClick={() => setInviteOpen(true)}>
+                    <PlusIcon size={14} /> Invite client
+                  </button>
+                )}
               </div>
             </div>
-            <p className="project-detail__meta">
-              Created by {client.createdBy?.name || client.createdBy?.email || 'someone'} · {relativeDay(client.createdAt)}
-            </p>
-            {/* Tabs alone now — the actions moved into the header's right-hand
-                column above, beside Edit/Delete. */}
+            {/* No "Created by … · date" line. Who first typed the space's name
+                and when tells nobody anything about the work inside it, and it
+                pushed the tabs a row further from the title. The Project
+                Details page keeps its own — only this one was asked for. */}
+            {/* Tabs alone — the page's actions sit in the head row above. */}
             <div className="channel__bar">
               <div className="channel__tabs">
                 <button
@@ -314,8 +310,25 @@ export default function ClientDetailPage() {
             </section>
           )}
 
-          {/* Sub-page (no bottom nav) — the FAB sits at the bottom, not raised. */}
-          <Fab label="New task" onClick={() => setCreateOpen(true)} />
+          {/* The FAB does whichever action fits the SELECTED TAB — New task on
+              Tasks, Invite client on Clients — mirroring the channel page,
+              where the same button already switches per tab. A single fixed
+              action would offer "New task" while the user is looking at a list
+              of people, and would leave the mobile Clients tab with no way to
+              add one at all: the desktop Invite button is `hide-mobile`.
+
+              On Clients it is gated exactly like that desktop button
+              (`isAdmin || isClient` — a client may bring in their own
+              colleagues), so the FAB can never trigger something the page
+              would refuse. That means no FAB at all for a plain MEMBER on this
+              tab, which is correct: they have no action to take here.
+
+              Sub-page (no bottom nav), so the FAB sits at the bottom, not raised. */}
+          {section === 'tasks' ? (
+            <Fab label="New task" onClick={() => setCreateOpen(true)} />
+          ) : (
+            (isAdmin || isClient) && <Fab label="Invite client" onClick={() => setInviteOpen(true)} />
+          )}
 
           {/* Everything about this task is already decided by where it is being
               raised from, so the form states the three fields rather than
