@@ -55,6 +55,17 @@ const clientSlice = createSlice({
       if (i >= 0) state.all[i] = c;
       else state.all.push(c);
     },
+    /**
+     * Seed the detail from a page-bundle response.
+     *
+     * The client-space page fetches its client as part of one combined request
+     * rather than through `fetchClient`, but the edit and delete modals still
+     * read `selectClientDetail` — so the bundle hands the client here instead
+     * of the page keeping a second, divergent copy in local state.
+     */
+    clientLoaded: (state, action) => {
+      state.detail = action.payload;
+    },
     resetClients: (state) => {
       state.items = [];
       state.all = [];
@@ -112,7 +123,7 @@ const clientSlice = createSlice({
   },
 });
 
-export const { clientChanged, resetClients } = clientSlice.actions;
+export const { clientChanged, clientLoaded, resetClients } = clientSlice.actions;
 export default clientSlice.reducer;
 
 export const selectClients = (s) => s.clients.items;

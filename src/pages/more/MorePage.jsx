@@ -16,13 +16,14 @@ import { selectCurrentOrg, resetOrgs } from '../../store/slices/orgSlice.js';
 import { logout } from '../../store/slices/authSlice.js';
 import { resetProjects } from '../../store/slices/projectSlice.js';
 import { resetClients } from '../../store/slices/clientSlice.js';
-import { isAdminRole } from '../../utils/role.js';
+import { isAdminRole, isClientRole } from '../../utils/role.js';
 
 export default function MorePage() {
   const dispatch = useDispatch();
   const invitationCount = useSelector(selectInvitationCount);
   const org = useSelector(selectCurrentOrg);
   const isAdmin = isAdminRole(org?.role);
+  const isClient = isClientRole(org?.role);
 
   const doLogout = () => {
     dispatch(logout());
@@ -42,7 +43,15 @@ export default function MorePage() {
       desc: 'Details & settings for your current workspace',
       Icon: BuildingIcon,
     },
-    { to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your workspace', Icon: ActivityIcon },
+    // Hidden from a CLIENT. The workspace activity feed quotes task titles and
+    // names members joining, renaming and creating things across channels the
+    // client is not in — the supplier's internal history, not the customer's.
+    // The feed IS viewer-scoped server-side, so this is not the security
+    // boundary; it is a menu entry that would lead an external party to a page
+    // about somebody else's business.
+    ...(isClient
+      ? []
+      : [{ to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your workspace', Icon: ActivityIcon }]),
     { to: '/more/reports', label: 'Reports', desc: 'Progress across your workspace', Icon: ReportsIcon },
     // Plans & Billing and the Storage report are both admin-only — mirroring
     // `requireOrgAdmin` on their APIs, so a member never sees an entry that
@@ -58,13 +67,19 @@ export default function MorePage() {
           { to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon },
         ]
       : []),
-    {
-      to: '/more/invitations',
-      label: 'Pending Approvals',
-      desc: 'Invitations waiting for you',
-      Icon: MailIcon,
-      badge: invitationCount,
-    },
+    // Also hidden from a CLIENT: approvals are the workspace's own joining
+    // decisions.
+    ...(isClient
+      ? []
+      : [
+          {
+            to: '/more/invitations',
+            label: 'Pending Approvals',
+            desc: 'Invitations waiting for you',
+            Icon: MailIcon,
+            badge: invitationCount,
+          },
+        ]),
   ];
 
   return (

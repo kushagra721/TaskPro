@@ -23,6 +23,7 @@ import { CheckIcon, XIcon, PlusIcon, EditIcon, TrashIcon, DownloadIcon } from '.
 import DocIcon from '../components/DocIcon.jsx';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 import { isAdminRole, isClientRole } from '../utils/role.js';
+import { DEFAULT_GROUP_NAME } from '../utils/defaultGroup.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 
@@ -53,6 +54,8 @@ export default function TaskDetailPage() {
     task && !isClient && (isAdminRole(org?.role) || task.createdBy?.id === user?.id);
   // Which status-change confirmation modal is open ('complete'|'cancel'|'reopen').
   const [statusAction, setStatusAction] = useState(null);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState('');
   const [timeline, setTimeline] = useState([]);
   // Surfaced rather than swallowed — an empty timeline and a failed request
   // look identical otherwise, which hid a 404 against a stale backend.
@@ -152,6 +155,20 @@ export default function TaskDetailPage() {
       setAttachError(err.message || 'Could not remove the attachment');
     }
   };
+  /**
+   * Is this an unclaimed request from a client that the viewer could take on?
+   *
+   * Mirrors `task.service.js#isUnclaimedClientRequest` — a channel dedicated to
+   * one client (`group.clientId`) or the workspace's shared client channel,
+   * with nobody assigned. A CLIENT is excluded: they are the party who asked
+   * for the work, and their own view hides the assignee entirely. The server
+   * re-checks all of it, so this only decides which button to draw.
+   */
+  const inClientChannel =
+    Boolean(task?.group?.clientId) ||
+    (task?.group?.name || '').trim().toLowerCase() === DEFAULT_GROUP_NAME.toLowerCase();
+  const canAccept = Boolean(task) && task.status === 'OPEN' && !task.assignee && inClientChannel && !isClient;
+
   // The status modal returns { status, remarks, dueDate? }; unwrap so it can
   // surface errors and only close on success.
   const applyStatus = async (payload) => {
@@ -161,6 +178,27 @@ export default function TaskDetailPage() {
   const doDelete = async () => {
     await dispatch(deleteTask({ taskId: task.id, groupId: task.groupId })).unwrap();
     navigate(-1);
+  };
+
+  /**
+   * Claim an unassigned client request.
+   *
+   * Goes through its own endpoint rather than a task PATCH: `updateTask` gates
+   * assignee changes behind creator-or-admin, so a regular member taking work
+   * off the client channel would be refused there.
+   */
+  const doAccept = async () => {
+    setAccepting(true);
+    setAcceptError('');
+    try {
+      await tasksApi.accept(task.id);
+      dispatch(fetchTaskDetail(task.id));
+      loadTimeline();
+    } catch (err) {
+      setAcceptError(err.message || 'Could not accept this task');
+    } finally {
+      setAccepting(false);
+    }
   };
 
   return (
@@ -219,16 +257,27 @@ export default function TaskDetailPage() {
             {!timelineError && timeline.length === 0 ? (
               <div className="panel__empty">No activity on this task yet.</div>
             ) : (
-              <Timeline items={timeline} />
+              <Timeline items={timeline} actorLabel={isClient ? org?.name : undefined} />
             )}
           </div>
         ) : (
         <>
         <div className="task-detail__grid">
-          <div className="kv"><span className="kv__k">Group</span><span className="kv__v">#{task.group?.name}</span></div>
+          {/* Group and Assigned to are internal facts, withheld from a CLIENT.
+              Which channel a supplier discusses the work in, and which of their
+              staff picked it up, are not the customer's business — and the
+              channel is one a client is not a member of anyway. The same two
+              are already hidden from their task LIST (`hide` on
+              `TaskListView`); hiding them here keeps the detail view honest
+              with the list that led to it. */}
+          {!isClient && (
+            <div className="kv"><span className="kv__k">Group</span><span className="kv__v">#{task.group?.name}</span></div>
+          )}
           <div className="kv"><span className="kv__k">Project</span><span className="kv__v">{task.project?.name || 'No project'}</span></div>
           <div className="kv"><span className="kv__k">Client</span><span className="kv__v">{task.client?.name || 'No client'}</span></div>
-          <div className="kv"><span className="kv__k">Assigned to</span><span className="kv__v">{task.assignee ? task.assignee.name || task.assignee.email : 'Unassigned'}</span></div>
+          {!isClient && (
+            <div className="kv"><span className="kv__k">Assigned to</span><span className="kv__v">{task.assignee ? task.assignee.name || task.assignee.email : 'Unassigned'}</span></div>
+          )}
           <div className="kv"><span className="kv__k">Created by</span><span className="kv__v">{task.createdBy ? task.createdBy.name || task.createdBy.email : '—'}</span></div>
           <div className="kv"><span className="kv__k">Created</span><span className="kv__v">{formatDateTime(task.createdAt)}</span></div>
           <div className="kv"><span className="kv__k">Due date</span><span className="kv__v">{formatDate(task.dueDate)}</span></div>
@@ -427,7 +476,17 @@ export default function TaskDetailPage() {
       {createPortal(
         <div className="task-actionbar">
           <div className="task-actionbar__inner">
-            {task.status === 'OPEN' ? (
+            {acceptError && <div className="alert alert--error">{acceptError}</div>}
+            {/* An unclaimed client request leads with Accept, not with
+                Complete/Cancel. Nobody owns it yet, so "mark as complete" is
+                the wrong first move — the useful action is to take it. Once
+                accepted the ordinary buttons come back, because the task then
+                has an owner who can finish or cancel it. */}
+            {canAccept ? (
+              <button className="btn btn--success" onClick={doAccept} disabled={accepting}>
+                {accepting ? <span className="spinner" /> : (<><CheckIcon size={16} /> Accept task</>)}
+              </button>
+            ) : task.status === 'OPEN' ? (
               <>
                 <button className="btn btn--success" onClick={() => setStatusAction('complete')}>
                   <CheckIcon size={16} /> Mark as complete

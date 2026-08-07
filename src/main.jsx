@@ -7,6 +7,7 @@ import { bootstrap } from './store/slices/authSlice.js';
 import { bootstrapPlatform } from './store/slices/platformAuthSlice.js';
 import { bootstrapKamdhenu } from './store/slices/kamdhenuAuthSlice.js';
 import { isNativeApp } from './utils/native.js';
+import { initAndroidShell } from './native/androidShell.js';
 import './styles/global.css';
 
 // The Android/iOS build takes an entirely separate path and is checked FIRST,
@@ -65,6 +66,10 @@ const isPlatformMode =
   (window.location.hostname === PLATFORM_HOSTNAME || hasPortalParam || isPlatformPath);
 
 if (isNative) {
+  // Status bar, hardware back button and text selection — none of which a
+  // WebView gets right on its own. Runs before render so the bar is already
+  // the right colour when the first screen paints.
+  initAndroidShell();
   // <NativeApp/> hydrates the right session once the company code names a
   // product — bootstrapping here would restore the wrong one.
 } else if (isAviationLanding) {

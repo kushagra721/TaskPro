@@ -11052,3 +11052,36 @@ a.btn {
     gap: 0;
   }
 }
+
+/* --- Native build: no long-press text selection ---------------------------- */
+
+/* In the Android app a long press on ordinary content pops up Android's
+   selection handles and its Copy/Share bar — which is browser behaviour that
+   has no place in a packaged app, and which fought the chat bubbles' own
+   long-press menu for the same gesture.
+
+   Scoped to `.native-app`, a class `src/native/androidShell.js` puts on <html>
+   only inside Capacitor, so the web app keeps selectable text exactly as it is.
+   `-webkit-touch-callout` is the separate switch for the long-press callout
+   itself; `user-select: none` alone does not suppress it on WebKit. */
+.native-app,
+.native-app * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Everything the user actually types into stays selectable — without this the
+   app is unusable: no caret placement, no correcting a typo mid-word, and the
+   chat composer (a contenteditable, not an <input>) stops accepting input at
+   all. `[contenteditable]` needs its descendants too, since RichTextEditor
+   wraps typed text in <b>/<i>/<a> nodes that would otherwise inherit `none`. */
+.native-app input,
+.native-app textarea,
+.native-app select,
+.native-app [contenteditable='true'],
+.native-app [contenteditable='true'] * {
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+}

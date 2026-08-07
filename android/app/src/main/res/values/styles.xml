@@ -9,10 +9,25 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
-    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
+    <!--
+      Parent is Light, NOT DayNight. TaskPro has no dark theme, so inheriting
+      DayNight meant a phone in dark mode flipped the system bars dark while
+      the app itself stayed light — the "dark status bar on some devices"
+      report. Pinning it Light makes every device agree.
+
+      `windowLightStatusBar` asks for DARK icons, which is what stays legible
+      against our near-white bar. `statusBarColor` is honoured up to API 34;
+      from API 35 the platform enforces edge-to-edge and ignores it, so the
+      runtime StatusBar call in `src/native/androidShell.js` is what covers
+      newer devices. Both are set deliberately — this one also prevents a
+      flash of the wrong colour before the WebView boots.
+    -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <item name="android:statusBarColor">@color/statusBarBackground</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
 

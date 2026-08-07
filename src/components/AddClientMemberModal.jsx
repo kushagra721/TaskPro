@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import Modal from './Modal.jsx';
 import Avatar from './Avatar.jsx';
-import { selectMembers, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { selectMembers, selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { isClientRole } from '../utils/role.js';
 import { organizationsApi, clientsApi } from '../api/client.js';
 import { SearchIcon, PlusIcon } from './icons.jsx';
 
@@ -22,12 +23,26 @@ import { SearchIcon, PlusIcon } from './icons.jsx';
  *                  Someone new arrives through Invite New.
  *   Invite New   — an email invitation. Role and client come from the page; the
  *                  group is resolved server-side.
+ *
+ * A CLIENT sees ONLY Invite New. Search & Add lists the workspace's other
+ * client-role members, which would show one customer the names and email
+ * addresses of every other customer — so the tab is withheld from them
+ * entirely rather than merely returning an empty list. They can still bring a
+ * colleague in by email, which is the thing they actually need.
+ *
+ * `roster` is the workspace's members, passed in by the client-space page from
+ * its single page-bundle response. It falls back to `orgSlice` for any caller
+ * that still populates that the old way — without the prop, the page's move to
+ * one combined request would leave this list silently empty.
  */
-export default function AddClientMemberModal({ clientId, clientName, existingIds, onClose, onChanged }) {
+export default function AddClientMemberModal({ clientId, clientName, existingIds, roster, onClose, onChanged }) {
   const orgId = useSelector(selectCurrentOrgId);
-  const orgMembers = useSelector(selectMembers);
+  const org = useSelector(selectCurrentOrg);
+  const sliceMembers = useSelector(selectMembers);
+  const orgMembers = roster?.length ? roster : sliceMembers;
+  const isClient = isClientRole(org?.role);
 
-  const [tab, setTab] = useState('search'); // 'search' | 'invite'
+  const [tab, setTab] = useState(isClient ? 'invite' : 'search'); // 'search' | 'invite'
   const [query, setQuery] = useState('');
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState('');
@@ -86,25 +101,28 @@ export default function AddClientMemberModal({ clientId, clientName, existingIds
 
   return (
     <Modal title="Add client" onClose={onClose}>
-      <div className="seg-tabs">
-        <button
-          className={`seg-tab ${tab === 'search' ? 'seg-tab--active' : ''}`}
-          onClick={() => setTab('search')}
-        >
-          Search &amp; Add
-        </button>
-        <button
-          className={`seg-tab ${tab === 'invite' ? 'seg-tab--active' : ''}`}
-          onClick={() => setTab('invite')}
-        >
-          Invite New
-        </button>
-      </div>
+      {/* One tab is not a tab bar — a client gets the invite form directly. */}
+      {!isClient && (
+        <div className="seg-tabs">
+          <button
+            className={`seg-tab ${tab === 'search' ? 'seg-tab--active' : ''}`}
+            onClick={() => setTab('search')}
+          >
+            Search &amp; Add
+          </button>
+          <button
+            className={`seg-tab ${tab === 'invite' ? 'seg-tab--active' : ''}`}
+            onClick={() => setTab('invite')}
+          >
+            Invite New
+          </button>
+        </div>
+      )}
 
       {error && <div className="alert alert--error">{error}</div>}
       {message && <div className="alert alert--info">{message}</div>}
 
-      {tab === 'search' ? (
+      {tab === 'search' && !isClient ? (
         <>
           <div className="search-box" style={{ width: '100%', marginBottom: 12 }}>
             <SearchIcon size={16} />

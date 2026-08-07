@@ -9,4 +9,12 @@
     <!-- Android 12+ splash background. White, matching the legacy splash.png so
          both API paths look identical. -->
     <color name="splashBackground">#FFFFFF</color>
+    <!-- Status bar. Matches the app background (the "bg" custom property in
+         global.css), so the bar reads as part of the app rather than as a
+         strip above it. Keep in step with STATUS_BAR_COLOR in
+         src/native/androidShell.js: the theme paints this before the WebView
+         boots, the StatusBar plugin repaints it after.
+         NOTE: a double hyphen is illegal inside an XML comment and fails the
+         resource merger, so no CSS variable syntax here. -->
+    <color name="statusBarBackground">#F4F6FB</color>
 </resources>

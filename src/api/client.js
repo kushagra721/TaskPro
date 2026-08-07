@@ -421,7 +421,12 @@ export const organizationsApi = {
     request(`/organizations/${orgId}/leave`, { method: 'POST', body: { confirmName, newOwnerUserId } }),
   dashboard: (orgId, params) => request(`/organizations/${orgId}/dashboard${qs(params)}`),
   members: (orgId, params) => request(`/organizations/${orgId}/members${qs(params)}`),
-  memberProfile: (orgId, userId) => request(`/organizations/${orgId}/members/${userId}`),
+  // ONE call serves the member profile page: the profile itself AND the
+  // paginated/filtered tasks assigned to that person. `params` carries the
+  // Tasks tab's own query, so a filter change reuses this same endpoint
+  // rather than the page needing a second one.
+  memberProfile: (orgId, userId, params) =>
+    request(`/organizations/${orgId}/members/${userId}${qs(params)}`),
   myTasks: (orgId, params) => request(`/organizations/${orgId}/my-tasks${qs(params)}`),
   activities: (orgId, params) => request(`/organizations/${orgId}/activities${qs(params)}`),
   reports: (orgId, params) => request(`/organizations/${orgId}/reports${qs(params)}`),
@@ -492,6 +497,11 @@ export const clientsApi = {
     request(`/organizations/${orgId}/clients/${clientId}`, { method: 'PATCH', body: payload }),
   remove: (orgId, clientId, confirmName) =>
     request(`/organizations/${orgId}/clients/${clientId}`, { method: 'DELETE', body: { confirmName } }),
+  // ONE call serves the whole client-space detail page: the client, the people
+  // in it, the workspace roster for the filter drawer, and the filtered task
+  // page. Replaces the four separate requests that page used to open with.
+  page: (orgId, clientId, params, options) =>
+    request(`/organizations/${orgId}/clients/${clientId}/page${qs(params)}`, options),
   // The people inside a client space.
   members: (orgId, clientId) => request(`/organizations/${orgId}/clients/${clientId}/members`),
   addMember: (orgId, clientId, userId) =>
@@ -593,6 +603,9 @@ export const uploadsApi = {
 
 // ---- Tasks ----
 export const tasksApi = {
+  // Claim an unassigned client request. Its own endpoint, not a PATCH — the
+  // task PATCH gates assignee changes behind creator-or-admin.
+  accept: (taskId) => request(`/tasks/${taskId}/accept`, { method: 'POST' }),
   listForOrg: (orgId, params) => request(`/organizations/${orgId}/tasks${qs(params)}`),
   get: (taskId) => request(`/tasks/${taskId}`),
   update: (taskId, payload) => request(`/tasks/${taskId}`, { method: 'PATCH', body: payload }),

@@ -24,6 +24,7 @@ import DateRangeControl from '../components/DateRangeControl.jsx';
 import { BuildingIcon, PlusIcon } from '../components/icons.jsx';
 import { timeAgo } from '../utils/time.js';
 import { STATUS_META } from '../utils/status.js';
+import { isClientRole } from '../utils/role.js';
 
 /**
  * The workspace at a glance.
@@ -62,6 +63,7 @@ export default function DashboardHome() {
   const user = useSelector(selectUser);
   const orgs = useSelector(selectOrgs);
   const currentOrg = useSelector(selectCurrentOrg);
+  const isClient = isClientRole(currentOrg?.role);
   const currentId = useSelector(selectCurrentOrgId);
   const dashboard = useSelector(selectDashboard);
   // Seeded to match what `DateRangeControl defaultMode="all"` emits on mount, so
@@ -215,29 +217,35 @@ export default function DashboardHome() {
           )}
         </section>
 
-        <section className="panel">
-          <div className="panel__head">
-            <h2 className="panel__title">Recent activity</h2>
-            {activity.length > 0 && (
-              <button className="link-btn" onClick={() => navigate('/more/activities')}>View all</button>
+        {/* Withheld from a CLIENT, matching the More menu: the feed is the
+            supplier's internal history — members joining, channels and projects
+            being created — and its "View all" leads to a page a client has no
+            entry point to. Their dashboard keeps the stats and their own tasks. */}
+        {!isClient && (
+          <section className="panel">
+            <div className="panel__head">
+              <h2 className="panel__title">Recent activity</h2>
+              {activity.length > 0 && (
+                <button className="link-btn" onClick={() => navigate('/more/activities')}>View all</button>
+              )}
+            </div>
+            {activity.length === 0 ? (
+              <div className="panel__empty">No activity yet — invite members or create a group.</div>
+            ) : (
+              <ul className="activity">
+                {activity.slice(0, 5).map((a) => (
+                  <li key={a.id} className="activity__item">
+                    <span className="activity__dot" />
+                    <div className="activity__body">
+                      <span className="activity__actor">{a.actor}</span> {a.summary}
+                      <div className="activity__time">{timeAgo(a.createdAt)}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-          {activity.length === 0 ? (
-            <div className="panel__empty">No activity yet — invite members or create a group.</div>
-          ) : (
-            <ul className="activity">
-              {activity.slice(0, 5).map((a) => (
-                <li key={a.id} className="activity__item">
-                  <span className="activity__dot" />
-                  <div className="activity__body">
-                    <span className="activity__actor">{a.actor}</span> {a.summary}
-                    <div className="activity__time">{timeAgo(a.createdAt)}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );

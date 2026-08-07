@@ -16,12 +16,7 @@ import { fetchAllClients, selectAllClients } from '../store/slices/clientSlice.j
 import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
 import { isAdminRole, isClientRole } from '../utils/role.js';
 import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
-
-/** The workspace's default channel — where invited clients land, and the group
- *  a task raised from a client's page belongs to. Kept in step with
- *  `organization.service.js#DEFAULT_GROUP_NAME` by hand; there is no shared
- *  package between the two projects. */
-const DEFAULT_GROUP_NAME = 'Client';
+import { DEFAULT_GROUP_NAME } from '../utils/defaultGroup.js';
 
 const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
 

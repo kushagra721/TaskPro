@@ -35,8 +35,14 @@ const fullDate = (d) =>
  * Vertical timeline of activities.
  * - items: [{ id, type, summary, actor, createdAt, taskId, data }]
  * - onView(taskId): optional — renders a "View" link on task-related entries.
+ * - actorLabel: optional — replaces every entry's actor name with this one
+ *   string. Set to the WORKSPACE name when the viewer is a CLIENT: which
+ *   individual member of the supplier moved a task along is internal detail,
+ *   and to the customer the whole team acts as one party. Passed in rather
+ *   than decided here, because the same component also renders the internal
+ *   activity feed, where the person's name is the entire point.
  */
-export default function Timeline({ items, onView }) {
+export default function Timeline({ items, onView, actorLabel }) {
   return (
     <ol className="timeline">
       {items.map((a) => {
@@ -59,7 +65,7 @@ export default function Timeline({ items, onView }) {
               <div className="timeline__meta">
                 <span className="timeline__date">{fullDate(a.createdAt)}</span>
                 <span className="timeline__sep">|</span>
-                <span className="timeline__actor">{a.actor}</span>
+                <span className="timeline__actor">{actorLabel || a.actor}</span>
               </div>
             </div>
           </li>

@@ -75,12 +75,12 @@ export default function ChatsLayout() {
     <div className="page page--full">
       {/* Same head as Home/Hub/Tasks — the shared responsive rules hide it on
           mobile, where the Topbar carries the page title instead. */}
-      <div className="page__head page__head--row">
+      {/* <div className="page__head page__head--row">
         <div className="page__head-text">
           <h1 className="page__title">Chats</h1>
           <p className="page__subtitle">Your group conversations, all in one place.</p>
         </div>
-      </div>
+      </div> */}
 
       <div className={`chats-layout ${groupId ? "chats-layout--detail" : ""}`}>
         <div className="chats-layout__list">

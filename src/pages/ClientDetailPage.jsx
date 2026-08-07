@@ -2,18 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
-  fetchClient,
+  clientLoaded,
   deleteClient,
   selectClientDetail,
 } from '../store/slices/clientSlice.js';
-import { fetchMembers, selectCurrentOrg, selectCurrentOrgId, selectMembers } from '../store/slices/orgSlice.js';
-import { fetchGroups, selectGroups } from '../store/slices/groupSlice.js';
-import { tasksApi, clientsApi } from '../api/client.js';
+import { selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { selectGroups } from '../store/slices/groupSlice.js';
+import { clientsApi } from '../api/client.js';
 import { useTaskQuery } from '../hooks/useTaskQuery.js';
 import { useRegisterHeaderActions } from '../layout/HeaderActions.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import Avatar from '../components/Avatar.jsx';
 import ConfirmNameModal from '../components/ConfirmNameModal.jsx';
+import Modal from '../components/Modal.jsx';
 import ClientFormModal from '../components/ClientFormModal.jsx';
 import TaskListView from '../components/TaskListView.jsx';
 import TaskStatusTabs from '../components/TaskStatusTabs.jsx';
@@ -38,7 +39,10 @@ export default function ClientDetailPage() {
   const org = useSelector(selectCurrentOrg);
   const client = useSelector(selectClientDetail);
   const groups = useSelector(selectGroups);
-  const members = useSelector(selectMembers);
+  // The workspace roster for the filter drawer's assignee picker. It arrives in
+  // the page bundle rather than from `orgSlice`, which is what removed this
+  // page's separate `fetchMembers` call.
+  const [members, setMembers] = useState([]);
   const isAdmin = isAdminRole(org?.role);
   const isClient = isClientRole(org?.role);
 
@@ -55,6 +59,9 @@ export default function ClientDetailPage() {
   // rather than inside the panel so the tab's count and the "already added"
   // set are both available to the header.
   const [spaceMembers, setSpaceMembers] = useState([]);
+  // The space member awaiting removal confirmation (null when none).
+  const [removeMember, setRemoveMember] = useState(null);
+  const [removing, setRemoving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState('');
@@ -65,49 +72,70 @@ export default function ClientDetailPage() {
   const openFilters = useCallback(() => setDrawerOpen(true), []);
   useRegisterHeaderActions({ search, onSearch: setSearch, onOpenFilters: openFilters, filterCount: activeFilterCount });
 
-  useEffect(() => {
-    if (orgId && clientId) dispatch(fetchClient({ orgId, clientId }));
-  }, [orgId, clientId, dispatch]);
-
-  useEffect(() => {
-    if (orgId) {
-      dispatch(fetchGroups(orgId));
-      dispatch(fetchMembers(orgId));
-    }
-  }, [orgId, dispatch]);
-
-  /** The people in this client space. Re-run after an add or an invite so the
-   *  tab count and the "already added" set stay honest without a page reload. */
-  const loadMembers = useCallback(() => {
+  /**
+   * ONE request for the whole page.
+   *
+   * This used to be FIVE on every open — the client, the workspace's groups,
+   * the workspace's members, this space's own members, and the task list. The
+   * groups call was pure duplication (`AppLayout` already fetches them
+   * workspace-wide, and `selectGroups` above reads that); the other four are
+   * now assembled server-side in parallel by `getClientSpacePage`.
+   *
+   * `params` is the Tasks tab's query, so a filter change re-runs exactly this
+   * same call rather than needing a second shape of request. The client detail
+   * is pushed into `clientSlice` as well, because the edit and delete modals
+   * read it from there.
+   */
+  const reload = useCallback(() => {
     if (!orgId || !clientId) return;
     clientsApi
-      .members(orgId, clientId)
-      .then((r) => setSpaceMembers(r.members || []))
-      .catch(() => setSpaceMembers([]));
-  }, [orgId, clientId]);
-
-  useEffect(loadMembers, [loadMembers]);
-
-  const loaded = client && client.id === clientId;
-
-  const reload = useCallback(() => {
-    if (!orgId || !loaded) return;
-    tasksApi
-      .listForOrg(orgId, { ...params, clientId })
+      .page(orgId, clientId, params)
       .then((r) => {
-        setTasks(r.tasks);
-        setPagination(r.pagination);
+        dispatch(clientLoaded(r.client));
+        setSpaceMembers(r.members || []);
+        setMembers(r.roster || []);
+        setTasks(r.tasks || []);
+        if (r.pagination) setPagination(r.pagination);
         setCounts(r.counts || emptyCounts);
+        setError('');
       })
-      .catch((err) => setError(err.message || 'Could not load tasks'));
-  }, [orgId, loaded, clientId, params]);
+      .catch((err) => setError(err.message || 'Could not load this client space'));
+  }, [orgId, clientId, params, dispatch]);
 
   useEffect(() => {
     reload();
   }, [reload]);
 
+  const loaded = client && client.id === clientId;
+
+  /** Kept as a named alias so the add/invite/remove flows read clearly — they
+   *  all need the same full refresh, since changing who is in the space also
+   *  changes the tab count. */
+  const loadMembers = reload;
+
   const setTab = (t) => applyFilters({ ...filters, status: t === 'ALL' ? '' : t });
   const activeTab = filters.status || 'ALL';
+
+  /**
+   * Take someone out of this client space.
+   *
+   * The API returns them to MEMBER rather than deleting their membership — a
+   * mis-click here must never evict anyone from the workspace — so the dialog
+   * says exactly that. `reload()` refreshes the tab count and the "already
+   * added" set in the same pass.
+   */
+  const doRemoveMember = async () => {
+    setRemoving(true);
+    try {
+      await clientsApi.removeMember(orgId, clientId, removeMember.id);
+      setRemoveMember(null);
+      reload();
+    } catch (err) {
+      setError(err.message || 'Could not remove them from this space');
+    } finally {
+      setRemoving(false);
+    }
+  };
 
   const doDelete = async () => {
     try {
@@ -265,6 +293,17 @@ export default function ClientDetailPage() {
                         <div className="member__email">{m.email}</div>
                       </div>
                       <span className={`role-pill role-pill--${m.role.toLowerCase()}`}>{m.role}</span>
+                      {/* Same permission as Add — whoever may put someone in
+                          this space may take them out again. */}
+                      {(isAdmin || isClient) && (
+                        <button
+                          className="mini-btn mini-btn--danger"
+                          onClick={() => setRemoveMember(m)}
+                          aria-label={`Remove ${m.name || m.email} from this space`}
+                        >
+                          <TrashIcon size={14} /> Remove
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -294,9 +333,28 @@ export default function ClientDetailPage() {
               clientId={clientId}
               clientName={client.name}
               existingIds={spaceMembers.map((m) => m.id)}
+              roster={members}
               onClose={() => setInviteOpen(false)}
               onChanged={loadMembers}
             />
+          )}
+
+          {removeMember && (
+            <Modal title="Remove from this space" onClose={() => !removing && setRemoveMember(null)}>
+              <p className="modal__intro">
+                Remove <strong>{removeMember.name || removeMember.email}</strong> from {client.name}?
+                They&apos;ll stay in this workspace as a regular member — they just won&apos;t see
+                this space&apos;s work any more.
+              </p>
+              <div className="modal__actions">
+                <button className="btn btn--ghost" onClick={() => setRemoveMember(null)} disabled={removing}>
+                  Cancel
+                </button>
+                <button className="btn btn--danger" onClick={doRemoveMember} disabled={removing}>
+                  {removing ? <span className="spinner" /> : (<><TrashIcon size={16} /> Remove</>)}
+                </button>
+              </div>
+            </Modal>
           )}
 
           {editOpen && (
