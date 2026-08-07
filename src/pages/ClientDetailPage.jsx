@@ -219,6 +219,7 @@ export default function ClientDetailPage() {
               <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
               <TaskListView
                 tasks={tasks}
+                hide={isClient ? ['assignee', 'group'] : []}
                 onOpen={(id) => navigate(`/tasks/${id}`)}
                 statusNode={(t) => (
                   <span className={`status-pill status-pill--${t.status.toLowerCase()}`}>{STATUS_META[t.status].label}</span>

@@ -19,6 +19,7 @@ import { fetchAllProjects, selectAllProjects } from '../../store/slices/projectS
 import { fetchAllClients, selectAllClients } from '../../store/slices/clientSlice.js';
 import { useRegisterHeaderActions } from '../../layout/HeaderActions.jsx';
 import { useIsMobile } from '../../hooks/useIsMobile.js';
+import { isClientRole } from '../../utils/role.js';
 import { TaskIcon, PlusIcon } from '../../components/icons.jsx';
 
 export default function ManageTasksPage() {
@@ -122,6 +123,7 @@ export default function ManageTasksPage() {
           <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
           <TaskListView
             tasks={tasks}
+            hide={isClientRole(org?.role) ? ['assignee', 'group'] : []}
             onOpen={(id) => navigate(`/tasks/${id}`)}
             statusNode={(t) => (
               <span className={`status-pill status-pill--${t.status.toLowerCase()}`}>{STATUS_META[t.status].label}</span>

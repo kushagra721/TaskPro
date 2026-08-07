@@ -17,8 +17,12 @@ const AssigneeCell = ({ assignee }) =>
  * - onOpen(id): navigate to detail
  * - subtitle(task): optional secondary line (description)
  * - statusNode(task): a status pill or an editable <select>
+ * - hide: column keys to omit ('assignee' | 'group') — a CLIENT's list drops
+ *   both, since who the supplier assigns and which internal channel the work
+ *   lives in are not the customer's concern.
  */
-export default function TaskListView({ tasks, onOpen, subtitle, statusNode }) {
+export default function TaskListView({ tasks, onOpen, subtitle, statusNode, hide = [] }) {
+  const show = (col) => !hide.includes(col);
   return (
     <>
       <div className="table-wrap task-desktop">
@@ -29,8 +33,8 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode }) {
               <th>Priority</th>
               <th>Created</th>
               <th>Due date</th>
-              <th>Assigned to</th>
-              <th>Group</th>
+              {show('assignee') && <th>Assigned to</th>}
+              {show('group') && <th>Group</th>}
               <th>Project</th>
               <th>Status</th>
             </tr>
@@ -44,8 +48,8 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode }) {
                 <td><span className={`prio prio--${t.priority.toLowerCase()}`}>{t.priority}</span></td>
                 <td className="nowrap">{relativeDay(t.createdAt)}</td>
                 <td className="nowrap">{t.dueDate ? formatDate(t.dueDate) : '—'}</td>
-                <td><AssigneeCell assignee={t.assignee} /></td>
-                <td className="nowrap">{t.group ? `#${t.group.name}` : '—'}</td>
+                {show('assignee') && <td><AssigneeCell assignee={t.assignee} /></td>}
+                {show('group') && <td className="nowrap">{t.group ? `#${t.group.name}` : '—'}</td>}
                 <td className="nowrap">{t.project ? t.project.name : '—'}</td>
                 <td onClick={(e) => e.stopPropagation()}>{statusNode(t)}</td>
               </tr>
@@ -64,12 +68,12 @@ export default function TaskListView({ tasks, onOpen, subtitle, statusNode }) {
             <div className="tcard__title">{t.title}</div>
             {subtitle?.(t) && <div className="tcard__sub">{subtitle(t)}</div>}
             <div className="tcard__tags">
-              {t.group && <span className="tcard__group">#{t.group.name}</span>}
+              {show('group') && t.group && <span className="tcard__group">#{t.group.name}</span>}
               {t.project && <span className="tcard__project">{t.project.name}</span>}
               <span className="tcard__due">Due: {t.dueDate ? formatDate(t.dueDate) : '—'}</span>
             </div>
             <div className="tcard__foot">
-              <AssigneeCell assignee={t.assignee} />
+              {show('assignee') ? <AssigneeCell assignee={t.assignee} /> : <span />}
               <div onClick={(e) => e.stopPropagation()}>{statusNode(t)}</div>
             </div>
           </div>

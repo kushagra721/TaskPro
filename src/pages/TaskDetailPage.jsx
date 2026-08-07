@@ -74,9 +74,12 @@ export default function TaskDetailPage() {
   }, [taskId, dispatch]);
 
   // Load the task's group (for its member list) once the group is known.
+  // Not for a CLIENT: the list only feeds the assignee picker they never get,
+  // and their space's tasks live in groups they aren't members of — the fetch
+  // would just be a guaranteed 403.
   useEffect(() => {
-    if (task?.groupId) dispatch(fetchGroup(task.groupId));
-  }, [task?.groupId, dispatch]);
+    if (task?.groupId && !isClient) dispatch(fetchGroup(task.groupId));
+  }, [task?.groupId, isClient, dispatch]);
 
   useEffect(() => {
     if (orgId) dispatch(fetchAllProjects(orgId));
