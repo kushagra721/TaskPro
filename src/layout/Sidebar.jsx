@@ -2,7 +2,6 @@ import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { HomeIcon, GroupsIcon, TaskIcon, ChatIcon, MoreIcon } from '../components/icons.jsx';
 import { selectTotalUnread } from '../store/slices/chatSlice.js';
-import OrgSwitcher from './OrgSwitcher.jsx';
 import { useNavGate } from '../hooks/useNavGate.js';
 
 const NAV = [
@@ -16,7 +15,11 @@ const NAV = [
 // The user-info + logout block that used to live at the bottom of the
 // sidebar now lives in Topbar.jsx's top-right corner (desktop only) —
 // see Topbar.jsx's `topbar__user` block.
-export default function Sidebar({ onCreateOrg }) {
+// The workspace switcher used to sit under the brand here. It moved to the
+// More page (see `MorePage`'s "Workspace" card): switching is an occasional
+// account action, not a navigation destination, and it was the widest thing in
+// this column — the sidebar narrowed once it left.
+export default function Sidebar() {
   const { isLocked, isHidden } = useNavGate();
   const unread = useSelector(selectTotalUnread);
 
@@ -25,8 +28,6 @@ export default function Sidebar({ onCreateOrg }) {
       <div className="sidebar__brand">
         <span className="brand__logo-mark">✓</span> Task&nbsp;Pro
       </div>
-
-      <OrgSwitcher onCreate={onCreateOrg} />
 
       <nav className="nav">
         {NAV.filter(({ to }) => !isHidden(to)).map(({ to, label, Icon }) =>

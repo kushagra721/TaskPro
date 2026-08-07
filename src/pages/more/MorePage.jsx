@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   UserIcon,
@@ -17,6 +17,7 @@ import { logout } from '../../store/slices/authSlice.js';
 import { resetProjects } from '../../store/slices/projectSlice.js';
 import { resetClients } from '../../store/slices/clientSlice.js';
 import { isAdminRole, isClientRole } from '../../utils/role.js';
+import OrgSwitcher from '../../layout/OrgSwitcher.jsx';
 
 export default function MorePage() {
   const dispatch = useDispatch();
@@ -24,6 +25,9 @@ export default function MorePage() {
   const org = useSelector(selectCurrentOrg);
   const isAdmin = isAdminRole(org?.role);
   const isClient = isClientRole(org?.role);
+  // `AppLayout` owns the create/find-workspace modal and hands it down through
+  // the Outlet, so this page can offer it without a second copy.
+  const { openCreateOrg } = useOutletContext() || {};
 
   const doLogout = () => {
     dispatch(logout());
@@ -84,6 +88,19 @@ export default function MorePage() {
 
   return (
     <div className="page">
+      {/* Workspace, moved off the sidebar.
+          Switching workspace is an occasional ACCOUNT action, not one of the
+          five places the nav exists to reach — so it belongs with Profile and
+          Sign out rather than above them. It leads the page because it decides
+          what every entry below it refers to. */}
+      <section className="more-workspace">
+        <div className="more-workspace__head">
+          <span className="more-workspace__label">Workspace</span>
+          <span className="more-workspace__hint">Switch between your workspaces</span>
+        </div>
+        <OrgSwitcher onCreate={() => openCreateOrg?.()} />
+      </section>
+
       <div className="menu-list">
         {items.map(({ to, label, desc, Icon, badge }) => (
           <Link key={to} to={to} className="menu-item">

@@ -1,19 +1,10 @@
-const COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b',
-  '#10b981', '#06b6d4', '#3b82f6', '#a855f7', '#14b8a6',
-];
+import { colorFor } from '../utils/avatarColor.js';
 
 const initials = (name = '', email = '') => {
   const src = (name || email || '?').trim();
   const parts = src.split(/\s+/).filter(Boolean);
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return src.slice(0, 2).toUpperCase();
-};
-
-const colorFor = (key = '') => {
-  let hash = 0;
-  for (let i = 0; i < key.length; i += 1) hash = key.charCodeAt(i) + ((hash << 5) - hash);
-  return COLORS[Math.abs(hash) % COLORS.length];
 };
 
 /** `viewable`: when true and a photo is set, clicking it opens the full image

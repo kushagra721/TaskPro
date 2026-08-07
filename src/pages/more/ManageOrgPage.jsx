@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { useIsMobile } from '../../hooks/useIsMobile.js';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser } from '../../store/slices/authSlice.js';
@@ -27,6 +28,9 @@ const EMPTY_FILTERS = { role: '' };
 /** `ref.current.openInvite()` lets the Groups page's mobile FAB (Members tab)
  *  open the invite modal without lifting all of this page's state up. */
 const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
+  // Desktop shows the inline "Add members" button; mobile is served by the
+  // Groups page's FAB, which reaches `openInvite()` through this ref.
+  const isMobile = useIsMobile();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectUser);
@@ -261,6 +265,10 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
         </section>
       )}
 
+      {/* Search, Filters and Invite member on ONE row, matching the Groups
+          tab — `.list-controls` is `space-between`, so the button lands hard
+          right. Hidden on mobile, where the Groups page's FAB calls the same
+          `openInvite()` through this component's ref. */}
       <div className="list-controls">
         <TaskSearchBar
           search={search}
@@ -269,6 +277,11 @@ const ManageOrgPage = forwardRef(function ManageOrgPage(_props, ref) {
           activeCount={activeFilterCount}
           placeholder="Search members by name…"
         />
+        {isAdmin && !isMobile && (
+          <button className="btn btn--sm" onClick={() => setInviteOpen(true)}>
+            <PlusIcon size={16} /> Add members
+          </button>
+        )}
       </div>
 
       <section className="panel">

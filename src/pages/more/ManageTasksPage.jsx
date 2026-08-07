@@ -91,21 +91,10 @@ export default function ManageTasksPage() {
 
   return (
     <div className="page">
-      <div className="page__head page__head--row">
-        <div className="page__head-text">
-          <h1 className="page__title">Manage Tasks</h1>
-          <p className="page__subtitle">Tasks across all groups you belong to.</p>
-        </div>
-        {/* Desktop keeps the inline button; mobile uses the FAB below. */}
-        {!isMobile && (
-          <div className="head-actions">
-            <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
-              <PlusIcon size={16} /> New task
-            </button>
-          </div>
-        )}
-      </div>
-
+      {/* No page head. The heading was already commented out (the Topbar
+          carries the title), and New task has moved into the controls row —
+          which left an empty div still holding `.page__head`'s 22px bottom
+          margin as a blank strip above the list. */}
       <div className="list-controls">
         <TaskStatusTabs active={activeTab} counts={counts} onChange={setTab} />
         <TaskSearchBar
@@ -113,6 +102,13 @@ export default function ManageTasksPage() {
           onSearch={setSearch}
           onOpenFilters={() => setDrawerOpen(true)}
           activeCount={activeFilterCount}
+          action={
+            !isMobile && (
+              <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
+                <PlusIcon size={16} /> New task
+              </button>
+            )
+          }
         />
       </div>
 

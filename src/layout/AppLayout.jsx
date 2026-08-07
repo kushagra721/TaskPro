@@ -7,13 +7,17 @@ import Topbar from './Topbar.jsx';
 import OrgFinderModal from '../components/OrgFinderModal.jsx';
 import PostLoginPopups from '../components/PostLoginPopups.jsx';
 import { HeaderActionsProvider } from './HeaderActions.jsx';
-import { fetchMyOrgs, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { fetchMyOrgs, selectCurrentOrg, selectCurrentOrgId } from '../store/slices/orgSlice.js';
+import { isClientRole } from '../utils/role.js';
 import { fetchGroups } from '../store/slices/groupSlice.js';
 import { fetchChats } from '../store/slices/chatSlice.js';
 import { fetchNotifications } from '../store/slices/notificationSlice.js';
 import { fetchMyInvitations } from '../store/slices/invitationSlice.js';
 import { fetchIncomingJoinRequests } from '../store/slices/joinRequestSlice.js';
 import { usePushNotifications } from '../hooks/usePushNotifications.js';
+
+/** The Hub's four tab panels, keyed by the `?tab=` value `GroupsPage` reads. */
+const HUB_TITLES = { groups: 'Groups', projects: 'Projects', clients: 'Clients Space', members: 'Members' };
 
 const TITLES = [
   { match: '/dashboard', title: 'Home' },
@@ -49,6 +53,7 @@ export default function AppLayout() {
   // the first thing that only renders once there is one. A no-op on web.
   usePushNotifications();
   const currentOrgId = useSelector(selectCurrentOrgId);
+  const currentOrg = useSelector(selectCurrentOrg);
   const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
@@ -69,7 +74,26 @@ export default function AppLayout() {
     if (currentOrgId) dispatch(fetchChats(currentOrgId));
   }, [currentOrgId, dispatch]);
 
-  const title = TITLES.find((t) => location.pathname.startsWith(t.match))?.title || 'Home';
+  /**
+   * The Hub is FOUR pages behind one path.
+   *
+   * `/groups` carries its tab in `?tab=`, so the pathname alone cannot name
+   * what is on screen — the header read "Groups" while Clients Space was
+   * selected. Resolved here rather than by letting the page register a title,
+   * because each of the Hub's tab panels already registers its own
+   * search/filter actions and a parent registering alongside them would race
+   * (parent effects run after child effects on mount, so the parent would win
+   * and silently clobber the child's search box).
+   */
+  let title = TITLES.find((t) => location.pathname.startsWith(t.match))?.title || 'Home';
+  if (location.pathname.startsWith('/groups') && !location.pathname.startsWith('/groups/')) {
+    // A CLIENT is pinned to the Clients tab whatever the query string says —
+    // mirroring `GroupsPage`, which ignores `?tab=` for them.
+    const tab = isClientRole(currentOrg?.role)
+      ? 'clients'
+      : new URLSearchParams(location.search).get('tab');
+    title = HUB_TITLES[tab] || 'Groups';
+  }
 
   // The five bottom-nav destinations are "root" pages. On mobile they show the
   // user/org header (no page title) and keep the bottom nav; every other page
@@ -86,7 +110,7 @@ export default function AppLayout() {
   return (
     <HeaderActionsProvider>
       <div className={`layout ${isRoot ? '' : 'layout--subpage'} ${isChatView ? 'layout--chat-view' : ''}`}>
-        <Sidebar onCreateOrg={() => setCreateOpen(true)} />
+        <Sidebar />
         <div className="layout__main">
           <Topbar title={title} isRoot={isRoot} onCreateOrg={() => setCreateOpen(true)} />
           <main className="layout__content">

@@ -19,7 +19,6 @@ import { selectCurrentOrgId } from '../../store/slices/orgSlice.js';
 import { groupsApi } from '../../api/client.js';
 import { sendTypingStart, sendTypingStop } from '../../realtime/socket.js';
 import Avatar from '../../components/Avatar.jsx';
-import RichTextEditor from '../../components/RichTextEditor.jsx';
 import AttachmentPicker from '../../components/AttachmentPicker.jsx';
 import Modal from '../../components/Modal.jsx';
 import {
@@ -35,7 +34,7 @@ import {
 import DocIcon from '../../components/DocIcon.jsx';
 import MessageQuote, { DeletedQuote } from '../../components/MessageQuote.jsx';
 import { clockTime } from '../../utils/time.js';
-import { sanitizeHtml, htmlToText } from '../../utils/sanitizeHtml.js';
+import { sanitizeHtml, textToHtml, htmlToPlainText } from '../../utils/sanitizeHtml.js';
 
 /** Local calendar day, as `YYYY-M-D`. Deliberately built from the local getters
  *  rather than `toISOString()`: ISO is UTC, so a message sent at 1am IST would
@@ -80,6 +79,11 @@ function Ticks({ message, members }) {
   );
 }
 
+/** Ceiling for the auto-growing composer. Mirrors `.composer__input`'s
+ *  `max-height` — keep the two equal, or the scrollbar appears at the wrong
+ *  point (or never). */
+const COMPOSER_MAX_HEIGHT = 160;
+
 export default function ChannelChat({ groupId, canManage, group }) {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
@@ -90,7 +94,9 @@ export default function ChannelChat({ groupId, canManage, group }) {
   const pending = useSelector(selectPendingMessages(groupId));
   const typing = useSelector(selectTyping(groupId));
   const typingEntries = Object.entries(typing).filter(([uid]) => uid !== user?.id);
-  const [html, setHtml] = useState('');
+  // Plain text, not HTML. The composer is a textarea now; `textToHtml` turns
+  // this into the stored shape at send time.
+  const [text, setText] = useState('');
   const [attachments, setAttachments] = useState([]);
   // { messageId, scope: 'me' | 'everyone' } — the confirm modal's copy and the
   // action it fires both key off `scope`.
@@ -116,7 +122,7 @@ export default function ChannelChat({ groupId, canManage, group }) {
   // Suppresses the "stick to bottom" effect for one render after older
   // messages are prepended, which would otherwise yank the user back down.
   const skipAutoScroll = useRef(false);
-  const editorRef = useRef(null);
+  const inputRef = useRef(null);
   const pressTimer = useRef(null);
   const suppressClickRef = useRef(false);
   const typingActive = useRef(false);
@@ -265,8 +271,31 @@ export default function ChannelChat({ groupId, canManage, group }) {
     };
   }, [groupId, orgId]);
 
-  const onEditorChange = (val) => {
-    setHtml(val);
+  /**
+   * Grow the composer with its content, up to a ceiling.
+   *
+   * `rows={1}` keeps it a single line at rest; a textarea does not resize
+   * itself, so a long message would otherwise scroll inside two lines. Height
+   * is reset to `auto` first — `scrollHeight` never shrinks below the current
+   * height, so measuring without that makes the box grow and never come back
+   * down after deleting text.
+   */
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    // Measure BEFORE clamping — once `height` is set the element is
+    // constrained, and deciding the overflow from a re-read is ambiguous.
+    const natural = el.scrollHeight;
+    el.style.height = `${Math.min(natural, COMPOSER_MAX_HEIGHT)}px`;
+    // Only allow a scrollbar once the box can no longer grow. Left on `auto`
+    // in CSS this put scroll buttons on a one-line field: the height above
+    // matches the content to the pixel, and sub-pixel rounding does the rest.
+    el.style.overflowY = natural > COMPOSER_MAX_HEIGHT ? 'auto' : 'hidden';
+  }, [text]);
+
+  const onInputChange = (e) => {
+    setText(e.target.value);
     if (!typingActive.current) {
       typingActive.current = true;
       sendTypingStart(groupId, orgId);
@@ -280,19 +309,22 @@ export default function ChannelChat({ groupId, canManage, group }) {
 
   const startEdit = (message) => {
     setEditing(message);
-    setHtml(message.content || '');
+    // `htmlToPlainText`, NOT `htmlToText` — messages sent before the composer
+    // was plain text still hold real markup, and `textContent` would drop every
+    // <br> and block boundary, silently joining a multi-line message into one.
+    setText(htmlToPlainText(message.content || ''));
   };
 
   const cancelEdit = () => {
     setEditing(null);
-    setHtml('');
+    setText('');
   };
 
   const saveEdit = () => {
-    const text = htmlToText(html);
-    if (!text) return;
+    const body = text.trim();
+    if (!body) return;
     dispatch(
-      editMessage({ groupId, messageId: editing.id, content: sanitizeHtml(html) })
+      editMessage({ groupId, messageId: editing.id, content: sanitizeHtml(textToHtml(body)) })
     );
     cancelEdit();
   };
@@ -303,15 +335,17 @@ export default function ChannelChat({ groupId, canManage, group }) {
       saveEdit();
       return;
     }
-    if (!htmlToText(html) && attachments.length === 0) return;
+    if (!text.trim() && attachments.length === 0) return;
     // Sending is an explicit request to be at the bottom, even if the user had
     // scrolled up to read history first.
     follow.current = true;
-    const content = htmlToText(html) ? sanitizeHtml(html) : '';
+    // `sanitizeHtml` on top of `textToHtml` is belt-and-braces: the text is
+    // already escaped, so this can only be a no-op — but it keeps every path
+    // that writes message content going through the same guard.
+    const content = text.trim() ? sanitizeHtml(textToHtml(text.trim())) : '';
     const clientId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    setHtml('');
+    setText('');
     setAttachments([]);
-    editorRef.current?.clear();
     if (typingActive.current) {
       typingActive.current = false;
       clearTimeout(typingStopTimer.current);
@@ -637,23 +671,29 @@ export default function ChannelChat({ groupId, canManage, group }) {
           {/* Attachments are immutable once sent — only the text is editable. */}
           {!editing && <AttachmentPicker value={attachments} onChange={setAttachments} variant="icon" />}
           <div className="composer__field">
-            {/* `key` remounts the (uncontrolled) editor so `defaultValue` can
-                seed it with the message being edited, and clear it again on
-                cancel/save. No `onSubmitKey` — Enter inserts a newline here;
-                sending is the send button only (explicit product decision). */}
-            <RichTextEditor
-              key={editing ? `edit-${editing.id}` : 'new'}
-              ref={editorRef}
-              defaultValue={editing?.content}
-              onChange={onEditorChange}
-              placeholder={editing ? 'Edit your message…' : undefined}
+            {/* A plain textarea, not a rich-text editor.
+                Enter inserts a NEWLINE and never sends — that is the whole
+                point of a textarea here, and it needs no key handler at all:
+                the form only submits from the send button, so there is nothing
+                to suppress. It is controlled (unlike the contenteditable it
+                replaced, which had to be remounted via `key` to reseed), so
+                editing a message is just setting state.
+                `rows={1}` plus the auto-grow effect keeps it one line until
+                the text actually needs more. */}
+            <textarea
+              ref={inputRef}
+              className="composer__input"
+              rows={1}
+              value={text}
+              onChange={onInputChange}
+              placeholder={editing ? 'Edit your message…' : 'Message this group…'}
             />
           </div>
           <button
             className="btn composer__send"
             type="submit"
             aria-label={editing ? 'Save changes' : 'Send'}
-            disabled={editing ? !htmlToText(html) : !htmlToText(html) && attachments.length === 0}
+            disabled={editing ? !text.trim() : !text.trim() && attachments.length === 0}
           >
             {editing ? (
               <CheckIcon size={18} />
@@ -690,7 +730,7 @@ export default function ChannelChat({ groupId, canManage, group }) {
                 if (target && !target.pending) {
                   setReplyTo(target);
                   cancelEdit();
-                  editorRef.current?.focus?.();
+                  inputRef.current?.focus();
                 }
                 setMenu(null);
               }}

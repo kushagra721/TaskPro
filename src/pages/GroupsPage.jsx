@@ -18,14 +18,20 @@ import { useIsMobile } from '../hooks/useIsMobile.js';
 import { GroupsIcon, PlusIcon } from '../components/icons.jsx';
 import { isAdminRole, isClientRole } from '../utils/role.js';
 
+/**
+ * The Hub's four tabs. The strings are intentionally empty — the heading is
+ * rendered by the Topbar (see `AppLayout`'s `HUB_TITLES`), not here. What this
+ * object is still FOR is validating the `?tab=` query value below: a key that
+ * is not in here falls back to 'groups'. Don't delete it as unused.
+ */
 const TAB_META = {
-  groups: { title: 'Groups', subtitle: 'Chat and manage tasks with your team.' },
-  projects: { title: 'Projects', subtitle: 'Organize tasks into projects. Anyone can add one.' },
+  groups: { title: '', subtitle: '' },
+  projects: { title: '', subtitle: '' },
   clients: {
-    title: 'Clients Space',
-    subtitle: 'A space per client. Their tasks and the people who can see them live here.',
+    title: '',
+    subtitle: '',
   },
-  members: { title: 'Members', subtitle: 'Members, roles and invitations for this workspace.' },
+  members: { title: '', subtitle: '' },
 };
 
 const EMPTY_DATE_FILTERS = { createdFrom: '', createdTo: '' };
@@ -68,7 +74,6 @@ export default function GroupsPage() {
   // `groups` selector instead of this snapshot, since it's already loaded and
   // kept current by sockets.
   const [tabCounts, setTabCounts] = useState({ projects: 0, clients: 0, members: 0 });
-  const isMobile = useIsMobile();
   const orgPageRef = useRef(null);
 
   // Members tab is admin-only — if role changes away from admin while it's
@@ -105,21 +110,11 @@ export default function GroupsPage() {
 
   return (
     <div className="page">
-      <div className="page__head page__head--row">
-        <div className="page__head-text">
-          <h1 className="page__title">{TAB_META[tab].title}</h1>
-          <p className="page__subtitle">{TAB_META[tab].subtitle}</p>
-        </div>
-        {/* Desktop keeps the inline button; mobile uses the FAB below. */}
-        {tab === 'groups' && isAdmin && !isMobile && (
-          <div className="head-actions">
-            <button className="btn btn--sm" onClick={() => setCreateOpen(true)}>
-              <PlusIcon size={16} /> New group
-            </button>
-          </div>
-        )}
-      </div>
-
+      {/* No page head. Every `TAB_META` title/subtitle is deliberately empty
+          (the Topbar carries the heading, and it now follows the active tab —
+          see `AppLayout`'s HUB_TITLES), so this rendered an empty <h1> plus a
+          22px margin as a blank strip above the tabs. New group moved into the
+          controls row below. */}
       {/* A client sees Clients only — with nothing to switch to, the whole tab
           bar is noise, so it is omitted rather than rendered with one item. */}
       {!isClient && (
@@ -183,6 +178,10 @@ export default function GroupsPage() {
  * so there's no risk of two registrations racing each other.
  */
 function GroupsListPanel({ groups, progress, isAdmin, onOpen, onCreate }) {
+  // Its own call, not a prop: this is a separate component from `GroupsPage`,
+  // so the parent's `isMobile` is not in scope here. The hook is a cheap
+  // media-query subscription.
+  const isMobile = useIsMobile();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filters, setFilters] = useState(EMPTY_DATE_FILTERS);
@@ -214,6 +213,9 @@ function GroupsListPanel({ groups, progress, isAdmin, onOpen, onCreate }) {
   return (
     <>
       {groups.length > 0 && (
+        // Search, Filters and New group on ONE row — `.list-controls` is
+        // already `space-between`, so the button lands hard right without any
+        // new layout. Hidden on mobile, where the FAB carries the same action.
         <div className="list-controls">
           <TaskSearchBar
             search={search}
@@ -222,6 +224,11 @@ function GroupsListPanel({ groups, progress, isAdmin, onOpen, onCreate }) {
             activeCount={activeFilterCount}
             placeholder="Search groups by name…"
           />
+          {isAdmin && !isMobile && (
+            <button className="btn btn--sm" onClick={onCreate}>
+              <PlusIcon size={16} /> New group
+            </button>
+          )}
         </div>
       )}
 

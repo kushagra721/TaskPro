@@ -25,11 +25,15 @@ import {
   XIcon,
   ArrowLeftIcon,
   LogoutIcon,
+  UserIcon,
+  KeyIcon,
 } from '../components/icons.jsx';
 
 export default function Topbar({ title, isRoot, onCreateOrg }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  // The account menu behind the chevron on the desktop user chip.
+  const [userOpen, setUserOpen] = useState(false);
   const org = useSelector(selectCurrentOrg);
   const orgs = useSelector(selectOrgs);
   const user = useSelector(selectUser);
@@ -155,9 +159,53 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
               <div className="topbar__user-email">{user?.email}</div>
             </div>
             {org?.role && <span className={`role-pill role-pill--${org.role.toLowerCase()}`}>{org.role}</span>}
-            <button className="icon-btn" onClick={doLogout} title="Log out" aria-label="Log out">
-              <LogoutIcon size={16} />
+            {/* Was a bare logout icon — one destructive action, reachable in a
+                single stray click next to the avatar. Now a chevron opening the
+                account menu; the chip itself is unchanged. */}
+            <button
+              className="icon-btn"
+              onClick={() => setUserOpen((o) => !o)}
+              title="Account"
+              aria-label="Account menu"
+              aria-expanded={userOpen}
+            >
+              <ChevronDownIcon size={16} />
             </button>
+
+            {userOpen && (
+              <>
+                <div className="dropdown-backdrop" onClick={() => setUserOpen(false)} />
+                <div className="dropdown topbar__user-menu">
+                  <div className="topbar__user-menu-head">
+                    <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={36} />
+                    <div className="topbar__user-menu-id">
+                      <div className="topbar__user-menu-name">{user?.name || 'You'}</div>
+                      <div className="topbar__user-menu-email">{user?.email}</div>
+                    </div>
+                  </div>
+                  <div className="dropdown__sep" />
+                  <button className="dropdown__item" onClick={() => { setUserOpen(false); navigate('/more/profile'); }}>
+                    <UserIcon size={16} />
+                    <span className="dropdown__item-text">Profile</span>
+                  </button>
+                  {/* Deep-links to the Password card on the profile page —
+                      that is where the OTP-confirmed flow already lives, so
+                      there is no second implementation of it here. */}
+                  <button
+                    className="dropdown__item"
+                    onClick={() => { setUserOpen(false); navigate('/more/profile#password'); }}
+                  >
+                    <KeyIcon size={16} />
+                    <span className="dropdown__item-text">Change password</span>
+                  </button>
+                  <div className="dropdown__sep" />
+                  <button className="dropdown__item dropdown__item--danger" onClick={doLogout}>
+                    <LogoutIcon size={16} />
+                    <span className="dropdown__item-text">Logout</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

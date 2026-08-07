@@ -293,9 +293,12 @@ export default function ClientDetailPage() {
                         <div className="member__email">{m.email}</div>
                       </div>
                       <span className={`role-pill role-pill--${m.role.toLowerCase()}`}>{m.role}</span>
-                      {/* Same permission as Add — whoever may put someone in
-                          this space may take them out again. */}
-                      {(isAdmin || isClient) && (
+                      {/* ADMIN ONLY — deliberately narrower than Add. A
+                          client may bring a colleague into their own space,
+                          but removing someone is an eviction, and one customer
+                          contact should not be able to cut another out of the
+                          space they both work in. */}
+                      {isAdmin && (
                         <button
                           className="mini-btn mini-btn--danger"
                           onClick={() => setRemoveMember(m)}

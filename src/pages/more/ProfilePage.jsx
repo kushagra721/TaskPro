@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectUser, setUser } from '../../store/slices/authSlice.js';
 import { selectCurrentOrg, selectCurrentOrgId } from '../../store/slices/orgSlice.js';
@@ -11,6 +12,25 @@ import { formatDate } from '../../utils/status.js';
 import { prettySize } from '../../utils/fileSize.js';
 
 export default function ProfilePage() {
+  const { hash } = useLocation();
+
+  /**
+   * Scroll to the Password card when arrived at via `/more/profile#password`.
+   *
+   * React Router does NOT honour a fragment on a client-side navigation — the
+   * browser only scrolls to one on a full page load — so without this the
+   * Topbar's "Change password" would land at the top of a long profile page
+   * and look like it had done nothing. `requestAnimationFrame` waits for the
+   * section to be laid out; scrolling before that measures the wrong offset.
+   */
+  useEffect(() => {
+    if (hash !== '#password') return undefined;
+    const raf = requestAnimationFrame(() => {
+      document.getElementById('password')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [hash]);
+
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const org = useSelector(selectCurrentOrg);
@@ -260,7 +280,10 @@ export default function ProfilePage() {
         />
       )}
 
-      <div className="card-form" style={{ marginTop: 20 }}>
+      {/* `id` is the deep-link target for the Topbar account menu's
+          "Change password" — that entry navigates to /more/profile#password
+          rather than duplicating this OTP-confirmed flow anywhere else. */}
+      <div className="card-form" id="password" style={{ marginTop: 20 }}>
         <h3 className="field__label" style={{ fontSize: 15, marginBottom: 4 }}>Password</h3>
         <p className="field__hint" style={{ marginBottom: 16 }}>
           {pwStage === 'idle'

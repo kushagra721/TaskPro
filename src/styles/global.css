@@ -747,7 +747,10 @@ a.btn {
    ============================================================ */
 .layout {
   display: grid;
-  grid-template-columns: 264px 1fr;
+  /* 264px -> 232px. The nav labels are short ("Home", "Hub", "Tasks") and the
+     column was sized for the workspace switcher that used to sit at its top —
+     that has moved to the More page, so the extra width bought nothing. */
+  grid-template-columns: 232px 1fr;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
@@ -765,7 +768,9 @@ a.btn {
 
 .layout__content {
   flex: 1;
-  padding: 26px 30px;
+  /* Trimmed from 26px 30px. This padding stacks with `.page`'s own centring,
+     so every 10px here cost 20px of usable width. */
+  padding: 22px 20px;
   overflow-y: auto;
 }
 
@@ -776,7 +781,7 @@ a.btn {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 20px 16px;
+  padding: 18px 12px;
   height: 100%;
   overflow-y: auto;
   border-right: 1px solid var(--border);
@@ -1439,8 +1444,13 @@ a.btn {
 /* ============================================================
    Pages
    ============================================================ */
+/* The reading column. Raised from 1080px: on a normal desktop that cap left
+   wide empty gutters either side of pages that are really dense tables and card
+   grids, which is what "too much space left and right" was about. 1440px still
+   stops the text pages sprawling on an ultrawide monitor.
+   `.page--narrow` (forms) deliberately keeps its own much tighter cap. */
 .page {
-  max-width: 1080px;
+  max-width: 1440px;
   margin: 0 auto;
   animation: rise 0.3s ease both;
 }
@@ -3093,9 +3103,30 @@ a.btn {
   padding: 2px;
 }
 
+/* The field's visible surface.
+   It used to come from `.rte`, which wrapped the old rich-text editor. Swapping
+   in a bare <textarea> left this wrapper unstyled, so the input had no edge at
+   all and floated between the attach and send buttons. The surface belongs on
+   the WRAPPER rather than the textarea so the auto-grow effect only ever
+   touches height, and so the focus ring can wrap the whole field. */
 .composer__field {
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  /* Generous enough to read as a pill at one line, but not `999px` — the
+     textarea grows to 160px, and a full pill on a tall box looks like a
+     mistake. */
+  border-radius: 20px;
+  padding: 0 8px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.composer__field:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
 }
 
 .composer__send {
@@ -3177,22 +3208,12 @@ a.btn {
   height: 38px;
 }
 
-/* Mobile chat composer: drop the bold/italic/underline/list/link toolbar for
-   a plain single-row WhatsApp-style input — attach icon, text field, send.
-   Scoped to the composer only (`RichTextEditor` keeps its toolbar elsewhere,
-   e.g. the task description field, even on mobile). */
+/* The chat composer used to be a `RichTextEditor`, and this block hid its
+   toolbar and set a 16px font here. Both are gone: the composer is a plain
+   textarea now (`.composer__input`), which has no toolbar to hide, and its own
+   16px mobile rule lives with the rest of its styles. `RichTextEditor` itself
+   is untouched — the task description field still uses it, toolbar and all. */
 @media (max-width: 900px) {
-  .composer__field .rte__toolbar {
-    display: none;
-  }
-  /* Anything under 16px makes iOS/Android auto-zoom the page the moment the
-     field takes focus, and it never zooms back out — that's the "sometimes it
-     zooms up automatically" bug. 16px is the minimum that suppresses it. */
-  .composer__field .rte__input {
-    font-size: 16px;
-    min-height: 38px;
-    max-height: 120px;
-  }
   /* Edge-to-edge on mobile: the desktop gutters added above are removed, not
      shrunk, per the "no extra spacing in mobile view" decision. */
   .chat-pane__header {
@@ -11084,4 +11105,151 @@ a.btn {
   -webkit-touch-callout: default;
   -webkit-user-select: text;
   user-select: text;
+}
+
+/* --- Topbar account menu --------------------------------------------------- */
+
+/* The chip's own layout is unchanged; only the trailing icon-button now opens
+   this menu instead of logging out on the spot. `position: relative` is what
+   the absolutely-positioned `.dropdown` anchors to. */
+.topbar__user {
+  position: relative;
+}
+
+/* Anchored to the chip's right edge — `.dropdown`'s default `left: 0; right: 0`
+   would stretch it to the chip's width, which is wider than the menu needs. */
+.topbar__user-menu {
+  left: auto;
+  right: 0;
+  width: 248px;
+}
+
+.topbar__user-menu-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 10px;
+}
+
+.topbar__user-menu-id {
+  min-width: 0; /* lets the two lines below actually ellipsis inside the flex row */
+}
+
+.topbar__user-menu-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar__user-menu-email {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Sign-out reads as destructive, matching every other danger action. */
+.dropdown__item--danger,
+.dropdown__item--danger .dropdown__item-text {
+  color: var(--danger, #dc2626);
+}
+
+/* --- More: the workspace card ---------------------------------------------- */
+
+/* Moved off the sidebar. It leads the More page because it decides what every
+   entry below it refers to.
+
+   Width is pinned to `.menu-list`'s own 620px column, NOT left to fill `.page`
+   — those two are siblings, so without this the card ran the full 1440px page
+   width while the menu items below it sat in a narrow centred column, and the
+   mismatch was the first thing you noticed.
+
+   The tint is what marks it as different in kind from the plain navigation
+   rows under it: this one changes the app's context rather than going
+   somewhere. Brand-coloured rather than a new hue, so it reads as emphasis and
+   not as a status. */
+.more-workspace {
+  max-width: 620px;
+  margin: 0 auto 12px;
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.06));
+  border: 1px solid rgba(99, 102, 241, 0.28);
+  border-radius: var(--radius);
+  /* Matches `.menu-item`'s padding so the card and the rows share an edge. */
+  padding: 16px 18px;
+}
+
+.more-workspace__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.more-workspace__label {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.more-workspace__hint {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+/* The switcher was sized for the sidebar column; here it spans the card, and
+   its button gets a solid surface so it stays legible on the tinted panel. */
+.more-workspace .org-switcher {
+  width: 100%;
+}
+
+.more-workspace .org-switcher__btn {
+  width: 100%;
+  background: var(--surface);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+/* --- Chat composer: plain-text input --------------------------------------- */
+
+/* Replaced the rich-text editor. A textarea (not an <input>) because Enter must
+   insert a newline, which an input cannot hold at all. Height is driven by the
+   auto-grow effect in `ChannelChat`; `resize: none` stops the browser's own
+   drag handle fighting it. */
+.composer__input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  /* Transparent: the surface is `.composer__field`'s, so a background here
+     would paint a square inside the rounded wrapper. */
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+  padding: 9px 8px;
+  resize: none;
+  /* HIDDEN, not `auto`. The auto-grow effect sets `height` to `scrollHeight`,
+     which under `box-sizing: border-box` fits exactly — but sub-pixel
+     line-height rounding tips it over by a fraction, and `auto` then renders a
+     scrollbar (with up/down buttons on Windows) on a single-line field with
+     nothing to scroll. The effect switches this to `auto` only once the box
+     has actually hit its cap. */
+  overflow-y: hidden;
+  max-height: 160px;
+}
+
+.composer__input::placeholder {
+  color: var(--text-faint);
+}
+
+@media (max-width: 900px) {
+  /* 16px minimum: anything smaller makes iOS/Android zoom the whole page the
+     instant the field takes focus, and it never zooms back out. This was
+     already true of the editor this replaced — don't lower it. */
+  .composer__field .composer__input {
+    font-size: 16px;
+  }
 }

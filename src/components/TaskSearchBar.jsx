@@ -7,12 +7,20 @@ const FilterIcon = ({ size = 16 }) => (
   </svg>
 );
 
-/** Search input + Filters button (with active-count badge). */
+/**
+ * Search input + Filters button (with active-count badge).
+ *
+ * `action` renders BETWEEN the two, which is the whole reason it exists: the
+ * Tasks page wants search → New task → Filters, and the primary action reads
+ * as stranded if it sits after the filter control. Callers that pass nothing
+ * are unchanged.
+ */
 export default function TaskSearchBar({
   search,
   onSearch,
   onOpenFilters,
   activeCount,
+  action = null,
   placeholder = 'Search tasks by name…',
 }) {
   return (
@@ -35,6 +43,7 @@ export default function TaskSearchBar({
           </button>
         )}
       </div>
+      {action}
       <button className="btn btn--ghost btn--sm filters-btn" onClick={onOpenFilters}>
         <FilterIcon size={15} /> Filters
         {activeCount > 0 && <span className="filters-btn__count">{activeCount}</span>}

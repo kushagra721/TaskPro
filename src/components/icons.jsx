@@ -247,6 +247,16 @@ export const ShieldIcon = ({ size, ...p }) => (
   </svg>
 );
 
+/** Change password. A key, matching the reference design's account menu. */
+export const KeyIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <circle cx="8" cy="15" r="4" />
+    <path d="m10.9 12.1 8.1-8.1" />
+    <path d="m17 4 3 3" />
+    <path d="m14 7 2.5 2.5" />
+  </svg>
+);
+
 export const DatabaseIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <ellipse cx="12" cy="5.5" rx="8" ry="3" />

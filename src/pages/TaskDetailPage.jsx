@@ -473,7 +473,13 @@ export default function TaskDetailPage() {
 
       {/* Fixed footer action bar. Portaled to body so `.page`'s transform can't
           trap the fixed positioning (same reason the FAB is portaled). */}
-      {createPortal(
+      {/* The whole action bar is withheld from a CLIENT. Completing,
+          cancelling, reopening and accepting are all the supplier's calls on
+          their own work — a customer raises a request and is told the outcome,
+          they do not close it themselves. Hiding the bar entirely also stops
+          the page reserving its fixed footer height for nothing. The server
+          still gates each action independently. */}
+      {!isClient && createPortal(
         <div className="task-actionbar">
           <div className="task-actionbar__inner">
             {acceptError && <div className="alert alert--error">{acceptError}</div>}

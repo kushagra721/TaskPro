@@ -1,5 +1,5 @@
 import { CameraIcon, VideoIcon, PaperclipIcon } from './icons.jsx';
-import { htmlToText } from '../utils/sanitizeHtml.js';
+import { htmlToPlainText } from '../utils/sanitizeHtml.js';
 
 /**
  * The quoted-message block: an accent rule, who wrote it, and a one-glance
@@ -25,7 +25,13 @@ export default function MessageQuote({
   onJump,
   onCancel,
 }) {
-  const text = content ? htmlToText(content) : '';
+  // `htmlToPlainText`, then newlines flattened to spaces. The quote is a
+  // two-line clamped PREVIEW, so the line structure is not wanted here — but
+  // `htmlToText` (plain `textContent`) drops the breaks with no separator at
+  // all, so a two-line message previewed as one run-on word. Now that Enter
+  // inserts a newline in the composer, multi-line messages are common enough
+  // for that to be a visible glitch.
+  const text = content ? htmlToPlainText(content).replace(/\s*\n\s*/g, ' ') : '';
   const isImage = attachmentKind === 'image';
   const isVideo = attachmentKind === 'video';
   // A media message with no caption still has to say something; falling through
