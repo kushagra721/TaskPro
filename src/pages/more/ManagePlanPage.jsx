@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { organizationsApi } from '../../api/client.js';
 import PaymentConfirmModal from '../../components/PaymentConfirmModal.jsx';
-import MandateActionModal from '../../components/MandateActionModal.jsx';
 import BillingDetailsModal from '../../components/BillingDetailsModal.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import { selectCurrentOrg } from '../../store/slices/orgSlice.js';
@@ -48,9 +47,6 @@ export default function ManagePlanPage() {
   const [quote, setQuote] = useState(null); // server-priced breakdown for the dialog
   const [quoting, setQuoting] = useState(false);
   const [busy, setBusy] = useState(false);
-  // A scheduled downgrade waiting on the customer: cancel the old mandate,
-  // approve the new one. Set from the change response, cleared on close.
-  const [pending, setPending] = useState(null);
   const [error, setError] = useState('');
   // Opened when checkout reports the workspace has no invoice address yet.
   const [editingBilling, setEditingBilling] = useState(false);
@@ -136,15 +132,10 @@ export default function ManagePlanPage() {
         return;
       }
       // A downgrade doesn't take effect (or charge) now — it's booked for the
-      // next billing date, and the customer has two things left to do. Show
-      // those instead of dropping them back on the billing page as if done.
-      if (res.billing?.pendingChange) {
-        setBusy(false);
-        setTarget(null);
-        setQuote(null);
-        setPending({ ...res.billing.pendingChange, previousPlanName: res.billing.plan?.name });
-        return;
-      }
+      // next billing date. There is nothing more to do here: the autopay is
+      // amended at the gateway, and in the one case where it can't be (UPI),
+      // the Billing page carries a single "approve autopay" button. Both read
+      // better on that page than in a modal stacked over this one.
       navigate('/more/billing');
     } catch (err) {
       setError(err.message || 'Could not change the plan');
@@ -334,17 +325,6 @@ export default function ManagePlanPage() {
           error={error}
           onSave={saveBilling}
           onClose={() => setEditingBilling(false)}
-        />
-      )}
-
-      {pending && (
-        <MandateActionModal
-          orgId={orgId}
-          pending={pending}
-          onClose={() => {
-            setPending(null);
-            navigate('/more/billing');
-          }}
         />
       )}
 

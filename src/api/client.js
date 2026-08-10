@@ -437,7 +437,10 @@ export const organizationsApi = {
   updateBillingDetails: (orgId, payload) =>
     request(`/organizations/${orgId}/billing/details`, { method: 'PATCH', body: payload }),
   changePlan: (orgId, planId) => request(`/organizations/${orgId}/billing/plan`, { method: 'POST', body: { planId } }),
-  cancelPlan: (orgId) => request(`/organizations/${orgId}/billing/cancel`, { method: 'POST' }),
+  // Pause suspends the autopay and stops the debits; the plan and its quota
+  // stay, so Resume needs no new authorisation from the customer's bank.
+  pausePlan: (orgId) => request(`/organizations/${orgId}/billing/pause`, { method: 'POST' }),
+  resumePlan: (orgId) => request(`/organizations/${orgId}/billing/resume`, { method: 'POST' }),
   topup: (orgId, tasks) => request(`/organizations/${orgId}/billing/topup`, { method: 'POST', body: { tasks } }),
   // Razorpay: open an order, then settle it. The server prices the order and
   // verifies the signature — neither amount nor success is trusted from here.

@@ -7,9 +7,9 @@ import DocumentActions from '../../components/DocumentActions.jsx';
 import ConfirmModal from '../../components/ConfirmModal.jsx';
 import EmptyState from '../../components/EmptyState.jsx';
 import Modal from '../../components/Modal.jsx';
-import MandateActionModal from '../../components/MandateActionModal.jsx';
 import PaymentConfirmModal from '../../components/PaymentConfirmModal.jsx';
 import { selectCurrentOrg } from '../../store/slices/orgSlice.js';
+import { loadRazorpay, openRazorpayCheckout } from '../../utils/razorpay.js';
 import { useCheckout } from '../../hooks/useCheckout.js';
 import {
   ActivityIcon,
@@ -100,7 +100,6 @@ export default function BillingPage() {
   const [saveError, setSaveError] = useState('');
 
   const [recharging, setRecharging] = useState(false);
-  const [showPending, setShowPending] = useState(false);
   const [topupTasks, setTopupTasks] = useState('100');
   // Server-priced breakdown for the confirm dialog. Set = dialog open, so the
   // amount shown is always the one the order will be created for.
@@ -198,15 +197,58 @@ export default function BillingPage() {
     setActionError('');
   };
 
-  const doCancel = async () => {
+  const doPause = async () => {
     setBusy(true);
     setActionError('');
     try {
-      const res = await organizationsApi.cancelPlan(orgId);
+      const res = await organizationsApi.pausePlan(orgId);
       setBilling(res.billing);
       setCancelling(false);
     } catch (err) {
-      setActionError(err.message || 'Could not cancel the plan');
+      setActionError(err.message || 'Could not pause the plan');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Resuming needs no confirmation and no re-authorisation — the mandate was
+   *  paused, not withdrawn, so this is a single reversible click. */
+  const doResume = async () => {
+    setBusy(true);
+    setActionError('');
+    try {
+      const res = await organizationsApi.resumePlan(orgId);
+      setBilling(res.billing);
+    } catch (err) {
+      setActionError(err.message || 'Could not resume the plan');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Opens Razorpay for the replacement mandate. Only reachable in the one case
+   *  that needs it — a UPI autopay the gateway would not let us amend. */
+  const doAuthorise = async () => {
+    setBusy(true);
+    setActionError('');
+    try {
+      const { setup } = await organizationsApi.setupMandate(orgId);
+      const ready = await loadRazorpay();
+      if (!ready) {
+        setActionError("Couldn't load the payment window. Check your connection or any ad blocker, then try again.");
+        return;
+      }
+      const result = await openRazorpayCheckout({ ...setup, subscriptionId: setup.subscriptionId });
+      // Closing the sheet is a normal outcome, not a failure.
+      if (result.status === 'dismissed') return;
+      if (result.status === 'failed') {
+        setActionError(result.message);
+        return;
+      }
+      const res = await organizationsApi.confirmMandate(orgId, result.payload);
+      setBilling(res.billing);
+    } catch (err) {
+      setActionError(err.message || 'Could not set up autopay');
     } finally {
       setBusy(false);
     }
@@ -257,19 +299,42 @@ export default function BillingPage() {
 
       {actionError && <div className="alert alert--error">{actionError}</div>}
 
-      {/* A downgrade booked for the next cycle. It stays visible until the
-          switch date because the customer has to cancel their old autopay
-          mandate themselves — see MandateActionModal. */}
+      {/* Billing paused: the plan and its quota are untouched, so this is a
+          calm note with a one-click undo, not a warning. */}
+      {billing.paused && (
+        <div className="alert pending-change">
+          <div>
+            Billing is <strong>paused</strong>
+            {billing.pausedAt ? ` since ${formatDate(billing.pausedAt)}` : ''}. You keep {plan?.name} and its
+            full quota — no payment will be taken until you resume.
+          </div>
+          <button className="btn btn--sm" onClick={doResume} disabled={busy}>
+            {busy ? <span className="spinner" /> : 'Resume plan'}
+          </button>
+        </div>
+      )}
+
+      {/* A downgrade booked for the next cycle.
+          Normally there is nothing to do: the existing autopay was amended at
+          the gateway, so it simply collects less from the switch date. The
+          button appears only when Razorpay refused that amendment — a UPI
+          mandate, which cannot be re-pointed — and one tap authorises the
+          replacement for ₹0 today. This replaced a two-step modal that asked
+          the customer to go and cancel their old mandate by hand. */}
       {pendingChange && (
-        <div className="alert alert--warn pending-change">
+        <div className={`alert ${pendingChange.needsAuthorisation ? 'alert--warn' : ''} pending-change`}>
           <div>
             <strong>{pendingChange.plan.name}</strong> starts on {formatDate(pendingChange.startsAt)}. You keep{' '}
             {plan?.name} until then, and nothing is charged today.
-            {!pendingChange.mandateReady && ' Your old autopay mandate still needs cancelling, and the new one approving.'}
+            {pendingChange.needsAuthorisation
+              ? ' Your bank could not switch the existing autopay to the lower amount, so approve the new one — it costs ₹0 now.'
+              : ' Your autopay has been updated to the new amount automatically.'}
           </div>
-          <button className="btn btn--sm" onClick={() => setShowPending(true)}>
-            {pendingChange.mandateReady ? 'View details' : 'Finish setup'}
-          </button>
+          {pendingChange.needsAuthorisation && (
+            <button className="btn btn--sm" onClick={doAuthorise} disabled={busy}>
+              {busy ? <span className="spinner" /> : 'Approve autopay · ₹0 now'}
+            </button>
+          )}
         </div>
       )}
 
@@ -351,9 +416,18 @@ export default function BillingPage() {
               <InfoIcon size={14} /> Changing plan starts a new billing cycle immediately, and resets this cycle&apos;s
               task count. Top-up tasks never expire and are kept.
             </p>
-            <button className="link-btn billing-plan__cancel" onClick={() => setCancelling(true)}>
-              Cancel plan
-            </button>
+            {/* Pause, not cancel: the plan and its quota stay and the autopay
+                is suspended rather than withdrawn, so Resume needs no new
+                authorisation. While paused the action is the undo. */}
+            {billing.paused ? (
+              <button className="link-btn billing-plan__cancel" onClick={doResume} disabled={busy}>
+                Resume plan
+              </button>
+            ) : (
+              <button className="link-btn billing-plan__cancel" onClick={() => setCancelling(true)}>
+                Pause plan
+              </button>
+            )}
           </>
         ) : (
           <EmptyState
@@ -513,14 +587,6 @@ export default function BillingPage() {
 
       {/* Two steps: pick a quantity, then review the priced breakdown. The
           quote replaces this dialog rather than stacking on it. */}
-      {showPending && pendingChange && (
-        <MandateActionModal
-          orgId={orgId}
-          pending={{ ...pendingChange, previousPlanName: plan?.name }}
-          onDone={(next) => setBilling(next)}
-          onClose={() => setShowPending(false)}
-        />
-      )}
 
       {recharging && !topupQuote && (
         <Modal title="Recharge tasks" onClose={closeRecharge}>
@@ -588,12 +654,12 @@ export default function BillingPage() {
 
       {cancelling && (
         <ConfirmModal
-          title="Cancel this plan?"
-          confirmLabel="Cancel plan"
-          message={`${org?.name} will drop to no plan and lose its monthly task quota. Your ${num(usage.topupTasks)} top-up task${usage.topupTasks === 1 ? '' : 's'} are kept — top-ups never expire. You can pick a plan again at any time.`}
+          title="Pause this plan?"
+          confirmLabel="Pause plan"
+          message={`${org?.name} keeps ${plan?.name} and its full task quota — only the billing stops, so no payment will be taken. Your autopay is suspended rather than cancelled, so resuming takes one click and needs no new approval from your bank.`}
           busy={busy}
           error={actionError}
-          onConfirm={doCancel}
+          onConfirm={doPause}
           onClose={() => setCancelling(false)}
         />
       )}
