@@ -11342,3 +11342,98 @@ a.btn {
   pointer-events: none;
   animation: rise 0.16s ease both;
 }
+
+/* The workspace list inside the account menu. Capped and scrollable so a user
+   in many workspaces cannot push Profile/Logout off the bottom of the screen —
+   those must stay reachable however long the list gets. */
+.topbar__user-menu-orgs {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* "Your workspaces" doubles as the fold control for the list beneath it, so it
+   is a <button> here rather than the plain <div> `.dropdown__label` assumes.
+   Resets the button defaults and lays the caret out on the right; everything
+   else (size, letter-spacing, colour) is inherited from `.dropdown__label`. */
+.dropdown__label--toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 8px;
+}
+
+.dropdown__label--toggle:hover {
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.dropdown__label-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The current workspace, shown only while the list is folded away. Not
+   uppercased — it is a name, not a section heading. */
+.dropdown__label-current {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.dropdown__label--toggle svg {
+  flex-shrink: 0;
+  transition: transform 160ms ease;
+}
+
+/* Collapsed points right, expanded points down — the caret's own default. */
+.dropdown__label--toggle:not(.is-open) svg {
+  transform: rotate(-90deg);
+}
+
+/* The account-menu caret in the header.
+   Given a real surface because as a borderless glyph at the edge of the header
+   it read as decoration rather than as a control — which is why the chip did
+   not look like it opened anything. */
+.topbar__user-caret {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.topbar__user-caret:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Open state: filled, and the caret rotated — the usual signal that this
+   disclosure is the thing holding the panel below it open. */
+.topbar__user-caret--open,
+.topbar__user-caret--open:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.topbar__user-caret svg {
+  transition: transform 180ms ease;
+}
+
+.topbar__user-caret--open svg {
+  transform: rotate(180deg);
+}

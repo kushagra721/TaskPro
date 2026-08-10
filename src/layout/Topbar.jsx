@@ -42,6 +42,12 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
   const currentId = useSelector(selectCurrentOrgId);
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // The workspace list inside the account menu can be folded away. It grows
+  // with the number of workspaces and sits ABOVE Profile / Change password /
+  // Logout, so on an account with many of them the everyday entries get pushed
+  // down out of easy reach. Collapsed still names the current workspace, so
+  // folding it never costs you the one fact it exists to show.
+  const [orgsOpen, setOrgsOpen] = useState(true);
 
   const doLogout = () => {
     dispatch(logout());
@@ -175,9 +181,16 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
             {org?.role && <span className={`role-pill role-pill--${org.role.toLowerCase()}`}>{org.role}</span>}
             {/* Was a bare logout icon — one destructive action, reachable in a
                 single stray click next to the avatar. Now a chevron opening the
-                account menu; the chip itself is unchanged. */}
+                account menu; the chip itself is unchanged.
+
+                Given its own surface (`topbar__user-caret`) rather than the
+                plain `icon-btn` treatment: as a borderless glyph at the very
+                edge of the header it read as decoration, so people did not
+                realise the chip opened anything. It also rotates while the menu
+                is open, which is the usual signal that a disclosure is the
+                thing holding the panel below it. */}
             <button
-              className="icon-btn"
+              className={`icon-btn topbar__user-caret ${userOpen ? 'topbar__user-caret--open' : ''}`}
               onClick={() => setUserOpen((o) => !o)}
               title="Account"
               aria-label="Account menu"
@@ -197,6 +210,62 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
                       <div className="topbar__user-menu-email">{user?.email}</div>
                     </div>
                   </div>
+                  <div className="dropdown__sep" />
+
+                  {/* Workspaces FIRST, then the account actions — the order in
+                      the reference. Switching workspace changes what every
+                      other entry in this menu refers to, so it reads before
+                      them, not after.
+
+                      Inline rows rather than the `OrgSwitcher` component: that
+                      one is itself a dropdown, and nesting a dropdown inside a
+                      dropdown gives two backdrops and two Escape handlers
+                      fighting over the same click. */}
+                  {/* The label is the fold control. When collapsed it carries
+                      the current workspace's name, so the section still answers
+                      "which one am I in?" without being expanded — a fold that
+                      hides the answer would just have to be opened every time. */}
+                  <button
+                    type="button"
+                    className={`dropdown__label dropdown__label--toggle ${orgsOpen ? 'is-open' : ''}`}
+                    onClick={() => setOrgsOpen((v) => !v)}
+                    aria-expanded={orgsOpen}
+                  >
+                    <span className="dropdown__label-text">
+                      Your workspaces
+                      {!orgsOpen && org?.name && (
+                        <span className="dropdown__label-current"> · {org.name}</span>
+                      )}
+                    </span>
+                    <ChevronDownIcon size={14} />
+                  </button>
+
+                  {orgsOpen && (
+                    <>
+                      {orgs.length === 0 && <div className="dropdown__empty">None yet</div>}
+                      <div className="topbar__user-menu-orgs">
+                        {orgs.map((o) => (
+                          <button
+                            key={o.id}
+                            className="dropdown__item"
+                            onClick={() => { pick(o.id); setUserOpen(false); }}
+                          >
+                            <OrgBadge name={o.name} icon={o.icon} photoUrl={o.photoUrl} size="sm" />
+                            <span className="dropdown__item-text">{o.name}</span>
+                            {o.id === currentId && <CheckIcon size={16} />}
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        className="dropdown__item"
+                        onClick={() => { setUserOpen(false); onCreateOrg?.(); }}
+                      >
+                        <span className="org-badge sm ghost"><PlusIcon size={14} /></span>
+                        <span className="dropdown__item-text">Create / find workspace</span>
+                      </button>
+                    </>
+                  )}
+
                   <div className="dropdown__sep" />
                   <button className="dropdown__item" onClick={() => { setUserOpen(false); navigate('/more/profile'); }}>
                     <UserIcon size={16} />

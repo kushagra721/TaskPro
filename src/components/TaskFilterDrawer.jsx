@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { createPortal } from 'react-dom';
 import { XIcon } from './icons.jsx';
 import Select from './Select.jsx';
+import { selectCurrentOrg } from '../store/slices/orgSlice.js';
+import { isClientRole } from '../utils/role.js';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
@@ -19,6 +22,20 @@ const TODAY = new Date().toISOString().slice(0, 10);
  */
 export default function TaskFilterDrawer({ open, onClose, value, onApply, onClear, groups, members, projects, clients }) {
   const [draft, setDraft] = useState(value);
+  /**
+   * A CLIENT gets Sort, Created date and Due date — nothing else.
+   *
+   * Every other filter narrows by something internal: which channel, which
+   * member, who raised it, which project, which client. A customer has one
+   * client space and no view of the supplier's staff or projects, so those
+   * pickers would either be empty or list names that are none of their
+   * business.
+   *
+   * Read from the store HERE rather than passed in by each of the five callers
+   * — one of them forgetting the prop would silently put the internal filters
+   * back in front of a client, and nothing would catch it.
+   */
+  const isClient = isClientRole(useSelector(selectCurrentOrg)?.role);
 
   useEffect(() => {
     if (open) setDraft(value);
@@ -83,6 +100,7 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
             </div>
           </div>
 
+          {!isClient && (
           <div className="field">
             <label className="field__label">Priority</label>
             <Select
@@ -92,8 +110,9 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
               options={[{ value: '', label: 'All' }, ...PRIORITIES.map((p) => ({ value: p, label: p }))]}
             />
           </div>
+          )}
 
-          {groups && (
+          {!isClient && groups && (
             <div className="field">
               <label className="field__label">Group</label>
               <Select
@@ -105,34 +124,40 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
             </div>
           )}
 
-          <div className="field">
-            <label className="field__label">Member (assignee)</label>
-            <Select
-              value={draft.assigneeId || ''}
-              onChange={setVal('assigneeId')}
-              placeholder="Anyone"
-              options={[
-                { value: '', label: 'Anyone' },
-                { value: 'unassigned', label: 'Unassigned' },
-                ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
-              ]}
-            />
-          </div>
+          {/* Both list the workspace's people — withheld from a client, who
+              has no view of the supplier's staff. */}
+          {!isClient && (
+            <div className="field">
+              <label className="field__label">Member (assignee)</label>
+              <Select
+                value={draft.assigneeId || ''}
+                onChange={setVal('assigneeId')}
+                placeholder="Anyone"
+                options={[
+                  { value: '', label: 'Anyone' },
+                  { value: 'unassigned', label: 'Unassigned' },
+                  ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
+                ]}
+              />
+            </div>
+          )}
 
-          <div className="field">
-            <label className="field__label">Created by</label>
-            <Select
-              value={draft.createdById || ''}
-              onChange={setVal('createdById')}
-              placeholder="Anyone"
-              options={[
-                { value: '', label: 'Anyone' },
-                ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
-              ]}
-            />
-          </div>
+          {!isClient && (
+            <div className="field">
+              <label className="field__label">Created by</label>
+              <Select
+                value={draft.createdById || ''}
+                onChange={setVal('createdById')}
+                placeholder="Anyone"
+                options={[
+                  { value: '', label: 'Anyone' },
+                  ...members.map((m) => ({ value: m.id, label: m.name || m.email })),
+                ]}
+              />
+            </div>
+          )}
 
-          {projects && (
+          {!isClient && projects && (
             <div className="field">
               <label className="field__label">Project</label>
               <Select
@@ -148,7 +173,7 @@ export default function TaskFilterDrawer({ open, onClose, value, onApply, onClea
             </div>
           )}
 
-          {clients && (
+          {!isClient && clients && (
             <div className="field">
               <label className="field__label">Client</label>
               <Select

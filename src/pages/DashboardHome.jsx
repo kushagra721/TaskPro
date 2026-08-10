@@ -206,11 +206,25 @@ export default function DashboardHome() {
             <div className="panel__empty">No open tasks 🎉</div>
           ) : (
             <ul className="open-tasks">
+              {/* A row opens the TASK, not the channel it lives in. Landing on
+                  the channel meant finding the row again in a list you had just
+                  clicked out of — and for a CLIENT the channel is one they are
+                  not a member of, so it was the wrong destination as well as an
+                  extra step. */}
               {openList.slice(0, 5).map((t) => (
-                <li key={t.id} className="open-task" onClick={() => navigate(`/groups/${t.groupId}`)}>
+                <li key={t.id} className="open-task" onClick={() => navigate(`/tasks/${t.id}`)}>
                   <span className={`prio prio--${t.priority.toLowerCase()}`}>{t.priority}</span>
                   <span className="open-task__title">{t.title}</span>
-                  <span className="open-task__assignee">{t.assignee ? (t.assignee.name || t.assignee.email).split(' ')[0] : 'Unassigned'}</span>
+                  {/* No assignee column for a CLIENT. Which member of staff is
+                      carrying the work is the supplier's business, and the API
+                      no longer sends it to them — so rendering the column
+                      anyway would print "Unassigned" against every row, which
+                      is actively misleading rather than merely empty. */}
+                  {!isClient && (
+                    <span className="open-task__assignee">
+                      {t.assignee ? (t.assignee.name || t.assignee.email).split(' ')[0] : 'Unassigned'}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

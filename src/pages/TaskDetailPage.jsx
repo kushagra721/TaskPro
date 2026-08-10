@@ -50,8 +50,47 @@ export default function TaskDetailPage() {
   // channel their work sits in, or handing it to a named member of staff, is
   // not a call they should be making. Excluded explicitly rather than relying
   // on the creator test.
+  /**
+   * Is this task in a CLIENT CHANNEL?
+   *
+   * Declared HERE, above `canManage`, because that reads it — this is a plain
+   * `const`, so referencing it from further up the body would be a temporal
+   * dead zone error at render (the same class of bug as the hook-deps one the
+   * TDZ check now guards). `canAccept` below reuses it.
+   */
+  const inClientChannel =
+    Boolean(task?.group?.clientId) ||
+    (task?.group?.name || '').trim().toLowerCase() === DEFAULT_GROUP_NAME.toLowerCase();
+
+  /**
+   * A CLIENT CHANNEL is shared ground: work raised there is a conversation
+   * between the customer and whoever picks it up, not one person's record, so
+   * everyone who can see the task can act on it — including the client. The
+   * server applies the same rule (`assertCanManageTask`), so these controls
+   * cannot offer anything it would refuse.
+   *
+   * Everywhere else the original rule stands, and still excludes a CLIENT
+   * explicitly: they may create a task in their own space, which would
+   * otherwise make them its "creator" and unlock group/assignee — decisions
+   * that are the supplier's to make.
+   */
   const canManage =
-    task && !isClient && (isAdminRole(org?.role) || task.createdBy?.id === user?.id);
+    task && (inClientChannel || (!isClient && (isAdminRole(org?.role) || task.createdBy?.id === user?.id)));
+
+  /**
+   * A CLIENT gets EDIT and DELETE — and nothing else.
+   *
+   * They keep those two because the request is theirs: correcting what they
+   * asked for, or withdrawing it, is the customer's call. Everything else on
+   * this page decides how the supplier will *do* the work — who it goes to,
+   * which channel it sits in, what priority it carries, and whether it is
+   * finished or cancelled. Those are not the customer's to set, so the inline
+   * field controls and the whole status action bar are withheld.
+   *
+   * This is narrower than `canManage`, which a client legitimately satisfies in
+   * a client channel — that flag still drives the Edit/Delete icons.
+   */
+  const canRunTask = canManage && !isClient;
   // Which status-change confirmation modal is open ('complete'|'cancel'|'reopen').
   const [statusAction, setStatusAction] = useState(null);
   const [accepting, setAccepting] = useState(false);
@@ -164,9 +203,6 @@ export default function TaskDetailPage() {
    * for the work, and their own view hides the assignee entirely. The server
    * re-checks all of it, so this only decides which button to draw.
    */
-  const inClientChannel =
-    Boolean(task?.group?.clientId) ||
-    (task?.group?.name || '').trim().toLowerCase() === DEFAULT_GROUP_NAME.toLowerCase();
   const canAccept = Boolean(task) && task.status === 'OPEN' && !task.assignee && inClientChannel && !isClient;
 
   // The status modal returns { status, remarks, dueDate? }; unwrap so it can
@@ -270,12 +306,12 @@ export default function TaskDetailPage() {
               are already hidden from their task LIST (`hide` on
               `TaskListView`); hiding them here keeps the detail view honest
               with the list that led to it. */}
-          {!isClient && (
+          {(!isClient || inClientChannel) && (
             <div className="kv"><span className="kv__k">Group</span><span className="kv__v">#{task.group?.name}</span></div>
           )}
           <div className="kv"><span className="kv__k">Project</span><span className="kv__v">{task.project?.name || 'No project'}</span></div>
           <div className="kv"><span className="kv__k">Client</span><span className="kv__v">{task.client?.name || 'No client'}</span></div>
-          {!isClient && (
+          {(!isClient || inClientChannel) && (
             <div className="kv"><span className="kv__k">Assigned to</span><span className="kv__v">{task.assignee ? task.assignee.name || task.assignee.email : 'Unassigned'}</span></div>
           )}
           <div className="kv"><span className="kv__k">Created by</span><span className="kv__v">{task.createdBy ? task.createdBy.name || task.createdBy.email : '—'}</span></div>
@@ -349,7 +385,7 @@ export default function TaskDetailPage() {
             is open, and only by the creator or an org admin — same rule as
             editing the title/description. Everyone else just sees the
             read-only values above. */}
-        {task.status === 'OPEN' && canManage && (
+        {task.status === 'OPEN' && canRunTask && (
         <div className="task-detail__controls">
           <div className="field">
             <label className="field__label">Group</label>
@@ -473,12 +509,15 @@ export default function TaskDetailPage() {
 
       {/* Fixed footer action bar. Portaled to body so `.page`'s transform can't
           trap the fixed positioning (same reason the FAB is portaled). */}
-      {/* The whole action bar is withheld from a CLIENT. Completing,
-          cancelling, reopening and accepting are all the supplier's calls on
-          their own work — a customer raises a request and is told the outcome,
-          they do not close it themselves. Hiding the bar entirely also stops
-          the page reserving its fixed footer height for nothing. The server
-          still gates each action independently. */}
+      {/* The whole action bar is withheld from a CLIENT — in a client channel
+          too, which is the change here. Completing, cancelling, reopening and
+          accepting are all the supplier's calls on their own work: a customer
+          raises a request and is told the outcome, they do not close it
+          themselves. It previously showed in a client channel on the reasoning
+          that such a channel is shared ground, but that argument covers who may
+          *act on* the task, not who may declare it done. Hiding the bar
+          entirely also stops the page reserving its fixed footer height for
+          nothing. */}
       {!isClient && createPortal(
         <div className="task-actionbar">
           <div className="task-actionbar__inner">
