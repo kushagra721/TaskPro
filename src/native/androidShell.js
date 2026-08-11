@@ -37,7 +37,24 @@ const setupStatusBar = async () => {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     // Order matters: stop overlaying first, so the colour applies to a bar
     // that actually has its own space rather than to a transparent strip.
-    await StatusBar.setOverlaysWebView({ overlay: false });
+
+    /*
+     * OVERLAY, and the inset comes from CSS.
+     *
+     * This used to be `overlay: false`, which asks Android to inset the WebView
+     * natively. That inset is computed ONCE and never revisited — so when the
+     * status bar GROWS (an in-progress call banner, a screen-recording chip, a
+     * folding phone changing display) the header slides underneath it. That is
+     * the overlap reported on a Galaxy Fold and during a call, and it explains
+     * why it only ever appeared on "some devices".
+     *
+     * `env(safe-area-inset-top)` is maintained by the system and updates as the
+     * bar changes, so the header re-pads itself live. The rule lives in
+     * `global.css` under `.native-app`, which means the browser build is
+     * untouched. Do NOT re-add the native inset alongside it — the two stack
+     * and double-pad, which is the trap the old comment warned about.
+     */
+    await StatusBar.setOverlaysWebView({ overlay: true });
     // `Style.Light` means "light background, dark icons" — the dark glyphs are
     // what makes the clock readable against our near-white bar. It reads
     // backwards; `Style.Dark` is the one that produces white icons.

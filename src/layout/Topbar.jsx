@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -8,6 +8,7 @@ import {
   setCurrentOrg,
 } from '../store/slices/orgSlice.js';
 import { selectUser, logout } from '../store/slices/authSlice.js';
+import { ROLE_LABEL } from '../utils/role.js';
 import { resetOrgs } from '../store/slices/orgSlice.js';
 import { resetProjects } from '../store/slices/projectSlice.js';
 import { resetClients } from '../store/slices/clientSlice.js';
@@ -30,6 +31,20 @@ import {
   KeyIcon,
 } from '../components/icons.jsx';
 
+/** The account menu's last card row. Rendered from two branches — inside the
+ *  expanded list, and alone when there is no list to expand — so it is a
+ *  component rather than duplicated markup. */
+function CreateWorkspaceRow({ onClick }) {
+  return (
+    <button type="button" className="acctmenu__row acctmenu__row--add" onClick={onClick}>
+      <span className="org-badge sm ghost"><PlusIcon size={14} /></span>
+      <span className="acctmenu__row-text">
+        <span className="acctmenu__row-name">Create / find workspace</span>
+      </span>
+    </button>
+  );
+}
+
 export default function Topbar({ title, isRoot, onCreateOrg }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -48,6 +63,11 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
   // down out of easy reach. Collapsed still names the current workspace, so
   // folding it never costs you the one fact it exists to show.
   const [orgsOpen, setOrgsOpen] = useState(true);
+
+  /* The current workspace now has its own row above the fold, so the list below
+     it is everything ELSE. Derived rather than filtered inline so the count in
+     the collapsed label and the rows themselves can never disagree. */
+  const others = useMemo(() => orgs.filter((o) => o.id !== currentId), [orgs, currentId]);
 
   const doLogout = () => {
     dispatch(logout());
@@ -203,68 +223,103 @@ export default function Topbar({ title, isRoot, onCreateOrg }) {
               <>
                 <div className="dropdown-backdrop" onClick={() => setUserOpen(false)} />
                 <div className="dropdown topbar__user-menu">
-                  <div className="topbar__user-menu-head">
-                    <Avatar name={user?.name} email={user?.email} src={user?.avatarUrl} size={36} />
-                    <div className="topbar__user-menu-id">
-                      <div className="topbar__user-menu-name">{user?.name || 'You'}</div>
-                      <div className="topbar__user-menu-email">{user?.email}</div>
-                    </div>
+                  {/* ------------------------------------------------------
+                      Laid out to the supplied reference (a Google account
+                      menu), mapped onto workspaces: the signed-in identity as
+                      the small line at the top, then the current workspace as
+                      the large image + name, then one primary action, then a
+                      fold holding everything you could switch to.
+
+                      The identity line stays because this is still the ACCOUNT
+                      menu — Profile, Change password and Logout all act on the
+                      person, not the workspace, and with it gone the menu would
+                      offer "Logout" with nothing saying whom it logs out.
+                      ------------------------------------------------------ */}
+                  <div className="acctmenu__top">
+                    <span className="acctmenu__email">{user?.email}</span>
+                    <button
+                      type="button"
+                      className="icon-btn acctmenu__close"
+                      onClick={() => setUserOpen(false)}
+                      aria-label="Close menu"
+                    >
+                      <XIcon size={16} />
+                    </button>
                   </div>
-                  <div className="dropdown__sep" />
 
-                  {/* Workspaces FIRST, then the account actions — the order in
-                      the reference. Switching workspace changes what every
-                      other entry in this menu refers to, so it reads before
-                      them, not after.
+                  <div className="acctmenu__hero">
+                    <OrgBadge name={org?.name} icon={org?.icon} photoUrl={org?.photoUrl} size="lg" />
+                    <div className="acctmenu__name">{org?.name || 'No workspace'}</div>
+                    {/* The reference's outlined pill. Goes to the workspace
+                        list rather than a settings dialog, which is where this
+                        app's "manage the workspace" surface actually lives. */}
+                    <button
+                      type="button"
+                      className="acctmenu__manage"
+                      onClick={() => { setUserOpen(false); navigate('/more/organizations'); }}
+                    >
+                      Manage workspace
+                    </button>
+                  </div>
 
-                      Inline rows rather than the `OrgSwitcher` component: that
-                      one is itself a dropdown, and nesting a dropdown inside a
-                      dropdown gives two backdrops and two Escape handlers
-                      fighting over the same click. */}
-                  {/* The label is the fold control. When collapsed it carries
-                      the current workspace's name, so the section still answers
-                      "which one am I in?" without being expanded — a fold that
-                      hides the answer would just have to be opened every time. */}
-                  <button
-                    type="button"
-                    className={`dropdown__label dropdown__label--toggle ${orgsOpen ? 'is-open' : ''}`}
-                    onClick={() => setOrgsOpen((v) => !v)}
-                    aria-expanded={orgsOpen}
-                  >
-                    <span className="dropdown__label-text">
-                      Your workspaces
-                      {!orgsOpen && org?.name && (
-                        <span className="dropdown__label-current"> · {org.name}</span>
-                      )}
-                    </span>
-                    <ChevronDownIcon size={14} />
-                  </button>
+                  {/* The reference's white card: a toggle row whose label flips
+                      between Show and Hide, and — only once expanded — the
+                      switchable workspaces followed by "Create / find
+                      workspace" as the last row.
 
-                  {orgsOpen && (
-                    <>
-                      {orgs.length === 0 && <div className="dropdown__empty">None yet</div>}
-                      <div className="topbar__user-menu-orgs">
-                        {orgs.map((o) => (
-                          <button
-                            key={o.id}
-                            className="dropdown__item"
-                            onClick={() => { pick(o.id); setUserOpen(false); }}
-                          >
-                            <OrgBadge name={o.name} icon={o.icon} photoUrl={o.photoUrl} size="sm" />
-                            <span className="dropdown__item-text">{o.name}</span>
-                            {o.id === currentId && <CheckIcon size={16} />}
-                          </button>
-                        ))}
-                      </div>
-                      <button
-                        className="dropdown__item"
-                        onClick={() => { setUserOpen(false); onCreateOrg?.(); }}
-                      >
-                        <span className="org-badge sm ghost"><PlusIcon size={14} /></span>
-                        <span className="dropdown__item-text">Create / find workspace</span>
-                      </button>
-                    </>
-                  )}
+                      THE CREATE ROW IS PART OF THE EXPANDED LIST, so collapsing
+                      puts the card back to a single line. It sits after the
+                      scroll area rather than inside it, so it stays on screen
+                      no matter how far the list is scrolled.
+
+                      THE ONE EXCEPTION IS AN ACCOUNT WITH NO OTHER WORKSPACE.
+                      There is no toggle then and nothing to expand, so gating
+                      the row on `orgsOpen` would hide it forever from the
+                      person most likely to be creating one. With nothing to
+                      collapse, the card is just that row. */}
+                  <div className="acctmenu__card">
+                    {others.length > 0 ? (
+                      <>
+                        <button
+                          type="button"
+                          className="acctmenu__toggle"
+                          onClick={() => setOrgsOpen((v) => !v)}
+                          aria-expanded={orgsOpen}
+                        >
+                          <span>{orgsOpen ? 'Hide more workspaces' : 'Show more workspaces'}</span>
+                          <span className={`acctmenu__chev ${orgsOpen ? 'is-open' : ''}`}>
+                            <ChevronDownIcon size={16} />
+                          </span>
+                        </button>
+
+                        {orgsOpen && (
+                          <>
+                            <div className="acctmenu__list">
+                              {others.map((o) => (
+                                <button
+                                  key={o.id}
+                                  type="button"
+                                  className="acctmenu__row"
+                                  onClick={() => { pick(o.id); setUserOpen(false); }}
+                                >
+                                  <OrgBadge name={o.name} icon={o.icon} photoUrl={o.photoUrl} size="sm" />
+                                  <span className="acctmenu__row-text">
+                                    <span className="acctmenu__row-name">{o.name}</span>
+                                    {o.role && (
+                                      <span className="acctmenu__row-sub">{ROLE_LABEL[o.role] || o.role}</span>
+                                    )}
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                            <CreateWorkspaceRow onClick={() => { setUserOpen(false); onCreateOrg?.(); }} />
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <CreateWorkspaceRow onClick={() => { setUserOpen(false); onCreateOrg?.(); }} />
+                    )}
+                  </div>
 
                   <div className="dropdown__sep" />
                   <button className="dropdown__item" onClick={() => { setUserOpen(false); navigate('/more/profile'); }}>

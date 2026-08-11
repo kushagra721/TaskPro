@@ -56,7 +56,15 @@ export default function MorePage() {
     ...(isClient
       ? []
       : [{ to: '/more/activities', label: 'All Activities', desc: 'Recent activity in your workspace', Icon: ActivityIcon }]),
-    { to: '/more/reports', label: 'Reports', desc: 'Progress across your workspace', Icon: ReportsIcon },
+    // Hidden from a CLIENT for the same reason as the activity feed above:
+    // Reports is a view of the SUPPLIER's throughput — every channel, project
+    // and member's workload — which is the internal picture of a business the
+    // client is a customer of, not a party to. The page's own API is scoped by
+    // channel membership, so this is a menu entry that would lead an external
+    // party somewhere pointless rather than a hole being plugged.
+    ...(isClient
+      ? []
+      : [{ to: '/more/reports', label: 'Reports', desc: 'Progress across your workspace', Icon: ReportsIcon }]),
     // Plans & Billing and the Storage report are both admin-only — mirroring
     // `requireOrgAdmin` on their APIs, so a member never sees an entry that
     // would 403 on open.

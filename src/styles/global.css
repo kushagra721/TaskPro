@@ -1527,6 +1527,8 @@ a.btn {
 .stat-card--violet::before { background: #8b5cf6; }
 .stat-card--amber::before { background: #f59e0b; }
 .stat-card--emerald::before { background: #10b981; }
+/* Cancelled work — the one status with no accent until Reports needed it. */
+.stat-card--rose::before { background: #f43f5e; }
 
 .stat-card__value {
   font-size: 30px;
@@ -11084,34 +11086,6 @@ a.btn {
   width: 248px;
 }
 
-.topbar__user-menu-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 8px 10px;
-}
-
-.topbar__user-menu-id {
-  min-width: 0; /* lets the two lines below actually ellipsis inside the flex row */
-}
-
-.topbar__user-menu-name {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.topbar__user-menu-email {
-  font-size: 12px;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Sign-out reads as destructive, matching every other danger action. */
 .dropdown__item--danger,
 .dropdown__item--danger .dropdown__item-text {
@@ -11343,67 +11317,6 @@ a.btn {
   animation: rise 0.16s ease both;
 }
 
-/* The workspace list inside the account menu. Capped and scrollable so a user
-   in many workspaces cannot push Profile/Logout off the bottom of the screen —
-   those must stay reachable however long the list gets. */
-.topbar__user-menu-orgs {
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-/* "Your workspaces" doubles as the fold control for the list beneath it, so it
-   is a <button> here rather than the plain <div> `.dropdown__label` assumes.
-   Resets the button defaults and lays the caret out on the right; everything
-   else (size, letter-spacing, colour) is inherited from `.dropdown__label`. */
-.dropdown__label--toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  background: none;
-  border: 0;
-  font: inherit;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
-  cursor: pointer;
-  text-align: left;
-  border-radius: 8px;
-}
-
-.dropdown__label--toggle:hover {
-  color: var(--text-muted);
-  background: var(--surface-2);
-}
-
-.dropdown__label-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The current workspace, shown only while the list is folded away. Not
-   uppercased — it is a name, not a section heading. */
-.dropdown__label-current {
-  text-transform: none;
-  letter-spacing: 0;
-  color: var(--text);
-  font-weight: 600;
-}
-
-.dropdown__label--toggle svg {
-  flex-shrink: 0;
-  transition: transform 160ms ease;
-}
-
-/* Collapsed points right, expanded points down — the caret's own default. */
-.dropdown__label--toggle:not(.is-open) svg {
-  transform: rotate(-90deg);
-}
-
 /* The account-menu caret in the header.
    Given a real surface because as a borderless glyph at the edge of the header
    it read as decoration rather than as a control — which is why the chip did
@@ -11436,4 +11349,436 @@ a.btn {
 
 .topbar__user-caret--open svg {
   transform: rotate(180deg);
+}
+
+/* ==========================================================================
+   Native shell — status bar inset
+   --------------------------------------------------------------------------
+   The WebView draws EDGE TO EDGE under the status bar (androidShell.js sets
+   `overlay: true`), so the app itself has to leave room for it. `env()` is
+   maintained by the system and updates live, which the native inset did not:
+   a call banner or a folding phone makes the bar taller mid-session, and the
+   old fixed inset left the header underneath it.
+
+   Scoped to `.native-app`, the class the shell puts on <html>, so the browser
+   build is completely unaffected. The header carries the padding — not <body>
+   — so its own background paints behind the status bar and the bar picks up
+   the app's colour instead of showing a strip of page.
+   ========================================================================== */
+.native-app .topbar {
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+}
+
+/* The full-bleed chat view hides the topbar on mobile, so its own header is
+   what sits under the status bar there. */
+.native-app .chat-pane__header {
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
+}
+
+/* Anything fixed to the top of the viewport needs the same room. */
+.native-app .drawer,
+.native-app .modal-overlay {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+
+/* ==========================================================================
+   REPORTS — two tab rows, a status mix bar, and the breakdown list
+   ========================================================================== */
+
+/* Right-hand note in a panel head — "Top 8", "All statuses", a row count.
+   `margin-left:auto` rather than a flex parent change, since `.panel__head`
+   already lays its children out in a row. */
+.panel__hint {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+/* ---- Status mix bar ---------------------------------------------------- */
+.statusbar {
+  display: flex;
+  /* Tall enough to hold a percentage legibly. It was 8px when the bar carried
+     no text; a label in an 8px track either overflows it or has to be printed
+     outside, which costs a column the row does not have. */
+  height: 20px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border);
+}
+.statusbar--empty {
+  /* No tasks at all: an empty track, so the row still has a baseline and the
+     list does not visibly jump where a bar would have been. */
+  opacity: 0.5;
+}
+.statusbar__seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 0;
+  transition: opacity 160ms ease, width 220ms ease;
+}
+.statusbar__pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  /* All three status colours are mid-tone, so white sits on them well — but a
+     thin shadow keeps it readable on the lightest (emerald) without darkening
+     the fill itself. */
+  text-shadow: 0 1px 1px rgba(15, 23, 42, 0.28);
+  /* Never let the label force its segment wider than its share: the widths ARE
+     the data, and a 3% segment stretched to fit "3%" would misreport it. */
+  overflow: hidden;
+  pointer-events: none;
+}
+.statusbar__seg--muted .statusbar__pct {
+  /* The dimmed segments keep their number, just quietly — the emphasised one
+     should read first. */
+  color: rgba(255, 255, 255, 0.92);
+}
+.statusbar__seg--muted {
+  opacity: 0.28;
+}
+
+/* ---- Breakdown list ---------------------------------------------------- */
+.rep-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.rep-list--compact {
+  gap: 11px;
+}
+.rep-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.rep-row__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rep-row__label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Lets a long name truncate instead of shoving the count off the row — the
+     usual flex overflow trap. */
+  min-width: 0;
+}
+.rep-row__text {
+  min-width: 0;
+}
+.rep-row__name {
+  font-weight: 600;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rep-row__sub {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rep-row__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.rep-row__count {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.rep-row__of {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* The legend entries switch the status tab, so they are buttons — but they
+   must still look exactly like the plain legend they replaced. */
+.legend__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.legend__btn:hover {
+  color: var(--primary);
+}
+.legend__btn .legend__val {
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  /* Both rows scroll sideways rather than wrapping — three or four tabs plus
+     their counts do not fit at 360px, and a wrapped second line reads as two
+     separate controls. Same treatment `.channel__tabs` already uses. */
+  .groups-tabbar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .groups-tabbar::-webkit-scrollbar {
+    display: none;
+  }
+  .groups-tabbar .tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .rep-row__count {
+    font-size: 16px;
+  }
+}
+
+
+/* ---- Reports status row: the tasks page's pills, in status colours -------
+   `.filter-tab` supplies the shape, size and spacing; only the colour of the
+   ACTIVE pill differs, and that is set inline from STATUS_META so the palette
+   has exactly one home in the codebase. `--status-on` exists to override
+   `.filter-tab--active`'s gradient, which would otherwise win over an inline
+   `background` set alongside it. */
+.filter-tabs--status {
+  margin-bottom: 18px;
+}
+/* Scoped to THIS row. An unscoped `.filter-tab { gap }` also reaches the tasks
+   page's pills, where `.filter-tab__count` already carries its own margin-left
+   — the two would stack and widen every pill on that screen. */
+.filter-tabs--status .filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.filter-tabs--status .filter-tab__count {
+  margin-left: 0;
+}
+.filter-tab--status-on {
+  background-image: none;
+  color: #fff;
+}
+.filter-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+
+/* ==========================================================================
+   ACCOUNT MENU — laid out to the supplied Google-account-menu reference
+   ==========================================================================
+   Structure, top to bottom: signed-in email, large workspace image, workspace
+   name, one outlined action, then an inset card holding the Show/Hide fold and
+   the switchable workspaces. The panel itself is tinted and the card inside it
+   is plain white, which is what gives the reference its layered look — a flat
+   panel with a flat list reads as an ordinary menu.
+   -------------------------------------------------------------------------- */
+.topbar__user-menu {
+  width: 340px;
+  padding: 0 0 6px;
+  background: var(--surface-2, #eef1f8);
+  overflow: hidden;
+}
+
+.acctmenu__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 2px 16px;
+}
+.acctmenu__email {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Optically centred against the close button on the right — without this the
+     email sits off-centre by exactly the button's width. */
+  padding-left: 28px;
+}
+.acctmenu__close {
+  flex-shrink: 0;
+}
+
+.acctmenu__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px 18px;
+}
+.acctmenu__hero .org-badge.lg {
+  width: 72px;
+  height: 72px;
+  font-size: 30px;
+  /* Fully round, like the reference's avatar — `.org-badge.lg`'s own 24px
+     radius is a rounded square, which reads as a logo tile rather than a
+     profile image. */
+  border-radius: 50%;
+}
+.acctmenu__name {
+  font-size: 19px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acctmenu__manage {
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong, rgba(15, 23, 42, 0.18));
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.acctmenu__manage:hover {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: var(--primary);
+}
+
+/* The inset white card. Rounded on all four corners and inset from the panel,
+   so the tinted panel shows around it — the layering the reference relies on. */
+.acctmenu__card {
+  margin: 0 8px 6px;
+  background: var(--surface);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.acctmenu__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.acctmenu__toggle:hover {
+  background: var(--surface-2);
+}
+/* The circled caret in the reference. A background of its own, so it reads as
+   the affordance even though the whole row is clickable. */
+.acctmenu__chev {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 160ms ease;
+}
+.acctmenu__chev.is-open {
+  transform: rotate(180deg);
+}
+
+.acctmenu__list {
+  /* Bounded so a long list cannot push Logout off the bottom of the viewport;
+     the rest scrolls inside the card. */
+  max-height: 260px;
+  overflow-y: auto;
+}
+.acctmenu__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--border);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.acctmenu__row:hover {
+  background: var(--surface-2);
+}
+/* The card's first row has nothing above it to be divided from — without this
+   the divider renders as a stray line just under the card's top edge, which is
+   visible whenever the list is collapsed or the account has no other workspace
+   (in both cases "Create / find workspace" IS the first row). */
+.acctmenu__card > .acctmenu__row:first-child,
+.acctmenu__list > .acctmenu__row:first-child {
+  border-top: 0;
+}
+/* The create row closes the card, so it keeps its divider from whatever is
+   above but rounds with the card's own bottom corners on hover. */
+.acctmenu__row--add {
+  border-bottom-left-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+.acctmenu__row--add .acctmenu__row-name {
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.acctmenu__row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.acctmenu__row-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.acctmenu__row-sub {
+  font-size: 12px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The remaining plain rows (Create / find workspace, Profile, Change password,
+   Logout) sit on the tinted panel, so they need their own inset to line up with
+   the card above rather than running edge to edge. */
+.topbar__user-menu > .dropdown__item {
+  border-radius: 10px;
+  margin: 0 8px;
+  width: calc(100% - 16px);
+}
+.topbar__user-menu > .dropdown__sep {
+  margin: 6px 12px;
 }

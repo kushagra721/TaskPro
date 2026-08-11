@@ -53,7 +53,11 @@ export default function UserProfilePage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { search, setSearch, filters, applyFilters, clearFilters, activeFilterCount, page, setPage, params } =
-    useTaskQuery({ status: '' });
+    // Open by default, matching Manage Tasks. What someone wants to know about
+    // a colleague is what is still on their plate; a list led by months of
+    // finished work buries it. `''` is the "All" tab, so this is a real change
+    // of landing tab, not just a sort.
+    useTaskQuery({ status: 'OPEN' });
 
   const openFilters = useCallback(() => setDrawerOpen(true), []);
   // Only the Tasks tab has anything to search or filter, so the Topbar's icons
