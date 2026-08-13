@@ -1,3 +1,5 @@
+import { COMPANY_LINKS } from '../../utils/companyLinks.js';
+
 /** Shared footer for every public marketing page. */
 export default function LandingFooter() {
   return (
@@ -8,6 +10,17 @@ export default function LandingFooter() {
           Task&nbsp;Pro
         </div>
         <p className="landing__footer-tag">Team tasks, chat &amp; collaboration.</p>
+
+        {/* Dial ERP's own pages. The same list backs the app's More page, so a
+            URL can only ever be changed in one place. */}
+        <nav className="landing__footer-links" aria-label="Legal and company">
+          {COMPANY_LINKS.map((l) => (
+            <a key={l.key} href={l.url} target="_blank" rel="noopener noreferrer">
+              {l.label}
+            </a>
+          ))}
+        </nav>
+
         <p className="landing__footer-powered">Task Pro is powered by Dial ERP.</p>
         <p className="landing__footer-copy">&copy; {new Date().getFullYear()} Task Pro. All rights reserved.</p>
       </div>

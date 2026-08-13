@@ -1,0 +1,56 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1024px;height:500px;overflow:hidden}
+body{font-family:'Segoe UI',Roboto,-apple-system,Arial,sans-serif;-webkit-font-smoothing:antialiased;background:#0A0F1E}
+.fg{position:relative;width:1024px;height:500px;overflow:hidden;
+  background:
+    radial-gradient(58% 120% at 84% 44%, rgba(124,92,255,.36) 0%, rgba(124,92,255,0) 62%),
+    radial-gradient(52% 100% at 4% 0%, rgba(99,102,241,.34) 0%, rgba(99,102,241,0) 60%),
+    linear-gradient(118deg,#0A0C1C 0%,#161334 52%,#1E1A4A 100%)}
+.fg::after{content:'';position:absolute;inset:0;opacity:.55;
+  background-image:linear-gradient(rgba(170,170,255,.06) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(170,170,255,.06) 1px,transparent 1px);
+  background-size:34px 34px}
+.copy{position:absolute;left:66px;top:0;height:100%;width:560px;display:flex;flex-direction:column;justify-content:center;z-index:3}
+.lockup{display:flex;align-items:center;gap:16px;margin-bottom:26px}
+.tile{width:70px;height:70px;border-radius:19px;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 12px 28px -10px rgba(124,92,255,.85)}
+.name{color:#fff;font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.kicker{color:#9DA6DA;font-size:13px;font-weight:700;letter-spacing:.19em;text-transform:uppercase;margin-top:6px}
+.tag{color:#DEE2F7;font-size:26px;font-weight:600;line-height:1.38;max-width:430px}
+.tag b{color:#fff;font-weight:700}
+.pills{display:flex;gap:10px;margin-top:30px;max-width:470px}
+.pill{color:#CBD2F7;font-size:14px;font-weight:600;padding:8px 15px;border-radius:999px;
+  background:rgba(160,170,255,.10);border:1px solid rgba(160,170,255,.24)}
+.stage{position:absolute;right:-8px;top:0;width:430px;height:100%;z-index:2}
+.fdev{position:absolute;background:linear-gradient(160deg,#2A3050 0%,#0B1020 55%,#1B2140 100%);
+  box-shadow:0 2px 0 rgba(255,255,255,.14) inset,0 34px 64px -22px rgba(0,0,0,.72)}
+.fscreen{position:relative;overflow:hidden;background:#F4F6FB}
+.fscreen img{display:block;position:absolute;left:0}
+</style></head><body><div class="fg">
+  <div class="copy">
+    <div class="lockup">
+      <div class="tile"><svg viewBox="0 0 64 64" width="70" height="70">
+  <defs><linearGradient id="tpg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#tpg)"/>
+  <path d="M20 33l8 8 16-18" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg></div>
+      <div><div class="name">Task Pro</div><div class="kicker">Team tasks &amp; chat</div></div>
+    </div>
+    <div class="tag">Tasks, channels and chat<br><b>in one workspace.</b></div>
+    <div class="pills">
+      <div class="pill">Tasks</div><div class="pill">Team chat</div><div class="pill">Reports</div>
+    </div>
+  </div>
+  <div class="stage">
+    <div style="position:absolute;left:6px;top:78px;transform:rotate(-7deg)"><div class="fdev" style="width:188px;padding:8px;border-radius:23px">
+    <div class="fscreen" style="width:172px;height:347px;border-radius:15px">
+      <img src="C:/Users/Kushagra kr/Desktop/Task Pro/TaskProReact/store-assets/raw/09-chats.png" style="width:172px;height:382px;top:-16px">
+    </div></div></div>
+    <div style="position:absolute;left:196px;top:36px;transform:rotate(-7deg)"><div class="fdev" style="width:222px;padding:8px;border-radius:27px">
+    <div class="fscreen" style="width:206px;height:416px;border-radius:19px">
+      <img src="C:/Users/Kushagra kr/Desktop/Task Pro/TaskProReact/store-assets/raw/01-dashboard.png" style="width:206px;height:458px;top:-19px">
+    </div></div></div>
+  </div>
+</div></body></html>

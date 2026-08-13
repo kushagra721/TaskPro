@@ -10,7 +10,12 @@ import {
   ReportsIcon,
   LogoutIcon,
   ChevronRightIcon,
+  ExternalLinkIcon,
+  ShieldIcon,
+  FileIcon,
+  InfoIcon,
 } from '../../components/icons.jsx';
+import { COMPANY_LINKS } from '../../utils/companyLinks.js';
 import { selectInvitationCount } from '../../store/slices/invitationSlice.js';
 import { selectCurrentOrg, resetOrgs } from '../../store/slices/orgSlice.js';
 import { logout } from '../../store/slices/authSlice.js';
@@ -18,6 +23,17 @@ import { resetProjects } from '../../store/slices/projectSlice.js';
 import { resetClients } from '../../store/slices/clientSlice.js';
 import { isAdminRole, isClientRole } from '../../utils/role.js';
 import OrgSwitcher from '../../layout/OrgSwitcher.jsx';
+
+/** Icon per company link, keyed off `companyLinks.js` so adding one there
+ *  degrades to the generic building icon rather than crashing. */
+const COMPANY_ICON = {
+  privacy: ShieldIcon,
+  terms: FileIcon,
+  contact: MailIcon,
+  // Not BuildingIcon: the workspace row above already uses it, and two
+  // identical glyphs in one list read as the same kind of destination.
+  about: InfoIcon,
+};
 
 export default function MorePage() {
   const dispatch = useDispatch();
@@ -123,6 +139,28 @@ export default function MorePage() {
             <ChevronRightIcon size={18} />
           </Link>
         ))}
+
+        {/* LEGAL AND COMPANY — Dial ERP's public pages. These are plain <a>
+            elements, not <Link>: every one leaves the app, and on Android
+            Capacitor hands them to the device browser rather than loading them
+            in the WebView. The trailing glyph is an external-link mark instead
+            of the chevron, which would promise another screen inside the app. */}
+        <div className="menu-list__title">Legal and company</div>
+        {COMPANY_LINKS.map((l) => {
+          const Icon = COMPANY_ICON[l.key] || BuildingIcon;
+          return (
+            <a key={l.key} className="menu-item" href={l.url} target="_blank" rel="noopener noreferrer">
+              <span className="menu-item__icon">
+                <Icon size={20} />
+              </span>
+              <span className="menu-item__text">
+                <span className="menu-item__label">{l.label}</span>
+                <span className="menu-item__desc">{l.desc}</span>
+              </span>
+              <ExternalLinkIcon size={17} />
+            </a>
+          );
+        })}
 
         {/* The sidebar owns logout on desktop; mobile needs it here. */}
         <button className="menu-item menu-item--danger" onClick={doLogout}>

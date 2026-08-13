@@ -1,4 +1,4 @@
-package com.taskpro.app;
+package dial.taskpro.app;
 
 import com.getcapacitor.BridgeActivity;
 

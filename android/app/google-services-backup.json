@@ -23,25 +23,6 @@
           "other_platform_oauth_client": []
         }
       }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:475888345123:android:eca1d5a11b22b473a2d196",
-        "android_client_info": {
-          "package_name": "dial.taskpro.app"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAoce1f510F7Vo7FR7ATvtglo95Fww4BRE"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
     }
   ],
   "configuration_version": "1"

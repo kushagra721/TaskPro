@@ -1,0 +1,67 @@
+[
+  {
+    "name": "feature-graphic.html",
+    "w": 1024,
+    "h": 500
+  },
+  {
+    "name": "phone-01.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-02.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-03.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-04.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-05.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-06.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-07.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "phone-08.html",
+    "w": 1080,
+    "h": 1920
+  },
+  {
+    "name": "tablet-01.html",
+    "w": 1920,
+    "h": 1200
+  },
+  {
+    "name": "tablet-02.html",
+    "w": 1920,
+    "h": 1200
+  },
+  {
+    "name": "tablet-03.html",
+    "w": 1920,
+    "h": 1200
+  },
+  {
+    "name": "tablet-04.html",
+    "w": 1920,
+    "h": 1200
+  }
+]

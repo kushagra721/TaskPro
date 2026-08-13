@@ -1,5 +1,5 @@
 {
-  "appId": "com.taskpro.app",
+  "appId": "dial.taskpro.app",
   "appName": "TaskPro",
   "webDir": "dist",
   "server": {
