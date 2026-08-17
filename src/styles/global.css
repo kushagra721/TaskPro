@@ -3659,6 +3659,23 @@ a.btn {
   color: #fff;
 }
 
+/*
+ * RETURNED — work handed back, not a level of urgency.
+ *
+ * Amber rather than another point on the red-to-grey ranking scale, because it
+ * is a different KIND of value: it says something needs attention from whoever
+ * raised it, not that it is more or less important than a HIGH.
+ *
+ * This rule is not optional. The pill's class is DERIVED
+ * (`prio--${priority.toLowerCase()}`) in four places, so a priority with no
+ * matching rule renders as bare `.prio` — unstyled text where every other task
+ * shows a coloured badge.
+ */
+.prio--returned {
+  background: rgba(217, 119, 6, 0.16);
+  color: #b45309;
+}
+
 /* Dashboard charts */
 .donut-wrap {
   display: flex;

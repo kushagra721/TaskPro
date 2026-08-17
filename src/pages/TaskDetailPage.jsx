@@ -25,7 +25,20 @@ import { sanitizeHtml, htmlToText } from '../utils/sanitizeHtml.js';
 import { isAdminRole, isClientRole } from '../utils/role.js';
 import { DEFAULT_GROUP_NAME } from '../utils/defaultGroup.js';
 
-const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((p) => ({ value: p, label: p }));
+/**
+ * The priorities this page can SET — the four ranked ones plus `RETURNED`.
+ *
+ * `RETURNED` is offered HERE ONLY, deliberately. `CreateTaskModal` keeps the
+ * four: nothing can be handed back before it has been worked on, so a
+ * brand-new task cannot honestly be in that state. The API enforces the same
+ * split (`editablePriority` in `task.validator.js`), so this is the shape of a
+ * real rule rather than a field merely hidden from one form.
+ *
+ * It is also absent from `TaskFilterDrawer` — filtering was not asked for, and
+ * a filter value nothing can be created at is worth adding on purpose rather
+ * than by copy-paste.
+ */
+const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'RETURNED'].map((p) => ({ value: p, label: p }));
 
 export default function TaskDetailPage() {
   const { taskId } = useParams();
