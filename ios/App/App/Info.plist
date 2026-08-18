@@ -22,6 +22,12 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Task Pro uses the camera so you can attach a photo to a task or message.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Task Pro lets you attach existing photos to tasks, messages and your profile.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Task Pro saves images you download from a task or conversation to your photo library.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

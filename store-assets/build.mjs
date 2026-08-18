@@ -111,44 +111,69 @@ p.sub{font-size:${o.k(29)}px;max-width:${o.k(780)}px;margin-top:${o.k(20)}px}
 };
 
 /* ------------------------------------------------------------------ assets */
+/**
+ * `topBg` is the capture's OWN colour at the crop line, used to fill the iOS
+ * status-bar band so it continues the app's header instead of showing a seam.
+ * It is only read by the App Store build; the Play build ignores it.
+ *
+ * Measured, not eyeballed — median of the pixel row at y=101, which ignores the
+ * avatar and text that make up a minority of that row. Re-measure with:
+ *
+ *   python -c "from PIL import Image; import statistics as st; \
+ *     im=Image.open('raw/01-dashboard.png').convert('RGB'); w,_=im.size; \
+ *     px=[im.getpixel((x,102)) for x in range(0,w,2)]; \
+ *     print('#%02X%02X%02X'%tuple(int(st.median([p[i] for p in px])) for i in range(3)))"
+ *
+ * Every row measured at most 9/255 of horizontal variation, so a flat band is
+ * genuinely seamless here. A future capture with a strong horizontal gradient
+ * at the top would need a gradient instead.
+ */
 const PHONE_SHOTS = [
   {
     shot: '01-dashboard.png',
+    topBg: '#F9FAFE',
     title: 'Your workspace,<br><em>at a glance</em>',
     sub: 'Members, channels, open tasks and what is assigned to you — on one home screen.',
   },
   {
     shot: '02-charts.png',
+    topBg: '#F9FAFE',
     title: 'See where the<br><em>work stands</em>',
     sub: 'Open, completed and cancelled at a glance, with the open list underneath.',
   },
   {
     shot: '03-hub-groups.png',
+    topBg: '#F9FAFE',
     title: 'Every channel,<br><em>with its progress</em>',
     sub: 'Members, open tasks, messages and a completion bar for each one.',
   },
   {
     shot: '07-channel.png',
+    topBg: '#F9FAFE',
     title: 'Tasks, people and chat —<br><em>in one channel</em>',
     sub: 'Filter by open, completed or cancelled without leaving the conversation.',
   },
   {
     shot: '09-chats.png',
+    topBg: '#F9FAFE',
     title: 'All your team chats,<br><em>in one list</em>',
     sub: 'Search every channel, filter to unread, and pick up where you left off.',
   },
   {
     shot: '10-chat-view.png',
+    topBg: '#EBEDFA',
     title: 'Reply, react,<br><em>stay in context</em>',
     sub: 'Quoted replies, emoji reactions, read receipts and day separators.',
   },
   {
     shot: '11-reports.png',
+    topBg: '#F9FAFE',
     title: 'Reports that show<br><em>who did what</em>',
     sub: 'Completed work broken down by channel, project, client space and member.',
   },
   {
     shot: '00-login.png',
+    topBg: '#E0E3FA',
     title: 'Sign in with a<br><em>password or a code</em>',
     sub: 'Email and password, or a one-time code sent to your inbox.',
   },
@@ -232,6 +257,200 @@ body{font-family:'Segoe UI',Roboto,-apple-system,Arial,sans-serif;-webkit-font-s
   </div>
 </div></body></html>`;
 
+/* ------------------------------------------------------ App Store (iOS) */
+/**
+ * The SAME eight captures and the SAME headlines as the Play phone set — only
+ * the canvas differs. Nothing here is a second design.
+ *
+ * It is not a resize either, and it cannot be: Play's frame is 1080x1920
+ * (0.563 wide-over-tall) against the App Store's 1320x2868 (0.460). Scaling the
+ * Play asset by width leaves ~520px of dead canvas at the bottom; scaling by
+ * height crops it. So the composition is REBUILT from the proportions the Play
+ * asset already uses — each band's share of the leftover space, measured off
+ * the 1080x1920 original — which is what makes the two stores read as the same
+ * asset rather than one looking like a stretched copy of the other.
+ */
+const PLAY_BANDS = { padTop: 0.153, headH: 0.518, gap: 0.093 }; // rest falls below the device
+
+/**
+ * The iPhone frame, as fractions of the SCREEN width so one set of numbers
+ * serves both canvases. Taken from iPhone 16 Pro geometry (402x874pt screen):
+ * a 55pt display corner, a 125x36pt Dynamic Island 11pt down, a ~62pt status
+ * bar and a 139x5pt home indicator. Expressing them as ratios is what keeps the
+ * 6.9" and 6.1" frames identical handsets rather than one looking chunkier.
+ */
+const IPHONE = {
+  rail: 0.03, // titanium band around the glass
+  ring: 0.008, // black bezel between rail and glass
+  radius: 0.12, // display corner — iPhones are much rounder than a generic frame
+  statusH: 0.154, // status bar band, which the Dynamic Island sits in
+  homeH: 0.085, // home-indicator band
+  islandW: 0.311,
+  islandH: 0.09,
+  islandTop: 0.027,
+  pillW: 0.346, // home indicator
+  pillH: 0.0125,
+};
+
+/**
+ * The App Store frame is a REAL iPhone, not the Play frame with rounder
+ * corners: titanium rails, side buttons, a Dynamic Island and a home indicator.
+ *
+ * That forces one structural change. The Play frame shows the capture and
+ * nothing else, but an iPhone has chrome ABOVE and BELOW the app — so the glass
+ * is three bands (status / app / home) rather than one image. The Android
+ * status bar was cropped off at capture time (`PHONE.top`), so the band is
+ * empty and gets filled with the shot's own `topBg`, which is why that colour
+ * is measured per shot rather than assumed.
+ *
+ * The Dynamic Island therefore sits in the status band and never covers app UI.
+ * Overlaying it on the capture instead would have hidden the avatar and name in
+ * the app's own header.
+ */
+const iosGeom = (canvasW, canvasH) => {
+  // Play puts the device at 0.617 of the canvas width. These canvases are
+  // narrower relative to their height, so the device takes a slightly larger
+  // share (0.70) to stay the subject of the shot rather than a strip down the
+  // middle — the ceiling is on WIDTH, so it can never crowd the side margins.
+  const screenW = Math.round((canvasW * 0.7) / (1 + 2 * IPHONE.rail));
+  const s = (r) => Math.round(screenW * r);
+  const appScale = screenW / PHONE.w;
+  const appH = Math.round((PHONE.bottom - PHONE.top) * appScale);
+  const rail = s(IPHONE.rail);
+  const statusH = s(IPHONE.statusH);
+  const homeH = s(IPHONE.homeH);
+  const free = canvasH - (statusH + appH + homeH + 2 * rail);
+  return {
+    canvasW,
+    canvasH,
+    screenW,
+    appH,
+    rail,
+    statusH,
+    homeH,
+    ring: s(IPHONE.ring),
+    radius: s(IPHONE.radius),
+    islandW: s(IPHONE.islandW),
+    islandH: s(IPHONE.islandH),
+    islandTop: s(IPHONE.islandTop),
+    pillW: s(IPHONE.pillW),
+    pillH: s(IPHONE.pillH),
+    imgW: screenW,
+    imgH: Math.round(PHONE.h * appScale),
+    imgTop: -Math.round(PHONE.top * appScale),
+    padTop: Math.round(free * PLAY_BANDS.padTop),
+    headH: Math.round(free * PLAY_BANDS.headH),
+    gap: Math.round(free * PLAY_BANDS.gap),
+    // Type scales with WIDTH, not height. Scaling it by height would give a
+    // 100px headline on a canvas no wider than the Play one.
+    k: (n) => Math.round((n * canvasW) / 1080),
+  };
+};
+
+/** Status-bar glyphs. Drawn rather than captured because the Android status bar
+ *  was cropped away — these are DEVICE chrome, not app UI, exactly like the
+ *  frame around them. 9:41 is Apple's own convention in its marketing. */
+const STATUS_ICONS = `<svg class="sb-svg sb-sig" viewBox="0 0 18 12" fill="currentColor" aria-hidden="true">
+  <rect x="0" y="8.5" width="3" height="3.5" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/>
+  <rect x="10" y="3.5" width="3" height="8.5" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/></svg>
+<svg class="sb-svg sb-wifi" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+  <path d="M1.4 4.3a10 10 0 0 1 13.2 0" stroke-width="1.7"/>
+  <path d="M4 7a6.3 6.3 0 0 1 8 0" stroke-width="1.7"/>
+  <path d="M6.6 9.7a2.5 2.5 0 0 1 2.8 0" stroke-width="1.7"/></svg>
+<svg class="sb-svg sb-bat" viewBox="0 0 25 12" fill="currentColor" aria-hidden="true">
+  <rect x="0.6" y="0.6" width="20.8" height="10.8" rx="3.3" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".38"/>
+  <rect x="2.2" y="2.2" width="15.6" height="7.6" rx="2.1"/>
+  <path d="M23.1 4.3a2.1 2.1 0 0 1 0 3.4z" opacity=".5"/></svg>`;
+
+/**
+ * The home-indicator band continues the BOTTOM of the capture, which is a
+ * different colour from the top — using `topBg` there left a visible seam under
+ * the app's nav bar. Measured the same way as `topBg` (median of the row at
+ * y=2277) and it came back #F6F6F6 with ZERO horizontal variation on all eight
+ * shots, so this is one constant rather than a per-shot field.
+ */
+const IOS_HOME_BG = '#F6F6F6';
+
+const IOS_CSS = `
+/* MUST null the Play frame. The shared CSS gives .device a dark navy gradient
+   and a drop shadow with no radius of its own — harmless there because that
+   rule IS the frame, but here .device is only a positioning box for the rail
+   and the side buttons, so it renders as a square dark wedge sticking out
+   behind every rounded corner. The rail carries the shadow instead. */
+.device{position:relative;background:none;box-shadow:none}
+/* Titanium rail. The light stops at 0% and 100% are the machined edge catching
+   the light — without them the frame reads as a flat dark rectangle. */
+.rail{position:relative;background:linear-gradient(128deg,#8A8F98 0%,#3A3E48 12%,#1B1E26 38%,#15171D 62%,#3A3E48 88%,#8A8F98 100%);
+  box-shadow:0 44px 90px -30px rgba(15,23,42,.60),0 10px 28px -10px rgba(15,23,42,.38)}
+.screen{position:relative;overflow:hidden;display:flex;flex-direction:column}
+.statusbar{position:relative;flex:none;display:flex;align-items:center;justify-content:space-between}
+.island{position:absolute;left:50%;transform:translateX(-50%);background:#000}
+.sb-time{font-weight:600;letter-spacing:-.01em;color:#14161F}
+.sb-icons{display:flex;align-items:center;color:#14161F}
+.sb-svg{display:block}
+.app{position:relative;flex:none;overflow:hidden}
+.app img{display:block;position:absolute;left:0}
+.homebar{flex:none;display:flex;align-items:center;justify-content:center;background:${IOS_HOME_BG}}
+.homepill{background:#14161F;opacity:.34}
+/* Side buttons sit just outside the rail so they read as protruding hardware. */
+.btn-side{position:absolute;background:linear-gradient(180deg,#6E7078,#2B2E36);border-radius:2px}
+`;
+
+const iosPage = (g, o) => `<!doctype html><html><head><meta charset="utf-8"><style>
+${CSS}${IOS_CSS}
+body{width:${g.canvasW}px;height:${g.canvasH}px}
+.inner{padding:${g.padTop}px 0 0}
+.brand{--brand-gap:${g.k(11)}px;--dot:${g.k(20)}px;font-size:${g.k(19)}px;margin-bottom:${g.k(24)}px}
+h1{font-size:${g.k(62)}px;max-width:${g.k(880)}px}
+p.sub{font-size:${g.k(29)}px;max-width:${g.k(780)}px;margin-top:${g.k(20)}px}
+.head{height:${g.headH}px}
+.device{margin-top:${g.gap}px}
+.rail{padding:${g.rail}px;border-radius:${g.radius + g.rail}px}
+.screen{width:${g.screenW}px;height:${g.statusH + g.appH + g.homeH}px;border-radius:${g.radius}px;
+  background:${o.topBg};box-shadow:0 0 0 ${g.ring}px #07080B}
+.statusbar{height:${g.statusH}px;padding:0 ${Math.round(g.screenW * 0.075)}px}
+.island{top:${g.islandTop}px;width:${g.islandW}px;height:${g.islandH}px;border-radius:${Math.round(g.islandH / 2)}px}
+.sb-time{font-size:${Math.round(g.screenW * 0.045)}px}
+.sb-icons{gap:${Math.round(g.screenW * 0.017)}px}
+.sb-sig{width:${Math.round(g.screenW * 0.049)}px}
+.sb-wifi{width:${Math.round(g.screenW * 0.045)}px}
+.sb-bat{width:${Math.round(g.screenW * 0.068)}px}
+.app{width:${g.screenW}px;height:${g.appH}px}
+.app img{width:${g.imgW}px;height:${g.imgH}px;top:${g.imgTop}px}
+.homebar{height:${g.homeH}px}
+.homepill{width:${g.pillW}px;height:${g.pillH}px;border-radius:${g.pillH}px}
+.btn-mute{left:${-Math.round(g.rail * 0.34)}px;top:${Math.round(g.screenW * 0.20)}px;width:${Math.round(g.rail * 0.34)}px;height:${Math.round(g.screenW * 0.043)}px;border-radius:2px 0 0 2px}
+.btn-up{left:${-Math.round(g.rail * 0.34)}px;top:${Math.round(g.screenW * 0.28)}px;width:${Math.round(g.rail * 0.34)}px;height:${Math.round(g.screenW * 0.075)}px;border-radius:2px 0 0 2px}
+.btn-dn{left:${-Math.round(g.rail * 0.34)}px;top:${Math.round(g.screenW * 0.375)}px;width:${Math.round(g.rail * 0.34)}px;height:${Math.round(g.screenW * 0.075)}px;border-radius:2px 0 0 2px}
+.btn-pwr{right:${-Math.round(g.rail * 0.34)}px;top:${Math.round(g.screenW * 0.31)}px;width:${Math.round(g.rail * 0.34)}px;height:${Math.round(g.screenW * 0.115)}px;border-radius:0 2px 2px 0}
+</style></head><body><div class="canvas"><div class="inner">
+  <div class="head">
+    <div class="brand">${LOGO(g.k(20))}Task Pro</div>
+    <h1>${o.title}</h1>
+    ${o.sub ? `<p class="sub">${o.sub}</p>` : ''}
+  </div>
+  <div class="device">
+    <div class="btn-side btn-mute"></div><div class="btn-side btn-up"></div>
+    <div class="btn-side btn-dn"></div><div class="btn-side btn-pwr"></div>
+    <div class="rail"><div class="screen">
+      <div class="statusbar">
+        <div class="sb-time">9:41</div>
+        <div class="island"></div>
+        <div class="sb-icons">${STATUS_ICONS}</div>
+      </div>
+      <div class="app"><img src="${RAW}/${o.shot}"></div>
+      <div class="homebar"><div class="homepill"></div></div>
+    </div></div>
+  </div>
+</div></div></body></html>`;
+
+// The two sizes App Store Connect asks for. Both are portrait @3x/@2x native
+// pixel counts, not points — do not "round" them.
+const IOS_SIZES = [
+  { tag: 'ios-69', w: 1320, h: 2868 }, // 6.9" — iPhone 16 Pro Max / 15 Pro Max
+  { tag: 'ios-61', w: 1179, h: 2556 }, // 6.1" — iPhone 16 Pro / 15 Pro
+];
+
 const files = [];
 writeFileSync(join(HERE, 'html', 'feature-graphic.html'), FEATURE);
 files.push({ name: 'feature-graphic.html', w: 1024, h: 500 });
@@ -249,6 +468,15 @@ TABLET_SHOTS.forEach((s, i) => {
     ...s, canvasW: 1920, canvasH: 1200, padTop: 70, headH: 180, gap: 40, k: (n) => Math.round(n * 0.86),
   }));
   files.push({ name, w: 1920, h: 1200 });
+});
+
+IOS_SIZES.forEach(({ tag, w, h }) => {
+  const g = iosGeom(w, h);
+  PHONE_SHOTS.forEach((s, i) => {
+    const name = `${tag}-${String(i + 1).padStart(2, '0')}.html`;
+    writeFileSync(join(HERE, 'html', name), iosPage(g, s));
+    files.push({ name, w, h });
+  });
 });
 
 writeFileSync(join(HERE, 'html', 'manifest.json'), JSON.stringify(files, null, 2));

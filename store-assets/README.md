@@ -1,7 +1,18 @@
-# Play Store graphic assets — Task Pro
+# Store graphic assets — Task Pro
 
-Ready to upload: **`out/`** — 1 feature graphic (1024×500), 8 phone (1080×1920)
-and 4 tablet (1920×1200 landscape) PNGs.
+Ready to upload: **`out/`**
+
+| Store | Files | Size |
+|---|---|---|
+| Play — feature graphic | `feature-graphic.png` | 1024×500 |
+| Play — phone | `phone-01…08.png` | 1080×1920 |
+| Play — tablet | `tablet-01…04.png` | 1920×1200 landscape |
+| **App Store — 6.9"** | **`ios-69-01…08.png`** | **1320×2868** |
+| **App Store — 6.1"** | **`ios-61-01…08.png`** | **1179×2556** |
+
+The two App Store sets are the **same eight captures with the same headlines**
+as the Play phone set — see "One composition, three canvases" below for why they
+are rebuilt rather than resized.
 
 | File | Screen | Headline |
 |---|---|---|
@@ -58,6 +69,75 @@ node build.mjs && node render.mjs
 - The logo in the feature graphic and the brand line is `public/favicon.svg`,
   copied verbatim.
 - No browser chrome, no localhost, no dev tooling, no watermark.
+
+## One composition, three canvases
+
+The App Store assets are **not resized Play assets**, and they cannot be. Play's
+phone frame is 1080×1920 — 0.563 wide-over-tall — against the App Store's
+1320×2868 (0.460) and 1179×2556 (0.461). Scaling the Play PNG up by width leaves
+roughly 520px of dead canvas below the device; scaling it by height crops the
+sides off. Either one looks like a mistake.
+
+So `build.mjs` rebuilds the composition at each canvas from the **proportions
+the Play asset already uses** — `PLAY_BANDS`, the share of the leftover space
+that the top padding, the copy block and the device gap each take, measured off
+the 1080×1920 original. The result reads as the same asset at a different size
+rather than a stretched copy.
+
+## The App Store set is in a real iPhone frame
+
+The Play assets sit in a generic dark slab. The App Store ones are an iPhone —
+titanium rails with a machined-edge highlight, a black bezel ring, the iPhone's
+much rounder display corner, side buttons, a Dynamic Island and a home
+indicator. `IPHONE` in `build.mjs` holds the geometry as fractions of the screen
+width, taken from iPhone 16 Pro dimensions (402×874pt screen, 55pt display
+corner, 125×36pt island, ~62pt status bar, 139×5pt home indicator). Fractions,
+not pixels, so the 6.9" and 6.1" frames are the same handset rather than one
+looking chunkier than the other.
+
+That forces one structural difference from the Play build: **the glass is three
+bands, not one image.** An iPhone has chrome above and below the app, so the
+screen is `status / app / home`. The Android status bar was cropped away at
+capture time, which leaves the top band empty — and this is why `topBg` exists.
+
+- **`topBg` is measured per shot, not chosen.** It is the median of the
+  capture's own pixel row at the crop line, so the band continues the app's
+  header instead of showing a seam. Login and the chat view genuinely differ
+  from the rest (`#E0E3FA` and `#EBEDFA` against `#F9FAFE`), so one shared value
+  would have seamed on two of the eight.
+- **`IOS_HOME_BG` is a single constant** because the bottom row measured
+  `#F6F6F6` with *zero* horizontal variation on all eight shots. Using `topBg`
+  there — which the first version did — left a visible line under the app's nav
+  bar.
+- Both seams are verified numerically after rendering, not by eye: every one of
+  the 16 files matches to within 1/255 on both edges.
+- **The Dynamic Island sits in the status band and never covers app UI.**
+  Overlaying it on the capture instead would have hidden the avatar and name in
+  the app's own header.
+- The status bar glyphs and the time are **drawn**, like the frame around them —
+  device chrome, not app UI, so this does not break the "nothing here redraws
+  the app" rule that the captures themselves follow. 9:41 is Apple's own
+  convention in its marketing.
+
+⚠️ `IOS_CSS` **must null `.device`'s background and shadow.** The shared `CSS`
+gives `.device` a dark navy gradient with no radius of its own — that rule *is*
+the frame for Play, but here `.device` is only a positioning box for the rail
+and buttons, so it renders as a square dark wedge behind every rounded corner.
+It shipped that way once and is only visible if you zoom into a corner.
+
+Two more details are load-bearing:
+
+- **Type scales with WIDTH, not height** (`k: n => n * canvasW / 1080`). Scaling
+  it by height would put a 100px headline on a canvas no wider than Play's, and
+  every headline would rewrap.
+- **The device ceiling is on width** (0.70 of the canvas, against Play's 0.617).
+  These canvases are narrower relative to their height, so the phone can take a
+  larger share and still keep its side margins — capping on height instead would
+  let it crowd the edges.
+
+Both App Store sizes are **native pixel counts** (@3x and @2x of the 6.9" and
+6.1" point sizes). App Store Connect rejects anything off by a pixel, so do not
+round them.
 
 ## Bug found while capturing — worth fixing before release
 

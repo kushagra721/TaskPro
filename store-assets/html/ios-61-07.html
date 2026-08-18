@@ -1,0 +1,123 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%}
+body{
+  font-family:'Segoe UI',Roboto,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;background:#EEF0FA;overflow:hidden;
+}
+.canvas{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.canvas::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(120% 72% at 50% -14%, #E9E7FF 0%, rgba(233,231,255,0) 62%),
+    radial-gradient(88% 54% at 106% 6%, #E4EDFF 0%, rgba(228,237,255,0) 60%),
+    linear-gradient(180deg,#F7F7FD 0%,#E9EBF7 100%);
+}
+.canvas::after{
+  content:'';position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(rgba(99,102,241,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(99,102,241,.055) 1px,transparent 1px);
+}
+.inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;height:100%}
+/* Fixed-height copy block so the device sits at the same y in every asset — a
+   one-line headline must not push the phone down as the carousel is swiped. */
+.head{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+
+.brand{display:flex;align-items:center;gap:var(--brand-gap);color:#5A5E73;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.brand svg{display:block;width:var(--dot);height:var(--dot)}
+
+/* 700, not 800 — Windows maps 800 to Segoe UI Black, a poster face rather than
+   the enterprise tone the app itself uses. */
+h1{color:#111527;font-weight:700;letter-spacing:-.022em;text-align:center;line-height:1.14}
+h1 em{font-style:normal;color:#6247E8}
+p.sub{color:#585E76;text-align:center;line-height:1.42;font-weight:500}
+
+.device{position:relative;background:linear-gradient(160deg,#232A40 0%,#0D1120 52%,#171D30 100%);
+  box-shadow:0 2px 0 rgba(255,255,255,.16) inset,0 40px 80px -28px rgba(15,23,42,.55),0 8px 24px -8px rgba(15,23,42,.35)}
+.screen{position:relative;overflow:hidden;background:#F4F6FB}
+.screen img{display:block;position:absolute;left:0;top:0}
+
+/* MUST null the Play frame. The shared CSS gives .device a dark navy gradient
+   and a drop shadow with no radius of its own — harmless there because that
+   rule IS the frame, but here .device is only a positioning box for the rail
+   and the side buttons, so it renders as a square dark wedge sticking out
+   behind every rounded corner. The rail carries the shadow instead. */
+.device{position:relative;background:none;box-shadow:none}
+/* Titanium rail. The light stops at 0% and 100% are the machined edge catching
+   the light — without them the frame reads as a flat dark rectangle. */
+.rail{position:relative;background:linear-gradient(128deg,#8A8F98 0%,#3A3E48 12%,#1B1E26 38%,#15171D 62%,#3A3E48 88%,#8A8F98 100%);
+  box-shadow:0 44px 90px -30px rgba(15,23,42,.60),0 10px 28px -10px rgba(15,23,42,.38)}
+.screen{position:relative;overflow:hidden;display:flex;flex-direction:column}
+.statusbar{position:relative;flex:none;display:flex;align-items:center;justify-content:space-between}
+.island{position:absolute;left:50%;transform:translateX(-50%);background:#000}
+.sb-time{font-weight:600;letter-spacing:-.01em;color:#14161F}
+.sb-icons{display:flex;align-items:center;color:#14161F}
+.sb-svg{display:block}
+.app{position:relative;flex:none;overflow:hidden}
+.app img{display:block;position:absolute;left:0}
+.homebar{flex:none;display:flex;align-items:center;justify-content:center;background:#F6F6F6}
+.homepill{background:#14161F;opacity:.34}
+/* Side buttons sit just outside the rail so they read as protruding hardware. */
+.btn-side{position:absolute;background:linear-gradient(180deg,#6E7078,#2B2E36);border-radius:2px}
+
+body{width:1179px;height:2556px}
+.inner{padding:115px 0 0}
+.brand{--brand-gap:12px;--dot:22px;font-size:21px;margin-bottom:26px}
+h1{font-size:68px;max-width:961px}
+p.sub{font-size:32px;max-width:852px;margin-top:22px}
+.head{height:390px}
+.device{margin-top:70px}
+.rail{padding:23px;border-radius:116px}
+.screen{width:779px;height:1758px;border-radius:93px;
+  background:#F9FAFE;box-shadow:0 0 0 6px #07080B}
+.statusbar{height:120px;padding:0 58px}
+.island{top:21px;width:242px;height:70px;border-radius:35px}
+.sb-time{font-size:35px}
+.sb-icons{gap:13px}
+.sb-sig{width:38px}
+.sb-wifi{width:35px}
+.sb-bat{width:53px}
+.app{width:779px;height:1572px}
+.app img{width:779px;height:1731px;top:-72px}
+.homebar{height:66px}
+.homepill{width:270px;height:10px;border-radius:10px}
+.btn-mute{left:-8px;top:156px;width:8px;height:33px;border-radius:2px 0 0 2px}
+.btn-up{left:-8px;top:218px;width:8px;height:58px;border-radius:2px 0 0 2px}
+.btn-dn{left:-8px;top:292px;width:8px;height:58px;border-radius:2px 0 0 2px}
+.btn-pwr{right:-8px;top:241px;width:8px;height:90px;border-radius:0 2px 2px 0}
+</style></head><body><div class="canvas"><div class="inner">
+  <div class="head">
+    <div class="brand"><svg viewBox="0 0 64 64" width="22" height="22">
+  <defs><linearGradient id="tpg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#tpg)"/>
+  <path d="M20 33l8 8 16-18" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>Task Pro</div>
+    <h1>Reports that show<br><em>who did what</em></h1>
+    <p class="sub">Completed work broken down by channel, project, client space and member.</p>
+  </div>
+  <div class="device">
+    <div class="btn-side btn-mute"></div><div class="btn-side btn-up"></div>
+    <div class="btn-side btn-dn"></div><div class="btn-side btn-pwr"></div>
+    <div class="rail"><div class="screen">
+      <div class="statusbar">
+        <div class="sb-time">9:41</div>
+        <div class="island"></div>
+        <div class="sb-icons"><svg class="sb-svg sb-sig" viewBox="0 0 18 12" fill="currentColor" aria-hidden="true">
+  <rect x="0" y="8.5" width="3" height="3.5" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/>
+  <rect x="10" y="3.5" width="3" height="8.5" rx="1"/><rect x="15" y="1" width="3" height="11" rx="1"/></svg>
+<svg class="sb-svg sb-wifi" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true">
+  <path d="M1.4 4.3a10 10 0 0 1 13.2 0" stroke-width="1.7"/>
+  <path d="M4 7a6.3 6.3 0 0 1 8 0" stroke-width="1.7"/>
+  <path d="M6.6 9.7a2.5 2.5 0 0 1 2.8 0" stroke-width="1.7"/></svg>
+<svg class="sb-svg sb-bat" viewBox="0 0 25 12" fill="currentColor" aria-hidden="true">
+  <rect x="0.6" y="0.6" width="20.8" height="10.8" rx="3.3" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".38"/>
+  <rect x="2.2" y="2.2" width="15.6" height="7.6" rx="2.1"/>
+  <path d="M23.1 4.3a2.1 2.1 0 0 1 0 3.4z" opacity=".5"/></svg></div>
+      </div>
+      <div class="app"><img src="C:/Users/Kushagra kr/Desktop/Task Pro/TaskProReact/store-assets/raw/11-reports.png"></div>
+      <div class="homebar"><div class="homepill"></div></div>
+    </div></div>
+  </div>
+</div></div></body></html>
