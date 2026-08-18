@@ -1,0 +1,346 @@
+# ============================================================================
+#  Task Pro — iOS builds on Codemagic
+#  https://docs.codemagic.io/yaml-basic-configuration/yaml-getting-started/
+# ============================================================================
+#
+#  This is a CAPACITOR app, not React Native and not Expo. The iOS build is
+#  three stages, and skipping any one of them produces a signed IPA containing
+#  the WRONG web assets rather than an error:
+#
+#      npm run build      Vite compiles src/ -> dist/
+#      npx cap sync ios   copies dist/ into ios/App/App/public + syncs plugins
+#      xcode-project      archives ios/App/App.xcodeproj -> .ipa
+#
+#  TWO WORKFLOWS, and start with the first one:
+#
+#    ios-unsigned    Compiles only. Needs NO Apple account, NO certificates and
+#                    NO App Store Connect key. Run this FIRST — it answers
+#                    "does this project build on a Mac at all", which matters
+#                    because it is developed on Windows and has never been
+#                    opened in Xcode.
+#
+#    ios-testflight  The real build: signed, versioned, uploaded to TestFlight.
+#                    Requires the App Store Connect integration below.
+#
+# ----------------------------------------------------------------------------
+#  BEFORE ios-testflight WILL RUN, in the Codemagic UI:
+#
+#  1. Team settings -> Integrations -> App Store Connect -> connect an API key.
+#     Name it exactly `codemagic`, or change `app_store_connect:` below to
+#     whatever you named it.
+#  2. The bundle id `dial.taskpro.app` must already exist in App Store Connect.
+#     Codemagic issues the certificate and profile itself, but it cannot create
+#     the app record for you.
+#  3. Put the real Apple ID number in APP_STORE_APPLE_ID below (App Store
+#     Connect -> your app -> App Information -> "Apple ID", a 10-digit number).
+#
+# ----------------------------------------------------------------------------
+#  ENVIRONMENT VARIABLES — set these in the Codemagic UI, not in this file.
+#
+#  Application settings -> Environment variables, group `taskpro_ios`:
+#
+#      VITE_API_URL = https://<your-api-host>/api
+#
+#  THIS IS NOT OPTIONAL, AND ITS ABSENCE IS SILENT. `.env` is gitignored, so it
+#  does not exist on the build machine. With VITE_API_URL unset,
+#  src/api/client.js falls back to `http://localhost:5000/api` and then rewrites
+#  localhost to `http://10.0.2.2:5000/api` — the ANDROID EMULATOR alias for the
+#  host machine, which means nothing at all on iOS. The build would succeed, the
+#  IPA would install, and every request would fail with "Cannot reach the
+#  server". The `Write .env` step below fails the build instead.
+#
+#  ⚠️ DO NOT SET `VITE_NATIVE_API_URL` HERE. In THIS project it is read BEFORE
+#  the localhost check (`src/api/client.js#resolveApiUrl`), so whatever it holds
+#  wins over VITE_API_URL in every native build — set it once and the IPA calls
+#  that address forever, with nothing in the build to suggest the variable was
+#  involved. Kamdhenu has the same variable with the opposite, safer ordering;
+#  do not assume this one behaves the same way. The `Write .env` step writes
+#  only VITE_API_URL for exactly this reason.
+#
+#  ⚠️ VITE_API_URL must be https. iOS App Transport Security blocks cleartext
+#  http by default, and unlike the Android build there is no config in this
+#  project that permits it.
+#
+#  Optional: VITE_APP_VERSION — reported with the push-token registration
+#  (`src/push/pushClient.js`). Harmless if unset; it degrades to undefined.
+# ============================================================================
+
+workflows:
+
+  # ==========================================================================
+  #  1. Unsigned compile check — no Apple credentials needed
+  # ==========================================================================
+  ios-unsigned:
+    name: iOS — build check (unsigned)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      groups:
+        - taskpro_ios           # must contain VITE_API_URL
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      node: 22
+      xcode: latest
+
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/Library/Caches/org.swift.swiftpm
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+
+      - name: Write .env for the Vite build
+        script: |
+          # .env is gitignored and so is absent here. See the warning at the
+          # top of this file for what an unset VITE_API_URL silently produces,
+          # and why VITE_NATIVE_API_URL is deliberately NOT written.
+          if [ -z "$VITE_API_URL" ]; then
+            echo "VITE_API_URL is not set."
+            echo "Add it to the taskpro_ios environment variable group in the Codemagic UI."
+            echo "Without it the app is built pointing at the Android emulator alias."
+            exit 1
+          fi
+          echo "VITE_API_URL=$VITE_API_URL" > .env
+          if [ -n "$VITE_APP_VERSION" ]; then
+            echo "VITE_APP_VERSION=$VITE_APP_VERSION" >> .env
+          fi
+          echo "Building against: $VITE_API_URL"
+
+      - name: Build the web app (Vite)
+        script: npm run build
+
+      - name: Sync web assets and plugins into the iOS project
+        script: |
+          # Copies dist/ into ios/App/App/public and regenerates the plugin
+          # wiring. Both paths are gitignored, so this step is what creates
+          # them on a fresh clone — it is not optional.
+          npx cap sync ios
+
+      - name: Normalise SPM paths written on Windows
+        script: |
+          # `npx cap sync ios` run on WINDOWS writes the plugin paths in
+          # Package.swift with backslashes:
+          #
+          #     path: "..\..\..\node_modules\@capacitor\app"
+          #
+          # On macOS a backslash is not a separator, and in a Swift string
+          # literal `\n` is a newline and `\@` is an invalid escape — so the
+          # manifest does not even parse and Xcode reports the useless
+          # "Missing package product 'CapApp-SPM'". Syncing on macOS rewrites it
+          # correctly, so this is normally a no-op; it is here because the file
+          # is committed and one sync from a Windows machine reintroduces it.
+          # Forward slashes work on both platforms.
+          python3 - <<'PY'
+          import re, io
+          p = 'ios/App/CapApp-SPM/Package.swift'
+          s = io.open(p, encoding='utf-8').read()
+          fixed, n = re.subn(r'path:\s*"([^"]*)"',
+                             lambda m: 'path: "%s"' % m.group(1).replace(chr(92), '/'), s)
+          if fixed != s:
+              io.open(p, 'w', encoding='utf-8', newline='\n').write(fixed)
+              print('normalised %d path literal(s)' % n)
+          else:
+              print('paths already POSIX — nothing to do')
+          PY
+
+      - name: Resolve Swift package dependencies
+        script: |
+          # Capacitor 8 wires its iOS plugins through Swift Package Manager,
+          # NOT CocoaPods — there is no Podfile and no .xcworkspace in this
+          # project, so do not add a `pod install` step. Resolving here rather
+          # than letting the build do it implicitly gives a readable error if a
+          # package fails to fetch.
+          xcodebuild -project "$XCODE_PROJECT" -scheme "$XCODE_SCHEME" -resolvePackageDependencies
+
+      - name: Compile for the simulator (no signing)
+        script: |
+          # A simulator build needs no certificate, which is the whole point of
+          # this workflow: it proves the project compiles before you spend time
+          # on Apple credentials.
+          xcodebuild \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+    artifacts:
+      - build/Build/Products/**/*.app
+      - /tmp/xcodebuild_logs/*.log
+
+  # ==========================================================================
+  #  2. Signed release — App Store Connect / TestFlight
+  # ==========================================================================
+  ios-testflight:
+    name: iOS — TestFlight release
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+
+    integrations:
+      app_store_connect: codemagic     # the API key name in Team settings
+
+    environment:
+      groups:
+        - taskpro_ios
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+        BUNDLE_ID: "dial.taskpro.app"
+        APP_STORE_APPLE_ID: 0000000000   # <- replace, see the notes at the top
+      node: 22
+      xcode: latest
+      ios_signing:
+        # Codemagic issues and installs the certificate and provisioning
+        # profile from the integration above. The keychain steps shown in older
+        # examples are handled automatically; only `use-profiles` below still
+        # has to be run by hand.
+        distribution_type: app_store
+        bundle_identifier: dial.taskpro.app
+
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/Library/Caches/org.swift.swiftpm
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+
+      - name: Write .env for the Vite build
+        script: |
+          if [ -z "$VITE_API_URL" ]; then
+            echo "VITE_API_URL is not set. See the notes at the top of codemagic.yaml."
+            exit 1
+          fi
+          case "$VITE_API_URL" in
+            https://*) ;;
+            *)
+              # iOS blocks cleartext HTTP under App Transport Security, and this
+              # project has no ATS exception configured. Catch it here rather
+              # than shipping an app that cannot reach its own API.
+              echo "VITE_API_URL must be https for an iOS build (got: $VITE_API_URL)"
+              exit 1
+              ;;
+          esac
+          echo "VITE_API_URL=$VITE_API_URL" > .env
+          if [ -n "$VITE_APP_VERSION" ]; then
+            echo "VITE_APP_VERSION=$VITE_APP_VERSION" >> .env
+          fi
+          echo "Building against: $VITE_API_URL"
+
+      - name: Build the web app (Vite)
+        script: npm run build
+
+      - name: Sync web assets and plugins into the iOS project
+        script: npx cap sync ios
+
+      - name: Normalise SPM paths written on Windows
+        script: |
+          # See the same step in ios-unsigned for why this exists. Normally a
+          # no-op; it catches a Package.swift committed from a Windows sync,
+          # which fails as "Missing package product 'CapApp-SPM'".
+          python3 - <<'PY'
+          import re, io
+          p = 'ios/App/CapApp-SPM/Package.swift'
+          s = io.open(p, encoding='utf-8').read()
+          fixed, n = re.subn(r'path:\s*"([^"]*)"',
+                             lambda m: 'path: "%s"' % m.group(1).replace(chr(92), '/'), s)
+          if fixed != s:
+              io.open(p, 'w', encoding='utf-8', newline='\n').write(fixed)
+              print('normalised %d path literal(s)' % n)
+          else:
+              print('paths already POSIX — nothing to do')
+          PY
+
+      - name: Declare export compliance
+        script: |
+          # Without this key, App Store Connect halts every TestFlight build to
+          # ask whether the app uses encryption. This app only talks HTTPS,
+          # which is exempt, so the answer is always the same — declaring it
+          # here stops the build sitting in "Missing Compliance". If that ever
+          # stops being true, change this rather than deleting it.
+          PLIST=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$PLIST" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
+
+      - name: Set the build number from App Store Connect
+        script: |
+          # Take whatever TestFlight already has and add one, rather than
+          # tracking a number in the repo. An upload whose build number is not
+          # higher than the last is rejected outright.
+          cd ios/App
+          LATEST=$(app-store-connect get-latest-app-store-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
+          agvtool new-version -all $(($LATEST + 1))
+          echo "Build number set to $(($LATEST + 1))"
+
+      - name: Apply provisioning profiles to the Xcode project
+        script: xcode-project use-profiles
+
+      - name: Resolve Swift package dependencies
+        script: xcodebuild -project "$XCODE_PROJECT" -scheme "$XCODE_SCHEME" -resolvePackageDependencies
+
+      - name: Build the IPA
+        script: |
+          # --project, NOT --workspace. Most examples online say --workspace
+          # because they assume CocoaPods; this project is SPM and has no
+          # .xcworkspace, so --workspace would fail with "does not exist".
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+      # email:
+      #   recipients:
+      #     - you@example.com
+      #   notify:
+      #     success: true
+      #     failure: true
+
+# ----------------------------------------------------------------------------
+#  PUSH NOTIFICATIONS DO NOT WORK ON iOS YET, and this file cannot fix it.
+#
+#  `@capacitor/push-notifications` is installed and the Android build works
+#  through FCM, but the iOS side has none of what it needs: no Push
+#  Notifications capability (there is no .entitlements file and no
+#  `aps-environment` anywhere in ios/), and no GoogleService-Info.plist. The
+#  build below still SUCCEEDS — an app without the capability simply fails at
+#  `PushNotifications.register()` — so this will not announce itself.
+#
+#  Fixing it needs an APNs key from the Apple Developer portal uploaded to
+#  Firebase, the capability enabled on the App target, and an entitlements file
+#  committed. Worth knowing: with Firebase absent the plugin yields an APNs
+#  token, not an FCM one, so the backend's `users.fcm_token` would hold a value
+#  FCM cannot send to.
+#
+#  Do NOT add an entitlements file requiring `aps-environment` before the App ID
+#  has Push enabled in the developer portal — the provisioning profile would not
+#  match it and the signed build would start failing.
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+#  Automatic triggering is deliberately NOT configured. Both workflows are
+#  started by hand from the Codemagic UI, so a routine push does not spend macOS
+#  build minutes. To build on every push to master, add this to a workflow:
+#
+#      triggering:
+#        events:
+#          - push
+#        branch_patterns:
+#          - pattern: master
+#            include: true
+# ----------------------------------------------------------------------------
