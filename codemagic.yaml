@@ -183,7 +183,7 @@ workflows:
     max_build_duration: 90
 
     integrations:
-      app_store_connect: codemagic     # the API key name in Team settings
+      app_store_connect: Task Pro AI     # the API key name in Team settings
 
     environment:
       groups:
@@ -192,7 +192,7 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "dial.taskpro.app"
-        APP_STORE_APPLE_ID: 0000000000   # <- replace, see the notes at the top
+        APP_STORE_APPLE_ID: 6802615225   # <- replace, see the notes at the top
       node: 22
       xcode: latest
       ios_signing:
