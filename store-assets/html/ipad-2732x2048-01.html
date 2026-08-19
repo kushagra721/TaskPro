@@ -1,0 +1,80 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%}
+body{
+  font-family:'Segoe UI',Roboto,-apple-system,'Helvetica Neue',Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;background:#EEF0FA;overflow:hidden;
+}
+.canvas{position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.canvas::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(120% 72% at 50% -14%, #E9E7FF 0%, rgba(233,231,255,0) 62%),
+    radial-gradient(88% 54% at 106% 6%, #E4EDFF 0%, rgba(228,237,255,0) 60%),
+    linear-gradient(180deg,#F7F7FD 0%,#E9EBF7 100%);
+}
+.canvas::after{
+  content:'';position:absolute;inset:0;opacity:.5;
+  background-image:linear-gradient(rgba(99,102,241,.055) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(99,102,241,.055) 1px,transparent 1px);
+}
+.inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;width:100%;height:100%}
+/* Fixed-height copy block so the device sits at the same y in every asset — a
+   one-line headline must not push the phone down as the carousel is swiped. */
+.head{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+
+.brand{display:flex;align-items:center;gap:var(--brand-gap);color:#5A5E73;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.brand svg{display:block;width:var(--dot);height:var(--dot)}
+
+/* 700, not 800 — Windows maps 800 to Segoe UI Black, a poster face rather than
+   the enterprise tone the app itself uses. */
+h1{color:#111527;font-weight:700;letter-spacing:-.022em;text-align:center;line-height:1.14}
+h1 em{font-style:normal;color:#6247E8}
+p.sub{color:#585E76;text-align:center;line-height:1.42;font-weight:500}
+
+.device{position:relative;background:linear-gradient(160deg,#232A40 0%,#0D1120 52%,#171D30 100%);
+  box-shadow:0 2px 0 rgba(255,255,255,.16) inset,0 40px 80px -28px rgba(15,23,42,.55),0 8px 24px -8px rgba(15,23,42,.35)}
+.screen{position:relative;overflow:hidden;background:#F4F6FB}
+.screen img{display:block;position:absolute;left:0;top:0}
+
+.ipad{position:relative}
+/* Aluminium, lighter and flatter than the iPhone's titanium — an iPad bezel
+   catches light across a broad face rather than along a machined edge. */
+.ipad-rail{position:relative;background:linear-gradient(135deg,#9BA1AA 0%,#4C525C 14%,#2A2F37 46%,#242931 62%,#4C525C 88%,#9BA1AA 100%);
+  box-shadow:0 46px 96px -32px rgba(15,23,42,.55),0 12px 30px -12px rgba(15,23,42,.34)}
+.ipad-screen{position:relative;overflow:hidden;background:#F4F6FB}
+.ipad-screen img{display:block;width:100%;height:100%}
+/* Front camera, centred on the landscape edge — where the M4 iPad Pro puts it. */
+.ipad-cam{position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(circle at 38% 34%, #3C424C 0%, #12151B 62%, #0A0C10 100%)}
+
+body{width:2732px;height:2048px}
+.inner{padding:120px 0 0}
+.brand{--brand-gap:13px;--dot:24px;font-size:23px;margin-bottom:29px}
+h1{font-size:76px;max-width:2131px}
+p.sub{font-size:35px;max-width:1694px;margin-top:24px}
+.head{height:309px}
+.ipad{margin-top:69px}
+.ipad-rail{padding:42px;border-radius:70px}
+.ipad-screen{width:1856px;height:1391px;border-radius:28px;
+  box-shadow:0 0 0 8px #07080B}
+.ipad-cam{top:15px;width:13px;height:13px}
+</style></head><body><div class="canvas"><div class="inner">
+  <div class="head">
+    <div class="brand"><svg viewBox="0 0 64 64" width="24" height="24">
+  <defs><linearGradient id="tpg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#tpg)"/>
+  <path d="M20 33l8 8 16-18" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>Task Pro</div>
+    <h1>The same app, <em>more room</em></h1>
+    <p class="sub">On a tablet the navigation opens out and the whole workspace sits side by side.</p>
+  </div>
+  <div class="ipad">
+    <div class="ipad-rail">
+      <div class="ipad-cam"></div>
+      <div class="ipad-screen"><img src="C:/Users/Kushagra kr/Desktop/Task Pro/TaskProReact/store-assets/raw/ipad-hub.png"></div>
+    </div>
+  </div>
+</div></div></body></html>

@@ -7,12 +7,15 @@ Ready to upload: **`out/`**
 | Play — feature graphic | `feature-graphic.png` | 1024×500 |
 | Play — phone | `phone-01…08.png` | 1080×1920 |
 | Play — tablet | `tablet-01…04.png` | 1920×1200 landscape |
-| **App Store — 6.9"** | **`ios-69-01…08.png`** | **1320×2868** |
-| **App Store — 6.1"** | **`ios-61-01…08.png`** | **1179×2556** |
+| **App Store — 6.5" iPhone** | **`ios-1242x2688-01…08.png`** | **1242×2688** |
+| **App Store — 6.5" iPhone** | **`ios-1284x2778-01…08.png`** | **1284×2778** |
+| **App Store — 12.9" iPad** | **`ipad-2732x2048-01…04.png`** | **2732×2048 landscape** |
+| **App Store — 13" iPad** | **`ipad-2752x2064-01…04.png`** | **2752×2064 landscape** |
 
-The two App Store sets are the **same eight captures with the same headlines**
-as the Play phone set — see "One composition, three canvases" below for why they
-are rebuilt rather than resized.
+The two **iPhone** App Store sets are the same eight captures and headlines as
+the Play phone set — see "One composition, three canvases" for why they are
+rebuilt rather than resized. The two **iPad** sets have their own captures and
+their own frame; see "The iPad set has its OWN captures".
 
 | File | Screen | Headline |
 |---|---|---|
@@ -29,6 +32,10 @@ are rebuilt rather than resized.
 | `tablet-02.png` | Chats, two-pane | Chat list and conversation, together |
 | `tablet-03.png` | Hub → Clients Space | Projects, channels and client spaces |
 | `tablet-04.png` | Channel task table | A full table, not a narrow list |
+| `ipad-*-01.png` | Hub → Groups | The same app, more room |
+| `ipad-*-02.png` | Chats, two-pane | Chat list and conversation, together |
+| `ipad-*-03.png` | Hub → Clients Space | Projects, channels and client spaces |
+| `ipad-*-04.png` | Channel task table | A full table, not a narrow list |
 
 ## Where the captures came from
 
@@ -70,13 +77,70 @@ node build.mjs && node render.mjs
   copied verbatim.
 - No browser chrome, no localhost, no dev tooling, no watermark.
 
+## The iPad set has its OWN captures, and had to
+
+`raw/ipad-*.png` are not the Play tablet shots. Those are **1288×808** — 1.594,
+a 16:10 laptop shape — while an iPad screen is **4:3** (1.333). Framing one
+inside the other would mean cropping 16% off the width of a two-pane layout, or
+letterboxing it; both look like mistakes.
+
+So the app was re-rendered at **1366×1024 CSS px**, which *is* the 12.9"/13"
+iPad landscape viewport, at `deviceScaleFactor: 2` — giving 2732×2048 real
+pixels, the exact screen size. That is the same method the Play tablet assets
+already use (Chrome at a tablet viewport, not a device capture); only the
+viewport changed. Re-run with `node ipad-capture.mjs` (it lives beside `build.mjs`) — it is read-only,
+it signs in with an existing token and navigates, and it creates nothing.
+
+- **Landscape, deliberately.** The canvas is 4:3 and so is the device, so the
+  headline-above-device layout still balances — and the tablet story here *is*
+  the two-pane layouts, which only exist in landscape. The portrait
+  alternatives Apple also accepts (2064×2752, 2048×2732) would need the app
+  re-captured at a 1024×1366 viewport: a different set of screenshots, not a
+  re-render of these.
+- **The frame is a real iPad, not the iPhone frame with squarer corners** —
+  uniform aluminium bezel, a much squarer display corner (0.02 of the short
+  side against the iPhone's 0.12), a front camera centred on the landscape edge
+  where the M4 iPad Pro puts it, and **no Dynamic Island**.
+- **No status bar and no home indicator are drawn**, unlike the iPhone frame.
+  There the Android status bar had been cropped away and left an empty band to
+  fill. Here the capture is a browser render that already fills the viewport, so
+  a fabricated status bar would sit on top of the app's own header — over the
+  Task Pro logo and the account chip. An empty frame beats chrome that covers
+  the thing the screenshot exists to show.
+- **The bezel scales off the screen's SHORT side**, not its width. On a
+  landscape canvas a width-relative bezel gets visibly fatter top-to-bottom than
+  side-to-side, and an iPad's is uniform.
+- **`TABLET_BANDS`, not the phone's.** The vertical rhythm is lifted off the
+  existing 1920×1200 Play tablet asset, whose bottom margin is much tighter
+  (0.13 of the free space against the phone's 0.24) — that is what stops a wide
+  canvas looking bottom-heavy. Type scales off the same asset's ratio too;
+  applying the phone rule here would put a **157px** headline on the canvas,
+  because that rule keys on width and this canvas is 2732 wide.
+- The four headlines are the Play tablet's, unchanged — that copy was written
+  for landscape and for exactly these four views.
+
 ## One composition, three canvases
+
+Both App Store files are the **6.5-inch display** slot, which App Store Connect
+accepts at either pixel count. Both are generated because the upload form takes
+either and the filenames say which is which; they differ by 4% in height and are
+otherwise the same composition. They replaced 1320×2868 / 1179×2556 (the 6.9"
+and 6.1" slots) — restoring those is one line in `IOS_SIZES`.
+
+**The landscape alternatives Apple also lists — 2688×1242 and 2778×1284 — are
+deliberately not built.** This composition is a portrait phone standing under a
+headline, so at 2688×1242 the device alone computes to 1881×4113 and overflows
+the canvas by more than its own height. A landscape asset is a different layout
+(copy beside the device, not above it) built from landscape PHONE captures,
+which `raw/` does not contain — the `ipad-*` landscape captures are a tablet
+viewport and are not a substitute. Ask for it rather than adding the size and
+expecting a re-render to work.
 
 The App Store assets are **not resized Play assets**, and they cannot be. Play's
 phone frame is 1080×1920 — 0.563 wide-over-tall — against the App Store's
-1320×2868 (0.460) and 1179×2556 (0.461). Scaling the Play PNG up by width leaves
-roughly 520px of dead canvas below the device; scaling it by height crops the
-sides off. Either one looks like a mistake.
+1242×2688 and 1284×2778 (both 0.462). Scaling the Play PNG up by width leaves
+hundreds of pixels of dead canvas below the device; scaling it by height crops
+the sides off. Either one looks like a mistake.
 
 So `build.mjs` rebuilds the composition at each canvas from the **proportions
 the Play asset already uses** — `PLAY_BANDS`, the share of the leftover space

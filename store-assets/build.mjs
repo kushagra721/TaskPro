@@ -263,12 +263,13 @@ body{font-family:'Segoe UI',Roboto,-apple-system,Arial,sans-serif;-webkit-font-s
  * the canvas differs. Nothing here is a second design.
  *
  * It is not a resize either, and it cannot be: Play's frame is 1080x1920
- * (0.563 wide-over-tall) against the App Store's 1320x2868 (0.460). Scaling the
- * Play asset by width leaves ~520px of dead canvas at the bottom; scaling by
- * height crops it. So the composition is REBUILT from the proportions the Play
- * asset already uses — each band's share of the leftover space, measured off
- * the 1080x1920 original — which is what makes the two stores read as the same
- * asset rather than one looking like a stretched copy of the other.
+ * (0.563 wide-over-tall) against the App Store's 1242x2688 / 1284x2778 (0.462).
+ * Scaling the Play asset by width leaves hundreds of pixels of dead canvas at
+ * the bottom; scaling by height crops it. So the composition is REBUILT from
+ * the proportions the Play asset already uses — each band's share of the
+ * leftover space, measured off the 1080x1920 original — which is what makes the
+ * two stores read as the same asset rather than one looking like a stretched
+ * copy of the other.
  */
 const PLAY_BANDS = { padTop: 0.153, headH: 0.518, gap: 0.093 }; // rest falls below the device
 
@@ -444,11 +445,158 @@ p.sub{font-size:${g.k(29)}px;max-width:${g.k(780)}px;margin-top:${g.k(20)}px}
   </div>
 </div></div></body></html>`;
 
-// The two sizes App Store Connect asks for. Both are portrait @3x/@2x native
-// pixel counts, not points — do not "round" them.
+/**
+ * App Store Connect's **6.5-inch display** slot, which accepts either of these
+ * two pixel counts. Both are generated because Apple takes either and the
+ * filenames say which is which, so whichever the upload form wants is already
+ * there — they differ by 4% in height and are otherwise the same composition.
+ *
+ * (This replaced 1320x2868 / 1179x2556, the 6.9" and 6.1" slots.)
+ *
+ * ⚠️ THE LANDSCAPE PAIR — 2688x1242 and 2778x1284 — IS DELIBERATELY NOT BUILT.
+ * Apple lists them as alternatives for the same slot, but this composition is a
+ * portrait phone standing under a headline: at 2688x1242 the device alone
+ * computes to 1881x4113, which overflows the canvas by more than its own
+ * height. A landscape asset is not a re-render, it is a different layout (copy
+ * beside the device rather than above it) built from landscape captures the
+ * `raw/` folder does not contain. Ask for it rather than changing these numbers
+ * and expecting it to work.
+ *
+ * These are native PIXEL counts, not points — do not "round" them.
+ */
 const IOS_SIZES = [
-  { tag: 'ios-69', w: 1320, h: 2868 }, // 6.9" — iPhone 16 Pro Max / 15 Pro Max
-  { tag: 'ios-61', w: 1179, h: 2556 }, // 6.1" — iPhone 16 Pro / 15 Pro
+  { tag: 'ios-1242x2688', w: 1242, h: 2688 }, // 6.5" — iPhone 11 Pro Max / XS Max
+  { tag: 'ios-1284x2778', w: 1284, h: 2778 }, // 6.5" — iPhone 12/13/14 Pro Max
+];
+
+/* ------------------------------------------------ App Store (iPad 12.9"/13") */
+/**
+ * The iPad frame. NOT the iPhone frame with squarer corners — a different
+ * device: a uniform aluminium bezel, a much squarer display corner, a front
+ * camera on the landscape edge, and **no Dynamic Island**.
+ *
+ * ⚠️ THESE USE THEIR OWN CAPTURES (`raw/ipad-*.png`) AND MUST. The Play tablet
+ * shots are 1288x808 — 1.594, a 16:10 laptop shape — while an iPad screen is
+ * 4:3 (1.333). Reusing them would mean cropping 16% off the width of a TWO-PANE
+ * layout or letterboxing it. The iPad captures are the app re-rendered at
+ * 1366x1024 CSS px, which IS the 12.9"/13" landscape viewport, at
+ * deviceScaleFactor 2 — so 2732x2048 of real pixels, the exact screen size.
+ *
+ * LANDSCAPE, deliberately. The canvas is 4:3 and so is the device, so the
+ * headline-above-device layout still balances; and the tablet story here is the
+ * two-pane layouts, which only exist in landscape.
+ *
+ * NO STATUS BAR AND NO HOME INDICATOR are drawn, unlike the iPhone frame. There
+ * the Android status bar had been cropped away and left an empty band to fill;
+ * here the capture is a browser render that already fills the whole viewport,
+ * so a fabricated status bar would sit ON TOP of the app's own header — over
+ * the Task Pro logo and the account chip. An honest empty frame beats chrome
+ * that covers the thing the screenshot exists to show.
+ */
+const IPAD = {
+  rail: 0.03, // aluminium bezel — a fraction of the screen's SHORT side, so it
+  ring: 0.006, // does not stretch with the long one in landscape
+  radius: 0.02, // display corner: iPads are far squarer than iPhones
+  camera: 0.009,
+};
+
+/**
+ * The LANDSCAPE band proportions, lifted off the existing 1920x1200 Play tablet
+ * asset rather than the phone one — its bottom margin is much tighter (0.13 of
+ * the free space against the phone's 0.24), which is what stops a wide canvas
+ * looking bottom-heavy.
+ */
+const TABLET_BANDS = { padTop: 0.21, headH: 0.539, gap: 0.12 };
+
+const ipadGeom = (canvasW, canvasH) => {
+  const ar = 2732 / 2048; // the capture's own aspect, i.e. the iPad screen
+  // Device at 0.71 of the canvas width, matching the Play tablet's presence.
+  // devW = screenW + 2*rail and rail scales off the SHORT side, hence the /ar.
+  const screenW = Math.round((canvasW * 0.71) / (1 + (2 * IPAD.rail) / ar));
+  const screenH = Math.round(screenW / ar);
+  const s = (r) => Math.round(screenH * r);
+  const rail = s(IPAD.rail);
+  const free = canvasH - (screenH + 2 * rail);
+  return {
+    canvasW,
+    canvasH,
+    screenW,
+    screenH,
+    rail,
+    ring: s(IPAD.ring),
+    radius: s(IPAD.radius),
+    camera: s(IPAD.camera),
+    padTop: Math.round(free * TABLET_BANDS.padTop),
+    headH: Math.round(free * TABLET_BANDS.headH),
+    gap: Math.round(free * TABLET_BANDS.gap),
+    // Type scales off the Play TABLET's ratio (0.86 at 1920 wide), not the
+    // phone's. Using the phone rule here would put a 157px headline on this
+    // canvas, because it keys on width and this canvas is 2732 wide.
+    k: (n) => Math.round((n * canvasW * 0.86) / 1920),
+  };
+};
+
+const IPAD_CSS = `
+.ipad{position:relative}
+/* Aluminium, lighter and flatter than the iPhone's titanium — an iPad bezel
+   catches light across a broad face rather than along a machined edge. */
+.ipad-rail{position:relative;background:linear-gradient(135deg,#9BA1AA 0%,#4C525C 14%,#2A2F37 46%,#242931 62%,#4C525C 88%,#9BA1AA 100%);
+  box-shadow:0 46px 96px -32px rgba(15,23,42,.55),0 12px 30px -12px rgba(15,23,42,.34)}
+.ipad-screen{position:relative;overflow:hidden;background:#F4F6FB}
+.ipad-screen img{display:block;width:100%;height:100%}
+/* Front camera, centred on the landscape edge — where the M4 iPad Pro puts it. */
+.ipad-cam{position:absolute;left:50%;transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(circle at 38% 34%, #3C424C 0%, #12151B 62%, #0A0C10 100%)}
+`;
+
+const ipadPage = (g, o) => `<!doctype html><html><head><meta charset="utf-8"><style>
+${CSS}${IPAD_CSS}
+body{width:${g.canvasW}px;height:${g.canvasH}px}
+.inner{padding:${g.padTop}px 0 0}
+.brand{--brand-gap:${g.k(11)}px;--dot:${g.k(20)}px;font-size:${g.k(19)}px;margin-bottom:${g.k(24)}px}
+h1{font-size:${g.k(62)}px;max-width:${Math.round(g.canvasW * 0.78)}px}
+p.sub{font-size:${g.k(29)}px;max-width:${Math.round(g.canvasW * 0.62)}px;margin-top:${g.k(20)}px}
+.head{height:${g.headH}px}
+.ipad{margin-top:${g.gap}px}
+.ipad-rail{padding:${g.rail}px;border-radius:${g.radius + g.rail}px}
+.ipad-screen{width:${g.screenW}px;height:${g.screenH}px;border-radius:${g.radius}px;
+  box-shadow:0 0 0 ${g.ring}px #07080B}
+.ipad-cam{top:${Math.round((g.rail - g.camera) / 2)}px;width:${g.camera}px;height:${g.camera}px}
+</style></head><body><div class="canvas"><div class="inner">
+  <div class="head">
+    <div class="brand">${LOGO(g.k(20))}Task Pro</div>
+    <h1>${o.title}</h1>
+    ${o.sub ? `<p class="sub">${o.sub}</p>` : ''}
+  </div>
+  <div class="ipad">
+    <div class="ipad-rail">
+      <div class="ipad-cam"></div>
+      <div class="ipad-screen"><img src="${RAW}/${o.shot}"></div>
+    </div>
+  </div>
+</div></div></body></html>`;
+
+/**
+ * The same four tablet screens and the same headlines the Play tablet set uses
+ * — that copy was written for landscape and for exactly these views. Only the
+ * capture changes, because only the viewport did.
+ */
+const IPAD_SHOTS = [
+  { shot: 'ipad-hub.png', title: 'The same app, <em>more room</em>', sub: 'On a tablet the navigation opens out and the whole workspace sits side by side.' },
+  { shot: 'ipad-chats.png', title: 'Chat list and conversation, <em>together</em>', sub: 'Pick a channel on the left and read it on the right — no back and forth.' },
+  { shot: 'ipad-clients.png', title: 'Projects, channels and <em>client spaces</em>', sub: 'Each client space carries its own tasks and its own completion bar.' },
+  { shot: 'ipad-channel.png', title: 'A full table, <em>not a narrow list</em>', sub: 'Priority, dates, assignee, channel, project and status in a single row.' },
+];
+
+/**
+ * App Store Connect's 12.9"/13" iPad slot, which accepts either pixel count.
+ * The PORTRAIT alternatives (2064x2752, 2048x2732) are not built: they would
+ * need the app re-captured at a 1024x1366 viewport, which is a different set of
+ * screenshots rather than a re-render of these. Ask if you need them.
+ */
+const IPAD_SIZES = [
+  { tag: 'ipad-2732x2048', w: 2732, h: 2048 }, // 12.9" iPad Pro
+  { tag: 'ipad-2752x2064', w: 2752, h: 2064 }, // 13" iPad Pro (M4)
 ];
 
 const files = [];
@@ -475,6 +623,15 @@ IOS_SIZES.forEach(({ tag, w, h }) => {
   PHONE_SHOTS.forEach((s, i) => {
     const name = `${tag}-${String(i + 1).padStart(2, '0')}.html`;
     writeFileSync(join(HERE, 'html', name), iosPage(g, s));
+    files.push({ name, w, h });
+  });
+});
+
+IPAD_SIZES.forEach(({ tag, w, h }) => {
+  const g = ipadGeom(w, h);
+  IPAD_SHOTS.forEach((s, i) => {
+    const name = `${tag}-${String(i + 1).padStart(2, '0')}.html`;
+    writeFileSync(join(HERE, 'html', name), ipadPage(g, s));
     files.push({ name, w, h });
   });
 });
