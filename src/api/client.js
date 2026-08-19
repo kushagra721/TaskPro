@@ -401,6 +401,11 @@ export const authApi = {
   resend: (payload) => request('/auth/resend', { method: 'POST', body: payload, auth: false }),
   requestPasswordChange: () => request('/auth/password/change/request', { method: 'POST' }),
   confirmPasswordChange: (payload) => request('/auth/password/change/confirm', { method: 'POST', body: payload }),
+  /** Forgot password. `auth: false` on both — the caller has no session, which
+   *  is the entire reason this lane exists. Confirm returns a token, like
+   *  /auth/verify does, so the reset ends signed in. */
+  requestPasswordReset: (payload) => request('/auth/password/reset/request', { method: 'POST', body: payload, auth: false }),
+  confirmPasswordReset: (payload) => request('/auth/password/reset/confirm', { method: 'POST', body: payload, auth: false }),
 };
 
 // ---- Users ----

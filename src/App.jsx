@@ -15,6 +15,7 @@ const ProductPage = lazy(() => import('./pages/ProductPage.jsx'));
 const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
 const Login = lazy(() => import('./pages/Login.jsx'));
 const Signup = lazy(() => import('./pages/Signup.jsx'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const Verify = lazy(() => import('./pages/Verify.jsx'));
 const DeclineInvitePage = lazy(() => import('./pages/DeclineInvitePage.jsx'));
 const AcceptInvitePage = lazy(() => import('./pages/AcceptInvitePage.jsx'));
@@ -83,6 +84,9 @@ export default function App({ nativeEntryPath }) {
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
+      {/* PublicOnly like login/signup: somebody already signed in has no use
+          for a reset page, and the flow ends by signing them in. */}
+      <Route path="/forgot-password" element={<PublicOnly><ForgotPassword /></PublicOnly>} />
       <Route path="/verify" element={<Verify />} />
       <Route path="/invite/decline/:token" element={<DeclineInvitePage />} />
       <Route path="/invite/accept/:token" element={<AcceptInvitePage />} />

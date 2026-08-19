@@ -2,7 +2,18 @@ import { isNativeApp } from '../utils/native.js';
 import { notificationsApi } from '../api/client.js';
 
 /**
- * The Android push lifecycle: permission, token, listeners, teardown.
+ * The native push lifecycle — Android AND iOS: permission, token, listeners,
+ * teardown.
+ *
+ * ⚠️ THERE IS NO iOS-SPECIFIC CODE IN THIS FILE, AND THAT IS THE DESIGN.
+ * `@capacitor/push-notifications` hands back an FCM token on Android but an
+ * APNs device token on iOS — and the backend sends through Firebase, which
+ * cannot deliver to an APNs token. The translation happens natively instead, in
+ * `ios/App/App/AppDelegate.swift`: it gives APNs' token to Firebase, gets an
+ * FCM token back, and posts THAT on the notification the plugin listens to
+ * (which accepts a String and forwards it verbatim). So the `registration`
+ * listener below receives an FCM token on both platforms and this module never
+ * has to branch. Read that file before changing anything here.
  *
  * WHY `@capacitor/push-notifications` RATHER THAN THE FIREBASE SDK DIRECTLY
  * This app's UI is a WebView. A hand-written `FirebaseMessagingService` would
@@ -57,6 +68,27 @@ const plugin = async () => {
     pluginRef = { api: mod.PushNotifications };
   }
   return pluginRef;
+};
+
+/**
+ * Which platform this device is, for the token record.
+ *
+ * It used to be the literal string 'android', from when that was the only
+ * native build. It is reported to the backend as diagnostics — nothing routes
+ * on it — but a column that says every iPhone is an Android is worse than no
+ * column, and it is the first thing anybody would check when investigating why
+ * one platform is not receiving.
+ *
+ * Read off Capacitor's own global rather than a user-agent sniff, and defaulted
+ * to 'android' so a runtime that somehow reports nothing behaves exactly as
+ * this did before.
+ */
+const devicePlatform = () => {
+  try {
+    return window.Capacitor?.getPlatform?.() || 'android';
+  } catch {
+    return 'android';
+  }
 };
 
 /**
@@ -127,11 +159,11 @@ const syncToken = async (token) => {
   try {
     await notificationsApi.registerToken({
       token,
-      platform: 'android',
+      platform: devicePlatform(),
       // Diagnostics only. Never used to route anything.
       appVersion: import.meta.env.VITE_APP_VERSION || undefined,
     });
-    console.log('[push] device token registered');
+    console.log(`[push] device token registered (${devicePlatform()})`);
   } catch (err) {
     // A failed sync is recoverable: the next app start registers again. It must
     // never surface to the user, who did not ask for any of this.

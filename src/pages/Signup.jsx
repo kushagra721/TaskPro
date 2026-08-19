@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import BrandPanel from '../components/BrandPanel.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
 import { authApi } from '../api/client.js';
 
 export default function Signup() {
@@ -87,30 +88,30 @@ export default function Signup() {
             {fieldErrors.email && <div className="field__error">{fieldErrors.email}</div>}
           </div>
 
+          {/* Same reveal control as the login and reset forms — a toggle that
+              exists on one password field and not the next reads as a bug. */}
           <div className="field">
             <label className="field__label" htmlFor="password">Password</label>
-            <input
+            <PasswordInput
               id="password"
-              className={`input ${fieldErrors.password ? 'input--error' : ''}`}
-              type="password"
-              placeholder="At least 6 characters"
               autoComplete="new-password"
+              placeholder="At least 6 characters"
               value={form.password}
               onChange={update('password')}
+              invalid={Boolean(fieldErrors.password)}
             />
             {fieldErrors.password && <div className="field__error">{fieldErrors.password}</div>}
           </div>
 
           <div className="field">
             <label className="field__label" htmlFor="confirmPassword">Re-enter password</label>
-            <input
+            <PasswordInput
               id="confirmPassword"
-              className={`input ${fieldErrors.confirmPassword ? 'input--error' : ''}`}
-              type="password"
-              placeholder="Re-enter your password"
               autoComplete="new-password"
+              placeholder="Re-enter your password"
               value={form.confirmPassword}
               onChange={update('confirmPassword')}
+              invalid={Boolean(fieldErrors.confirmPassword)}
             />
             {fieldErrors.confirmPassword && <div className="field__error">{fieldErrors.confirmPassword}</div>}
           </div>

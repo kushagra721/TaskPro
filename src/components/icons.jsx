@@ -18,6 +18,20 @@ export const HomeIcon = ({ size, ...p }) => (
   </svg>
 );
 
+/**
+ * The "hidden" state for a password reveal: the eye with a stroke through it.
+ * `EyeIcon` (its counterpart) already exists further down — it was added for a
+ * document's "View" action and is reused here rather than duplicated.
+ */
+export const EyeOffIcon = ({ size, ...p }) => (
+  <svg {...base(size)} {...p}>
+    <path d="M9.9 5.7A9.6 9.6 0 0 1 12 5.5c6.5 0 10.1 6.5 10.1 6.5a17.9 17.9 0 0 1-3 3.9" />
+    <path d="M6.5 6.6A17.6 17.6 0 0 0 1.9 12S5.5 18.5 12 18.5a9.7 9.7 0 0 0 4-.8" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    <path d="M3 3l18 18" />
+  </svg>
+);
+
 export const GroupsIcon = ({ size, ...p }) => (
   <svg {...base(size)} {...p}>
     <path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />

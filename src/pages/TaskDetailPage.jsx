@@ -522,16 +522,21 @@ export default function TaskDetailPage() {
 
       {/* Fixed footer action bar. Portaled to body so `.page`'s transform can't
           trap the fixed positioning (same reason the FAB is portaled). */}
-      {/* The whole action bar is withheld from a CLIENT — in a client channel
-          too, which is the change here. Completing, cancelling, reopening and
-          accepting are all the supplier's calls on their own work: a customer
-          raises a request and is told the outcome, they do not close it
-          themselves. It previously showed in a client channel on the reasoning
-          that such a channel is shared ground, but that argument covers who may
-          *act on* the task, not who may declare it done. Hiding the bar
-          entirely also stops the page reserving its fixed footer height for
-          nothing. */}
-      {!isClient && createPortal(
+      {/* The action bar is withheld from a CLIENT with ONE exception: a
+          completed task, where they get Reopen and nothing else.
+
+          Completing, cancelling and accepting are the supplier's calls on their
+          own work — a customer raises a request and is told the outcome, they
+          do not close it themselves. Reopening is the opposite: "this is not
+          actually done" is the customer's judgement, and it is the only status
+          move that hands work BACK rather than settling it on the supplier's
+          behalf. The API enforces exactly this split (`updateTask` allows a
+          client COMPLETED → OPEN and refuses everything else), so the bar can
+          never offer a client something the server would reject.
+
+          A CANCELLED task shows nothing: that is the supplier having declined
+          the work, and re-raising it is a new request, not a status flip. */}
+      {(!isClient || task.status === 'COMPLETED') && createPortal(
         <div className="task-actionbar">
           <div className="task-actionbar__inner">
             {acceptError && <div className="alert alert--error">{acceptError}</div>}

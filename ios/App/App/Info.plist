@@ -49,6 +49,13 @@
       </array>
     </dict>
 	</dict>
+	<!-- Lets a data-only push wake the app in the background. Without it iOS
+	     holds silent/data pushes until the user next opens the app, which is
+	     indistinguishable from them never arriving. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

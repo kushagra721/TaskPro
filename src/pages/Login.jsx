@@ -6,6 +6,7 @@ import { authApi, domainStore } from '../api/client.js';
 import { setCredentials } from '../store/slices/authSlice.js';
 import { isNativeApp } from '../utils/native.js';
 import DomainPicker from '../components/DomainPicker.jsx';
+import PasswordInput from '../components/PasswordInput.jsx';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -195,16 +196,23 @@ export default function Login() {
           {mode === 'password' && (
             <div className="field">
               <label className="field__label" htmlFor="password">Password</label>
-              <input
+              <PasswordInput
                 id="password"
-                className={`input ${fieldErrors.password ? 'input--error' : ''}`}
-                type="password"
-                placeholder="Your password"
-                autoComplete="current-password"
                 value={form.password}
                 onChange={update('password')}
+                invalid={Boolean(fieldErrors.password)}
               />
               {fieldErrors.password && <div className="field__error">{fieldErrors.password}</div>}
+              {/* Only on the password lane. On the OTP lane there is no password
+                  to have forgotten — the code IS the credential — so offering a
+                  reset there would answer a question nobody asked. The email
+                  already typed is carried across so the reset page does not ask
+                  for it twice. */}
+              <p className="auth__forgot">
+                <Link className="link-btn" to="/forgot-password" state={{ email: form.email }}>
+                  Forgot password?
+                </Link>
+              </p>
             </div>
           )}
 

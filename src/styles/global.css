@@ -261,6 +261,47 @@ input {
   color: var(--text-faint);
 }
 
+/* Password field + reveal toggle (components/PasswordInput.jsx).
+   The padding-right on the field is what keeps a long password from running
+   under the eye button; the button itself is transparent and sits on top, so
+   the field keeps `.input`'s own border, focus ring and error state. */
+.pw-input {
+  position: relative;
+}
+
+.pw-input__field {
+  padding-right: 46px;
+}
+
+.pw-input__toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 50px;
+  width: 44px;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color 0.18s;
+}
+
+.pw-input__toggle:hover,
+.pw-input__toggle[aria-pressed='true'] {
+  color: var(--text-muted);
+}
+
+/* "Forgot password?" — right-aligned under the password field, so it reads as
+   belonging to that field rather than as another footer link competing with
+   "Login with OTP instead" below the button. */
+.auth__forgot {
+  margin-top: 8px;
+  text-align: right;
+}
+
 .input:focus {
   border-color: var(--primary);
   background: rgba(99, 102, 241, 0.08);
