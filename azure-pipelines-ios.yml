@@ -1,0 +1,541 @@
+# Console — iOS build and TestFlight upload
+#
+# This file does not belong in the Console repository. Copy it to the root of
+# the iOS application's own repository in Azure Repos, then create a pipeline
+# pointing at it. Console starts it over the REST API and hands it the
+# `parameters:` below; it holds no per-application knowledge of its own, so one
+# copy serves every app whose Xcode project lives in that repository.
+#
+# Why a pipeline at all: Apple has no API endpoint that accepts a binary, and an
+# .ipa can only be produced by Xcode on macOS. The Console server is Windows and
+# always will be. A macOS agent is the only place both can happen.
+#
+# What this pipeline does NOT do: submit to App Review. An upload always lands
+# in TestFlight and nowhere else — that is what Transporter does. Creating the
+# App Store version, attaching the build and submitting it are ordinary REST
+# calls, and Console makes them itself once the build has finished processing at
+# Apple. That keeps the decision to ship with the person pressing the button
+# rather than with a pipeline that has already ended.
+#
+# ---------------------------------------------------------------------------
+# WHAT KIND OF PROJECT THIS BUILDS
+#
+# Three shapes, told apart by what is in the checkout rather than by a setting:
+#
+#   Capacitor (capacitor.config.json)  the web app is compiled and copied into
+#                                      the iOS project before anything is built
+#   CocoaPods (Podfile)                pods are installed, and the .xcworkspace
+#                                      they generate is what gets built
+#   Plain Xcode (neither)              the .xcodeproj is built directly
+#
+# The Capacitor case is the one with a trap worth naming. `dist/` and
+# `ios/App/App/public` are both gitignored, so a fresh clone contains no web
+# assets at all — and Xcode does not mind. Skip the two steps that create them
+# and the build SUCCEEDS, uploads, installs, and opens to a blank screen. There
+# is no error anywhere to look for. Same for VITE_API_URL: without it a Vite
+# build silently falls back to a localhost address that means nothing on a
+# phone, so this pipeline refuses to build rather than shipping that.
+# ---------------------------------------------------------------------------
+
+# Console decides when a build happens, so a push must not start one.
+trigger: none
+pr: none
+
+# Sent by Console at queue time. Template parameters rather than variables:
+# a YAML pipeline only accepts a queue-time variable if someone first ticks
+# "settable at queue time" in the pipeline's UI, and a declaration that lives
+# in the repository is one fewer thing to have forgotten.
+parameters:
+  - name: bundleId
+    displayName: Bundle ID
+    type: string
+    default: ''
+  - name: appName
+    displayName: Application name
+    type: string
+    default: ''
+  - name: track
+    displayName: Track
+    type: string
+    default: testflight-internal
+    values:
+      - testflight-internal
+      - testflight-external
+      - appstore
+  # Which Xcode scheme to build. Empty means "the one named in variables below",
+  # which is what a repository holding a single app wants. A repository holding
+  # several sets it per application in Console, and one pipeline serves them all.
+  - name: scheme
+    displayName: Xcode scheme
+    type: string
+    default: ''
+  - name: consoleAppId
+    displayName: Console application id
+    type: string
+    default: ''
+
+variables:
+  # Nothing to fill in, deliberately. The Xcode project and its scheme are found
+  # on the agent, and the Apple team comes from the ios-signing variable group —
+  # so this file is byte-identical in every repository. With one app per
+  # repository that matters: fifteen copies with three hand-edited values each
+  # is forty-five chances to mistype something that only fails twenty minutes
+  # into a build.
+  # Used only when the repository does not pin one in .nvmrc
+  defaultNodeVersion: '22.x'
+  configuration: 'Release'
+  sdk: 'iphoneos'
+  archivePath: '$(Build.ArtifactStagingDirectory)/archive.xcarchive'
+  exportPath: '$(Build.ArtifactStagingDirectory)/ipa'
+
+pool:
+  vmImage: 'macOS-latest'
+
+steps:
+  - checkout: self
+    # Tags and history are not needed to build one commit, and a shallow clone
+    # is markedly faster on a repository with any age to it
+    fetchDepth: 1
+
+  - script: |
+      echo "Application : ${{ parameters.appName }}"
+      echo "Bundle ID   : ${{ parameters.bundleId }}"
+      echo "Track       : ${{ parameters.track }}"
+      echo "Console id  : ${{ parameters.consoleAppId }}"
+      echo "Build number: $(Build.BuildId)"
+    displayName: 'What Console asked for'
+
+  # ---------------------------------------------------------------------------
+  # JavaScript dependencies, for a React Native repository.
+  #
+  # Skipped entirely when there is no package.json, so a native Swift or
+  # Objective-C repository pays nothing for this step existing.
+  #
+  # The node version is the repository's own if it pins one. Nothing is pinned
+  # here: a React Native app that needs node 18 and one that needs node 22 are
+  # both real, and this file has no business deciding.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      if [ ! -f package.json ]; then
+        echo "No package.json — not a JavaScript project, nothing to install."
+        exit 0
+      fi
+
+      if [ -f .nvmrc ]; then
+        echo "Repository pins node $(cat .nvmrc) in .nvmrc"
+        # nvm is on the hosted image but not in a non-interactive shell's PATH
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && nvm install && nvm use
+      fi
+      node --version
+
+      if [ -f yarn.lock ]; then
+        echo "yarn.lock present — yarn install"
+        yarn install --frozen-lockfile
+      elif [ -f package-lock.json ]; then
+        echo "package-lock.json present — npm ci"
+        npm ci
+      else
+        echo "No lockfile — npm install"
+        npm install
+      fi
+    displayName: 'Install JavaScript dependencies'
+
+  # ---------------------------------------------------------------------------
+  # Capacitor: compile the web app and copy it into the iOS project.
+  #
+  # Both outputs are gitignored, so on a fresh clone they do not exist and these
+  # steps are the only thing that creates them. Skipping them does not fail —
+  # it produces a signed app with no content in it.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
+        echo "No capacitor config — not a Capacitor project, nothing to build."
+        exit 0
+      fi
+
+      # Vite reads configuration from .env at build time, and .env is gitignored
+      # precisely because it differs per environment. An unset VITE_API_URL does
+      # not fail the build: Vite substitutes undefined, the app falls back to a
+      # localhost address, and every request from the phone fails with nothing
+      # in the build log to explain it. Refusing here is the only place this can
+      # still be caught.
+      if [ -z "${VITE_API_URL:-}" ]; then
+        echo "VITE_API_URL is not set."
+        echo "Add it to the pipeline's variable group. Without it the app is built"
+        echo "pointing at a localhost address that means nothing on a device, and"
+        echo "nothing later in this build would notice."
+        exit 1
+      fi
+      case "$VITE_API_URL" in
+        https://*) ;;
+        *)
+          # iOS App Transport Security blocks cleartext HTTP unless the app
+          # carries an exception, which a Capacitor default project does not
+          echo "VITE_API_URL must be https for an iOS build (got: $VITE_API_URL)"
+          exit 1
+          ;;
+      esac
+      echo "VITE_API_URL=$VITE_API_URL" > .env
+      echo "Building against: $VITE_API_URL"
+
+      npm run build
+      npx cap sync ios
+    displayName: 'Build the web app and sync it into iOS'
+
+  - script: |
+      set -euo pipefail
+      # `npx cap sync ios` run on WINDOWS writes the Swift Package Manager paths
+      # with backslashes. On macOS a backslash is not a path separator, and in a
+      # Swift string literal `\n` is a newline and `\@` is an invalid escape — so
+      # the manifest does not parse and Xcode reports the unhelpful "Missing
+      # package product". Syncing on macOS rewrites it correctly, which makes
+      # this a no-op most of the time; it is here because the file is committed
+      # and one sync from a Windows machine puts it back.
+      MANIFEST=$(find ios -name 'Package.swift' -not -path '*/node_modules/*' 2>/dev/null | head -1)
+      if [ -z "$MANIFEST" ]; then
+        echo "No Swift package manifest — nothing to normalise."
+        exit 0
+      fi
+      python3 - "$MANIFEST" <<'PY'
+      import io, re, sys
+      p = sys.argv[1]
+      s = io.open(p, encoding='utf-8').read()
+      fixed, n = re.subn(r'path:\s*"([^"]*)"',
+                         lambda m: 'path: "%s"' % m.group(1).replace(chr(92), '/'), s)
+      if fixed != s:
+          io.open(p, 'w', encoding='utf-8', newline='\n').write(fixed)
+          print('normalised %d path literal(s) in %s' % (n, p))
+      else:
+          print('paths already POSIX in %s — nothing to do' % p)
+      PY
+    displayName: 'Normalise Swift package paths'
+
+  # ---------------------------------------------------------------------------
+  # CocoaPods.
+  #
+  # This is why it runs before the project is looked for: in a React Native
+  # repository the .xcworkspace is *generated here*. It is not in the checkout,
+  # and looking for it first would find nothing and stop.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      PODFILE=$(find . -maxdepth 2 -name 'Podfile' -not -path '*/Pods/*' | head -1)
+      if [ -z "$PODFILE" ]; then
+        echo "No Podfile — nothing to install."
+        exit 0
+      fi
+      PODDIR=$(dirname "$PODFILE")
+      echo "Podfile: $PODFILE"
+      cd "$PODDIR"
+
+      # A stale local spec repo is the commonest pod failure and --repo-update
+      # is the cure, but it costs minutes — so it is the retry, not the default
+      pod install || {
+        echo "pod install failed — retrying with --repo-update"
+        pod install --repo-update
+      }
+    displayName: 'Install CocoaPods'
+
+  # ---------------------------------------------------------------------------
+  # Find what to build, rather than being told.
+  #
+  # A repository contains exactly one .xcworkspace or .xcodeproj, and Xcode
+  # itself can list the schemes inside it — so both are facts about the checkout
+  # and neither needs to be written down. What cannot be worked out is which
+  # scheme to pick when there are several, and that is precisely the case where
+  # Console has been told: it sends one.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+
+      # A workspace wins over a project: a repository using CocoaPods or local
+      # Swift packages has both, and building the project alone fails on the
+      # missing dependencies.
+      # node_modules is excluded everywhere below: React Native libraries ship
+      # example apps, and an example app has a perfectly real .xcworkspace and
+      # Info.plist that would be found in preference to the actual one.
+      TARGET=$(find . -maxdepth 4 -name '*.xcworkspace' \
+                 -not -path '*/.*' -not -path '*/Pods/*' \
+                 -not -path '*/node_modules/*' -not -path '*.xcodeproj/*' | head -1)
+      KIND=-workspace
+      if [ -z "$TARGET" ]; then
+        TARGET=$(find . -maxdepth 4 -name '*.xcodeproj' -not -path '*/.*' \
+                   -not -path '*/node_modules/*' | head -1)
+        KIND=-project
+      fi
+      if [ -z "$TARGET" ]; then
+        echo "No .xcworkspace or .xcodeproj found within three levels of the repository root."
+        exit 1
+      fi
+      echo "Building $KIND $TARGET"
+
+      SCHEMES=$(xcodebuild -list -json $KIND "$TARGET" | python3 -c \
+        "import sys,json; d=json.load(sys.stdin); print('\n'.join((d.get('workspace') or d.get('project'))['schemes']))")
+      echo "Schemes in this project:"
+      echo "$SCHEMES" | sed 's/^/  /'
+
+      WANTED="${{ parameters.scheme }}"
+      if [ -n "$WANTED" ]; then
+        # Named by Console. Checked against the list rather than trusted, so a
+        # scheme renamed in Xcode fails here with the real list in front of you
+        # instead of as an opaque xcodebuild error later.
+        if ! echo "$SCHEMES" | grep -qxF "$WANTED"; then
+          echo
+          echo "Console asked for scheme \"$WANTED\", which this project does not have."
+          echo "Fix it under Build settings on the application's Build tab."
+          exit 1
+        fi
+        SCHEME="$WANTED"
+      elif [ "$(echo "$SCHEMES" | grep -c .)" -eq 1 ]; then
+        SCHEME=$(echo "$SCHEMES" | head -1)
+      else
+        echo
+        echo "This project has more than one scheme and Console named none."
+        echo "Set the Xcode scheme under Build settings on the application's Build tab."
+        exit 1
+      fi
+
+      # A scheme Xcode can see is not necessarily one the agent can build: only
+      # a Shared scheme is committed, and a personal one lives in a .xcuserdata
+      # directory that never leaves the developer's machine
+      echo
+      echo "Building scheme: $SCHEME"
+      echo "##vso[task.setvariable variable=effectiveScheme]$SCHEME"
+      echo "##vso[task.setvariable variable=xcodeWorkspace]$TARGET"
+      # -workspace or -project: later steps that call xcodebuild directly need
+      # the right flag, and guessing it from the extension in three places is
+      # three places to get it wrong
+      echo "##vso[task.setvariable variable=xcodeTargetKind]$KIND"
+    displayName: 'Find the project and scheme'
+
+  # ---------------------------------------------------------------------------
+  # Signing. Both files are Secure Files in the pipeline library:
+  #   Pipelines → Library → Secure files
+  # The certificate password is a secret variable, ideally from a variable group.
+  # ---------------------------------------------------------------------------
+  - task: InstallAppleCertificate@2
+    displayName: 'Install the distribution certificate'
+    inputs:
+      certSecureFile: 'ios_distribution.p12'
+      certPwd: '$(APPLE_CERT_PASSWORD)'
+      keychain: 'temp'
+      # A keychain that exists only for this run — a hosted agent is discarded
+      # afterwards anyway, but a self-hosted Mac is not
+      deleteCert: true
+
+  - task: InstallAppleProvisioningProfile@1
+    displayName: 'Install the provisioning profile'
+    inputs:
+      provisioningProfileLocation: 'secureFiles'
+      provProfileSecureFile: 'ios_appstore.mobileprovision'
+      removeProfile: true
+
+  # ---------------------------------------------------------------------------
+  # The build number must rise with every upload — Apple refuses a build number
+  # it has already seen for a version, and that refusal comes at the end of a
+  # twenty-minute run. $(Build.BuildId) is unique and monotonic per organization,
+  # so it is the cheapest thing that is always correct.
+  #
+  # The marketing version (CFBundleShortVersionString) is deliberately left to
+  # the repository: it is a decision about the product, not about this run.
+  #
+  # Finding the right Info.plist is the fiddly part. A React Native repository
+  # has several — the app's, a test target's, and one inside every pod — and
+  # stamping the wrong one silently uploads the build number the repository
+  # already had. The app's plist sits in a directory named after the scheme, so
+  # that is looked for first; the fallbacks only ever consider plists that carry
+  # a CFBundleVersion and are not test targets.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+
+      PLIST=""
+      # 1. ios/<Scheme>/Info.plist, or <Scheme>/Info.plist — the normal layout
+      for candidate in "ios/$(effectiveScheme)/Info.plist" "$(effectiveScheme)/Info.plist"; do
+        if [ -f "$candidate" ]; then PLIST="$candidate"; break; fi
+      done
+
+      # 2. Anything that looks like an application's plist. Tests and pods are
+      #    excluded by path; a plist without CFBundleVersion is not an app's.
+      if [ -z "$PLIST" ]; then
+        # Via a file, not a pipe: a while loop on the right of a pipe runs in a
+        # subshell, and PLIST set inside it would be lost on the way out
+        find . -name 'Info.plist' -not -path '*/node_modules/*' | sort \
+          > "$(Agent.TempDirectory)/plists.txt"
+        while IFS= read -r p; do
+          case "$p" in
+            *Tests/*|*Test/*|*/Pods/*|*/build/*|*.xcodeproj/*) continue;;
+          esac
+          if /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$p" >/dev/null 2>&1; then
+            PLIST="$p"; break
+          fi
+        done < "$(Agent.TempDirectory)/plists.txt"
+      fi
+
+      if [ -z "$PLIST" ]; then
+        echo "Could not find the application's Info.plist."
+        echo "Every Info.plist in the checkout:"
+        find . -name 'Info.plist' -not -path '*/node_modules/*' | sed 's/^/  /'
+        exit 1
+      fi
+
+      echo "Info.plist: $PLIST"
+
+      # How the build number is stored decides how to change it. A modern Xcode
+      # project keeps CFBundleVersion as a reference to a build setting, and
+      # overwriting the reference with a literal would work for this build while
+      # quietly breaking the project's own versioning. agvtool edits the setting
+      # itself, which is what the reference points at.
+      CURRENT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST" 2>/dev/null || echo "")
+      case "$CURRENT" in
+        '$'*)
+          echo "CFBundleVersion is a build setting reference — using agvtool"
+          # agvtool works on the directory holding the project, not the plist
+          TARGET_PATH="$(xcodeWorkspace)"
+          PROJECT_DIR=$(dirname "$TARGET_PATH")
+          ( cd "$PROJECT_DIR" && agvtool new-version -all "$(Build.BuildId)" )
+          ;;
+        *)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(Build.BuildId)" "$PLIST"
+          ;;
+      esac
+      echo "Build number set to $(Build.BuildId)"
+      echo "##vso[task.setvariable variable=buildNumber]$(Build.BuildId)"
+      # The export compliance step needs the same plist, and finding it twice
+      # risks the two steps disagreeing about which one is the app's
+      echo "##vso[task.setvariable variable=appInfoPlist]$PLIST"
+
+      # Printed for the log only — Console reads the real version back from
+      # Apple after the upload. A modern Xcode project stores a build setting
+      # reference here rather than the number, and resolving that would mean
+      # parsing the pbxproj for a value nothing downstream uses.
+      MARKETING=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST" 2>/dev/null || echo "")
+      case "$MARKETING" in
+        ""|'$'*) echo "Marketing version is set from a build setting, not the plist — Apple will report the real one." ;;
+        *)       echo "CFBundleShortVersionString is $MARKETING" ;;
+      esac
+    displayName: 'Stamp the build number'
+
+  # ---------------------------------------------------------------------------
+  # Export compliance.
+  #
+  # Without this key App Store Connect halts every TestFlight build to ask
+  # whether the app uses encryption, and the build sits in "Missing Compliance"
+  # until a person answers in the browser.
+  #
+  # This mirrors a declaration the repository already makes — see the same step
+  # in codemagic.yaml, where the reasoning is written down: the app talks only
+  # HTTPS, which is exempt. It is repeated here so moving to this pipeline does
+  # not silently drop an answer the team already gave, NOT because a pipeline is
+  # the right place to decide it. The right place is the committed Info.plist;
+  # if the answer ever changes, change it there and delete this step.
+  #
+  # Console itself never answers this. When Apple is waiting on a build, Console
+  # says so and stops.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      PLIST="$(appInfoPlist)"
+      if /usr/libexec/PlistBuddy -c "Print :ITSAppUsesNonExemptEncryption" "$PLIST" >/dev/null 2>&1; then
+        echo "Already declared in $PLIST — leaving it alone."
+        exit 0
+      fi
+      if [ "${DECLARE_EXPORT_COMPLIANCE:-true}" != "true" ]; then
+        echo "DECLARE_EXPORT_COMPLIANCE is not true — not declaring anything."
+        echo "The build will wait in App Store Connect for the answer."
+        exit 0
+      fi
+      /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$PLIST"
+      echo "Declared ITSAppUsesNonExemptEncryption = false in $PLIST"
+    displayName: 'Declare export compliance'
+
+  - script: |
+      set -euo pipefail
+      # Capacitor 8 wires its iOS plugins through Swift Package Manager. Resolving
+      # here rather than letting the archive do it implicitly means a package that
+      # fails to fetch says so on its own line, instead of inside a wall of
+      # compiler output.
+      xcodebuild "$(xcodeTargetKind)" "$(xcodeWorkspace)" \
+        -scheme "$(effectiveScheme)" -resolvePackageDependencies
+    displayName: 'Resolve Swift package dependencies'
+
+  - task: Xcode@5
+    displayName: 'Archive'
+    inputs:
+      actions: 'archive'
+      configuration: '$(configuration)'
+      sdk: '$(sdk)'
+      xcWorkspacePath: '$(xcodeWorkspace)'
+      scheme: '$(effectiveScheme)'
+      packageApp: true
+      archivePath: '$(archivePath)'
+      exportPath: '$(exportPath)'
+      exportOptions: 'specify'
+      exportMethod: 'app-store'
+      # From the ios-signing variable group: one Apple organization is one team,
+      # so it belongs beside that organization's certificate rather than being
+      # repeated in every repository that signs with it
+      exportTeamId: '$(APPLE_TEAM_ID)'
+      signingOption: 'manual'
+      signingIdentity: '$(APPLE_CERTIFICATE_SIGNING_IDENTITY)'
+      provisioningProfileUuid: '$(APPLE_PROV_PROFILE_UUID)'
+      # Both variables above are set by the two install tasks — not by hand
+
+  # ---------------------------------------------------------------------------
+  # Upload. altool wants the App Store Connect key on disk at a fixed path it
+  # will not be told about, so it is written there rather than passed.
+  #
+  # Use the SAME key Console holds for this Apple organization. A second key
+  # works, but then two things can be revoked and only one of them is visible in
+  # Console, which is how a release fails for a reason nobody can see.
+  # ---------------------------------------------------------------------------
+  - task: DownloadSecureFile@1
+    name: ascKey
+    displayName: 'Fetch the App Store Connect key'
+    inputs:
+      secureFile: 'AuthKey.p8'
+
+  - script: |
+      set -euo pipefail
+      mkdir -p ~/.appstoreconnect/private_keys
+      cp "$(ascKey.secureFilePath)" ~/.appstoreconnect/private_keys/AuthKey_$(ASC_KEY_ID).p8
+
+      IPA=$(find "$(exportPath)" -name '*.ipa' | head -1)
+      if [ -z "$IPA" ]; then
+        echo "No .ipa was produced — the archive step exported nothing."
+        exit 1
+      fi
+      echo "Uploading $IPA"
+
+      # validate-app first: it catches a wrong bundle id, a missing icon or an
+      # unsigned binary in about a minute, where upload-app finds the same thing
+      # after transferring the whole file
+      xcrun altool --validate-app -f "$IPA" -t ios \
+        --apiKey "$(ASC_KEY_ID)" --apiIssuer "$(ASC_ISSUER_ID)"
+
+      xcrun altool --upload-app -f "$IPA" -t ios \
+        --apiKey "$(ASC_KEY_ID)" --apiIssuer "$(ASC_ISSUER_ID)"
+
+      echo "Uploaded. Apple now processes the build; it appears in TestFlight in 5-30 minutes."
+    displayName: 'Upload to App Store Connect'
+    env:
+      # Named here so a missing variable group fails with something readable
+      ASC_KEY_ID: $(ASC_KEY_ID)
+      ASC_ISSUER_ID: $(ASC_ISSUER_ID)
+
+  - script: |
+      rm -f ~/.appstoreconnect/private_keys/AuthKey_$(ASC_KEY_ID).p8
+    displayName: 'Remove the key from the agent'
+    condition: always()
+    # always(): a failed upload is exactly when the key must not be left behind,
+    # and on a self-hosted Mac the agent is not discarded afterwards
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Keep the .ipa'
+    condition: succeededOrFailed()
+    inputs:
+      pathToPublish: '$(exportPath)'
+      artifactName: 'ipa'
