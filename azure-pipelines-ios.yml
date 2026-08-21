@@ -92,6 +92,52 @@ pool:
   vmImage: 'macOS-latest'
 
 steps:
+  # ---------------------------------------------------------------------------
+  # Everything this pipeline needs from the variable group, checked first.
+  #
+  # This exists because naming the secure files through variables costs the
+  # fast check that used to catch a wrong name: with a literal name Azure DevOps
+  # validates the reference before scheduling and a mistake fails in under a
+  # second, but a variable cannot be resolved that early, so the same mistake
+  # would surface minutes in — after a checkout and an npm install. This gets
+  # the seconds back for the commonest case, an unset variable, and lists every
+  # missing one at once rather than one per run.
+  #
+  # A secret variable is not placed in the environment automatically, which is
+  # why each is mapped explicitly below. Only whether they are empty is ever
+  # looked at; nothing here prints a value.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -uo pipefail
+      MISSING=""
+      for v in CERT_SECURE_FILE PROV_PROFILE_SECURE_FILE ASC_KEY_SECURE_FILE \
+               APPLE_TEAM_ID APPLE_CERT_PASSWORD ASC_KEY_ID ASC_ISSUER_ID; do
+        eval "value=\${$v:-}"
+        if [ -z "$value" ]; then MISSING="$MISSING  $v\n"; fi
+      done
+      if [ -n "$MISSING" ]; then
+        echo "The pipeline is missing configuration:"
+        printf "$MISSING"
+        echo
+        echo "All of these live in the ios-signing variable group, which must also"
+        echo "be linked to this pipeline: Edit -> Variables -> Variable groups -> Link."
+        exit 1
+      fi
+      echo "Configuration present:"
+      echo "  certificate     $CERT_SECURE_FILE"
+      echo "  profile         $PROV_PROFILE_SECURE_FILE"
+      echo "  App Store key   $ASC_KEY_SECURE_FILE"
+      echo "  Apple team      $APPLE_TEAM_ID"
+    displayName: 'Check the pipeline is configured'
+    env:
+      CERT_SECURE_FILE: $(CERT_SECURE_FILE)
+      PROV_PROFILE_SECURE_FILE: $(PROV_PROFILE_SECURE_FILE)
+      ASC_KEY_SECURE_FILE: $(ASC_KEY_SECURE_FILE)
+      APPLE_TEAM_ID: $(APPLE_TEAM_ID)
+      APPLE_CERT_PASSWORD: $(APPLE_CERT_PASSWORD)
+      ASC_KEY_ID: $(ASC_KEY_ID)
+      ASC_ISSUER_ID: $(ASC_ISSUER_ID)
+
   - checkout: self
     # Tags and history are not needed to build one commit, and a shallow clone
     # is markedly faster on a repository with any age to it
@@ -106,14 +152,14 @@ steps:
     displayName: 'What Console asked for'
 
   # ---------------------------------------------------------------------------
-  # JavaScript dependencies, for a React Native repository.
+  # JavaScript dependencies, for a Capacitor or React Native repository.
   #
   # Skipped entirely when there is no package.json, so a native Swift or
   # Objective-C repository pays nothing for this step existing.
   #
   # The node version is the repository's own if it pins one. Nothing is pinned
-  # here: a React Native app that needs node 18 and one that needs node 22 are
-  # both real, and this file has no business deciding.
+  # here: an app that needs node 18 and one that needs node 22 are both real,
+  # and this file has no business deciding.
   # ---------------------------------------------------------------------------
   - script: |
       set -euo pipefail
@@ -319,7 +365,11 @@ steps:
   - task: InstallAppleCertificate@2
     displayName: 'Install the distribution certificate'
     inputs:
-      certSecureFile: 'ios_distribution.p12'
+      # Named through the variable group, not here: a certificate is replaced
+      # when it expires, and doing that should not mean a commit to fifteen
+      # repositories. Apple's own export names are long and team-specific, so
+      # this also avoids renaming the file before uploading it.
+      certSecureFile: '$(CERT_SECURE_FILE)'
       certPwd: '$(APPLE_CERT_PASSWORD)'
       keychain: 'temp'
       # A keychain that exists only for this run — a hosted agent is discarded
@@ -330,7 +380,7 @@ steps:
     displayName: 'Install the provisioning profile'
     inputs:
       provisioningProfileLocation: 'secureFiles'
-      provProfileSecureFile: 'ios_appstore.mobileprovision'
+      provProfileSecureFile: '$(PROV_PROFILE_SECURE_FILE)'
       removeProfile: true
 
   # ---------------------------------------------------------------------------
@@ -496,7 +546,7 @@ steps:
     name: ascKey
     displayName: 'Fetch the App Store Connect key'
     inputs:
-      secureFile: 'AuthKey.p8'
+      secureFile: '$(ASC_KEY_SECURE_FILE)'
 
   - script: |
       set -euo pipefail
