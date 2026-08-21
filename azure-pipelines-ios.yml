@@ -730,6 +730,11 @@ steps:
       # the same way — an earlier run reported only two errors at a time, which
       # made this one look exempt. It is not.
       secureFile: 'AuthKey.p8'
+      # A hosted agent's DNS occasionally blinks — run 1532 died on
+      # "getaddrinfo ENOTFOUND dev.azure.com" fetching this, with the
+      # certificate and profile already installed. Nothing about that is worth
+      # a whole run.
+      retryCount: 3
 
   - script: |
       set -euo pipefail
