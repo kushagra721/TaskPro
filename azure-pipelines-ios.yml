@@ -566,29 +566,41 @@ steps:
         -scheme "$(effectiveScheme)" -resolvePackageDependencies
     displayName: 'Resolve Swift package dependencies'
 
-  # Archive only. Exporting is a separate step below, because the two need
-  # different things and doing them in one task means the export cannot be told
-  # what it needs — see there.
-  - task: Xcode@5
+  # ---------------------------------------------------------------------------
+  # Archive, calling xcodebuild directly.
+  #
+  # Not the Xcode task, for two reasons learned the hard way. It pipes output
+  # through xcpretty, which on a failure prints "** ARCHIVE FAILED **" and drops
+  # the error that caused it. And with packageApp disabled it quietly stops
+  # passing -archivePath, so the archive lands in DerivedData and the next step
+  # cannot find what the log says was built successfully.
+  #
+  # The signing identity and profile come from the two install tasks. They are
+  # mapped explicitly below rather than relied on as ambient environment.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      rm -rf "$(archivePath)"
+      xcodebuild \
+        "$(xcodeTargetKind)" "$(xcodeWorkspace)" \
+        -scheme "$(effectiveScheme)" \
+        -sdk "$(sdk)" \
+        -configuration "$(configuration)" \
+        -archivePath "$(archivePath)" \
+        archive \
+        CODE_SIGN_STYLE=Manual \
+        CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+        PROVISIONING_PROFILE="$PROV_PROFILE_UUID"
+
+      if [ ! -d "$(archivePath)" ]; then
+        echo "xcodebuild reported success but wrote no archive at $(archivePath)."
+        exit 1
+      fi
+      echo "Archived to $(archivePath)"
     displayName: 'Archive'
-    inputs:
-      actions: 'archive'
-      configuration: '$(configuration)'
-      sdk: '$(sdk)'
-      xcWorkspacePath: '$(xcodeWorkspace)'
-      scheme: '$(effectiveScheme)'
-      packageApp: false
-      archivePath: '$(archivePath)'
-      signingOption: 'manual'
-      signingIdentity: '$(APPLE_CERTIFICATE_SIGNING_IDENTITY)'
-      provisioningProfileUuid: '$(APPLE_PROV_PROFILE_UUID)'
-      # Both variables above are set by the two install tasks — not by hand
-      #
-      # xcpretty summarises xcodebuild's output and, on a failure, summarises
-      # away the reason: the log ends at "** ARCHIVE FAILED **" with the actual
-      # compiler or signing error nowhere in it. A readable failure is worth
-      # more than a tidy success, so the raw output stays.
-      useXcpretty: false
+    env:
+      SIGNING_IDENTITY: $(APPLE_CERTIFICATE_SIGNING_IDENTITY)
+      PROV_PROFILE_UUID: $(APPLE_PROV_PROFILE_UUID)
 
   # ---------------------------------------------------------------------------
   # Export the .ipa.
