@@ -339,10 +339,24 @@ steps:
 
       SCHEMES=$(xcodebuild -list -json $KIND "$TARGET" | python3 -c \
         "import sys,json; d=json.load(sys.stdin); print('\n'.join((d.get('workspace') or d.get('project'))['schemes']))")
-      echo "Schemes in this project:"
+      echo "Schemes xcodebuild reports:"
       echo "$SCHEMES" | sed 's/^/  /'
 
+      # The ones the project itself ships. A scheme committed under
+      # xcshareddata/xcschemes belongs to this project; the rest are contributed
+      # by resolved Swift packages, which is why a Capacitor app reports five
+      # schemes when it has one — CapacitorApp, CapacitorStatusBar and friends
+      # are packages, not things to build and upload.
+      OWN=$(find "$TARGET/xcshareddata/xcschemes" -name '*.xcscheme' 2>/dev/null \
+              | sed 's|.*/||; s|\.xcscheme$||' | sort)
+      if [ -n "$OWN" ]; then
+        echo "Schemes this project ships:"
+        echo "$OWN" | sed 's/^/  /'
+      fi
+
       WANTED="${{ parameters.scheme }}"
+      OWN_COUNT=$(echo "$OWN" | grep -c . || true)
+
       if [ -n "$WANTED" ]; then
         # Named by Console. Checked against the list rather than trusted, so a
         # scheme renamed in Xcode fails here with the real list in front of you
@@ -354,11 +368,19 @@ steps:
           exit 1
         fi
         SCHEME="$WANTED"
+      elif [ "$OWN_COUNT" -eq 1 ]; then
+        SCHEME=$(echo "$OWN" | head -1)
       elif [ "$(echo "$SCHEMES" | grep -c .)" -eq 1 ]; then
         SCHEME=$(echo "$SCHEMES" | head -1)
       else
         echo
-        echo "This project has more than one scheme and Console named none."
+        if [ "$OWN_COUNT" -gt 1 ]; then
+          echo "This project ships more than one scheme and Console named none."
+        else
+          echo "This project ships no shared scheme, so there is nothing to pick from."
+          echo "In Xcode: Product -> Scheme -> Manage Schemes, tick Shared, and commit"
+          echo "the .xcscheme file it writes."
+        fi
         echo "Set the Xcode scheme under Build settings on the application's Build tab."
         exit 1
       fi
