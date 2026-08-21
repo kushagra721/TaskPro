@@ -566,6 +566,9 @@ steps:
         -scheme "$(effectiveScheme)" -resolvePackageDependencies
     displayName: 'Resolve Swift package dependencies'
 
+  # Archive only. Exporting is a separate step below, because the two need
+  # different things and doing them in one task means the export cannot be told
+  # what it needs — see there.
   - task: Xcode@5
     displayName: 'Archive'
     inputs:
@@ -574,15 +577,8 @@ steps:
       sdk: '$(sdk)'
       xcWorkspacePath: '$(xcodeWorkspace)'
       scheme: '$(effectiveScheme)'
-      packageApp: true
+      packageApp: false
       archivePath: '$(archivePath)'
-      exportPath: '$(exportPath)'
-      exportOptions: 'specify'
-      exportMethod: 'app-store'
-      # From the ios-signing variable group: one Apple organization is one team,
-      # so it belongs beside that organization's certificate rather than being
-      # repeated in every repository that signs with it
-      exportTeamId: '$(APPLE_TEAM_ID)'
       signingOption: 'manual'
       signingIdentity: '$(APPLE_CERTIFICATE_SIGNING_IDENTITY)'
       provisioningProfileUuid: '$(APPLE_PROV_PROFILE_UUID)'
@@ -593,6 +589,59 @@ steps:
       # compiler or signing error nowhere in it. A readable failure is worth
       # more than a tidy success, so the raw output stays.
       useXcpretty: false
+
+  # ---------------------------------------------------------------------------
+  # Export the .ipa.
+  #
+  # Manual signing requires an ExportOptions.plist that maps each bundle
+  # identifier to the profile to sign it with. The Xcode task's own export
+  # writes only the method and team, so the export fails with
+  # 'exportArchive "App.app" requires a provisioning profile' — after a
+  # successful archive, which makes it look like a signing problem when it is a
+  # missing two-line mapping.
+  #
+  # The bundle identifier is read out of the archive rather than taken from what
+  # Console sent. Console's record is what someone typed; the archive is what
+  # was actually built, and if they disagree the export is the wrong place to
+  # find out.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      APP=$(find "$(archivePath)/Products/Applications" -maxdepth 1 -name '*.app' | head -1)
+      if [ -z "$APP" ]; then
+        echo "The archive contains no .app — nothing to export."
+        exit 1
+      fi
+      BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP/Info.plist")
+      echo "archive:   $APP"
+      echo "bundle id: $BUNDLE_ID"
+      echo "profile:   $(APPLE_PROV_PROFILE_UUID)"
+
+      PLIST="$(Agent.TempDirectory)/ExportOptions.plist"
+      cat > "$PLIST" <<PLISTEOF
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+        <key>method</key><string>app-store</string>
+        <key>teamID</key><string>$(APPLE_TEAM_ID)</string>
+        <key>signingStyle</key><string>manual</string>
+        <key>uploadSymbols</key><true/>
+        <key>provisioningProfiles</key>
+        <dict>
+          <key>${BUNDLE_ID}</key><string>$(APPLE_PROV_PROFILE_UUID)</string>
+        </dict>
+      </dict>
+      </plist>
+      PLISTEOF
+      echo "--- ExportOptions.plist ---"
+      cat "$PLIST"
+
+      xcodebuild -exportArchive \
+        -archivePath "$(archivePath)" \
+        -exportOptionsPlist "$PLIST" \
+        -exportPath "$(exportPath)"
+    displayName: 'Export the .ipa'
 
   # ---------------------------------------------------------------------------
   # Upload. altool wants the App Store Connect key on disk at a fixed path it
