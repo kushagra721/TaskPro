@@ -674,8 +674,26 @@ steps:
 
   - script: |
       set -euo pipefail
+
+      # altool answers every credential problem with the same "Failure to
+      # authenticate" and says nothing about which credential — so what it was
+      # given is printed here. The Key ID and Issuer ID are identifiers, not
+      # secrets; the .p8 is the secret and only its shape is checked.
+      KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_$(ASC_KEY_ID).p8
       mkdir -p ~/.appstoreconnect/private_keys
-      cp "$(ascKey.secureFilePath)" ~/.appstoreconnect/private_keys/AuthKey_$(ASC_KEY_ID).p8
+      cp "$(ascKey.secureFilePath)" "$KEY_PATH"
+
+      echo "Key ID    : $(ASC_KEY_ID)"
+      echo "Issuer ID : $(ASC_ISSUER_ID)"
+      echo "Key file  : $KEY_PATH ($(wc -c < "$KEY_PATH" | tr -d ' ') bytes)"
+      if ! head -1 "$KEY_PATH" | grep -q 'BEGIN PRIVATE KEY'; then
+        echo
+        echo "That file is not a PKCS#8 private key — its first line reads:"
+        head -1 "$KEY_PATH"
+        echo "An App Store Connect .p8 begins with -----BEGIN PRIVATE KEY-----."
+        exit 1
+      fi
+      echo
 
       IPA=$(find "$(exportPath)" -name '*.ipa' | head -1)
       if [ -z "$IPA" ]; then
