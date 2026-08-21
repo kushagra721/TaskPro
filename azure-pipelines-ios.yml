@@ -92,6 +92,10 @@ variables:
   # every repository.
   - name: defaultNodeVersion      # only when the repository has no .nvmrc
     value: '22.x'
+  # Apple refuses an upload built with an older SDK than this, and refuses it
+  # server-side after the whole build has run. Raised when Apple raises it.
+  - name: requiredXcodeMajor
+    value: '26'
   - name: configuration
     value: 'Release'
   - name: sdk
@@ -169,6 +173,52 @@ steps:
       echo "Console id  : ${{ parameters.consoleAppId }}"
       echo "Build number: $(Build.BuildId)"
     displayName: 'What Console asked for'
+
+  # ---------------------------------------------------------------------------
+  # Choose the Xcode to build with.
+  #
+  # Apple rejects an upload built against an SDK older than it currently
+  # requires — and rejects it at the far end, after the archive, the export and
+  # the transfer, with a 409 that mentions neither the agent nor Xcode's
+  # version. The hosted image carries several Xcodes and its default is usually
+  # not the newest, so this picks the newest and fails here if that is still too
+  # old. Twenty seconds instead of twenty-five minutes.
+  # ---------------------------------------------------------------------------
+  - script: |
+      set -euo pipefail
+      echo "Xcode versions on this agent:"
+      BEST=""; BEST_MAJOR=0; BEST_VERSION=""
+      for app in /Applications/Xcode*.app; do
+        [ -d "$app" ] || continue
+        V=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
+              "$app/Contents/Info.plist" 2>/dev/null) || continue
+        echo "  $V   $app"
+        MAJOR=${V%%.*}
+        case "$MAJOR" in
+          ''|*[!0-9]*) continue ;;
+        esac
+        if [ "$MAJOR" -gt "$BEST_MAJOR" ]; then
+          BEST_MAJOR=$MAJOR; BEST="$app"; BEST_VERSION="$V"
+        fi
+      done
+
+      if [ -z "$BEST" ]; then
+        echo "No Xcode found on this agent."
+        exit 1
+      fi
+      if [ "$BEST_MAJOR" -lt "$(requiredXcodeMajor)" ]; then
+        echo
+        echo "The newest Xcode here is $BEST_VERSION, and Apple requires $(requiredXcodeMajor) or later."
+        echo "An upload built with an older SDK is refused by App Store Connect after"
+        echo "the build has already run, so this stops now instead."
+        echo "Change the pool's vmImage to one carrying Xcode $(requiredXcodeMajor)."
+        exit 1
+      fi
+
+      echo
+      echo "Building with Xcode $BEST_VERSION"
+      echo "##vso[task.setvariable variable=DEVELOPER_DIR]$BEST/Contents/Developer"
+    displayName: 'Choose the Xcode version'
 
   # ---------------------------------------------------------------------------
   # JavaScript dependencies, for a Capacitor or React Native repository.
