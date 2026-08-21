@@ -112,7 +112,15 @@ steps:
       MISSING=""
       for v in APPLE_TEAM_ID APPLE_CERT_PASSWORD ASC_KEY_ID ASC_ISSUER_ID; do
         eval "value=\${$v:-}"
-        if [ -z "$value" ]; then MISSING="$MISSING  $v\n"; fi
+        # Empty is one failure; still holding its own name is the other, and the
+        # second is the one that fools you. An unlinked variable group leaves
+        # every reference as the literal text "$(NAME)", which is not empty — so
+        # a check for emptiness alone passes, and the value goes on to be used
+        # as a password or a team id and fails somewhere far less obvious.
+        case "$value" in
+          "")            MISSING="$MISSING  $v (not set)\n" ;;
+          '$('*')')      MISSING="$MISSING  $v (unresolved — is the variable group linked?)\n" ;;
+        esac
       done
       if [ -n "$MISSING" ]; then
         echo "The pipeline is missing configuration:"
@@ -377,15 +385,10 @@ steps:
       # So: upload the certificate under this exact name.
       certSecureFile: 'ios_distribution.p12'
       certPwd: '$(APPLE_CERT_PASSWORD)'
-      # A .p12 exported from the macOS Keychain is encrypted with algorithms
-      # OpenSSL 3 no longer enables by default, and the agent runs OpenSSL 3.
-      # Without this the import fails with "Error parsing certificate. This might
-      # be caused by an unsupported algorithm" and a bare openssl exit code —
-      # which reads like a corrupt file rather than a policy default.
-      #
-      # Harmless for a certificate that does not need it: the flag loads the
-      # legacy provider, it does not change how a modern file is read.
-      opensslPkcsArgs: '-legacy'
+      # No opensslPkcsArgs here. The task suggests -legacy whenever openssl
+      # fails, but the macOS agent ships OpenSSL 1.1, where that flag does not
+      # exist — passing it turns a readable failure into "Unrecognized flag
+      # legacy". The advice applies to OpenSSL 3 agents, which these are not.
       keychain: 'temp'
       # A keychain that exists only for this run — a hosted agent is discarded
       # afterwards anyway, but a self-hosted Mac is not
