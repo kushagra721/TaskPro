@@ -93,15 +93,15 @@ pool:
 
 steps:
   # ---------------------------------------------------------------------------
-  # Everything this pipeline needs from the variable group, checked first.
+  # Everything this pipeline needs from the variable group, checked before the
+  # long part.
   #
-  # This exists because naming the secure files through variables costs the
-  # fast check that used to catch a wrong name: with a literal name Azure DevOps
-  # validates the reference before scheduling and a mistake fails in under a
-  # second, but a variable cannot be resolved that early, so the same mistake
-  # would surface minutes in — after a checkout and an npm install. This gets
-  # the seconds back for the commonest case, an unset variable, and lists every
-  # missing one at once rather than one per run.
+  # Not first, despite being written first: the certificate, profile and key
+  # tasks install themselves in the agent's pre-job phase, which runs ahead of
+  # every script step whatever their order here. So this cannot guard those —
+  # it guards the twenty minutes that follow, by failing in seconds on a
+  # variable group that is empty or not linked, and listing every missing value
+  # at once rather than one per run.
   #
   # A secret variable is not placed in the environment automatically, which is
   # why each is mapped explicitly below. Only whether they are empty is ever
@@ -377,6 +377,15 @@ steps:
       # So: upload the certificate under this exact name.
       certSecureFile: 'ios_distribution.p12'
       certPwd: '$(APPLE_CERT_PASSWORD)'
+      # A .p12 exported from the macOS Keychain is encrypted with algorithms
+      # OpenSSL 3 no longer enables by default, and the agent runs OpenSSL 3.
+      # Without this the import fails with "Error parsing certificate. This might
+      # be caused by an unsupported algorithm" and a bare openssl exit code —
+      # which reads like a corrupt file rather than a policy default.
+      #
+      # Harmless for a certificate that does not need it: the flag loads the
+      # legacy provider, it does not change how a modern file is read.
+      opensslPkcsArgs: '-legacy'
       keychain: 'temp'
       # A keychain that exists only for this run — a hosted agent is discarded
       # afterwards anyway, but a self-hosted Mac is not
@@ -593,9 +602,22 @@ steps:
     # always(): a failed upload is exactly when the key must not be left behind,
     # and on a self-hosted Mac the agent is not discarded afterwards
 
+  # Kept on failure too, since a partial export is worth looking at — but only
+  # if there is one. A build that failed before the archive has no export
+  # directory at all, and publishing a path that does not exist adds a second,
+  # meaningless failure on top of the real one.
+  - script: |
+      if [ -d "$(exportPath)" ]; then
+        echo "##vso[task.setvariable variable=haveIpaDirectory]true"
+      else
+        echo "Nothing was exported — no artifact to publish."
+      fi
+    displayName: 'Is there anything to keep'
+    condition: succeededOrFailed()
+
   - task: PublishBuildArtifacts@1
     displayName: 'Keep the .ipa'
-    condition: succeededOrFailed()
+    condition: and(succeededOrFailed(), eq(variables['haveIpaDirectory'], 'true'))
     inputs:
       pathToPublish: '$(exportPath)'
       artifactName: 'ipa'
