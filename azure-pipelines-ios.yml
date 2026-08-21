@@ -587,6 +587,12 @@ steps:
       signingIdentity: '$(APPLE_CERTIFICATE_SIGNING_IDENTITY)'
       provisioningProfileUuid: '$(APPLE_PROV_PROFILE_UUID)'
       # Both variables above are set by the two install tasks — not by hand
+      #
+      # xcpretty summarises xcodebuild's output and, on a failure, summarises
+      # away the reason: the log ends at "** ARCHIVE FAILED **" with the actual
+      # compiler or signing error nowhere in it. A readable failure is worth
+      # more than a tidy success, so the raw output stays.
+      useXcpretty: false
 
   # ---------------------------------------------------------------------------
   # Upload. altool wants the App Store Connect key on disk at a fixed path it
