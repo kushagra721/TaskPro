@@ -75,18 +75,31 @@ parameters:
     default: ''
 
 variables:
-  # Nothing to fill in, deliberately. The Xcode project and its scheme are found
-  # on the agent, and the Apple team comes from the ios-signing variable group —
-  # so this file is byte-identical in every repository. With one app per
-  # repository that matters: fifteen copies with three hand-edited values each
-  # is forty-five chances to mistype something that only fails twenty minutes
-  # into a build.
-  # Used only when the repository does not pin one in .nvmrc
-  defaultNodeVersion: '22.x'
-  configuration: 'Release'
-  sdk: 'iphoneos'
-  archivePath: '$(Build.ArtifactStagingDirectory)/archive.xcarchive'
-  exportPath: '$(Build.ArtifactStagingDirectory)/ipa'
+  # The signing group, linked here rather than through the pipeline's UI. A
+  # declaration in the repository is reviewable, travels with this file to every
+  # repository that copies it, and is one fewer step to have forgotten — which
+  # is not hypothetical: a run whose group is not linked passes every check and
+  # then hands openssl the literal text "$(APPLE_CERT_PASSWORD)" as a password.
+  #
+  # The first run still needs the group authorized for this pipeline once, the
+  # same way a secure file does. Azure DevOps asks in the run's own page.
+  - group: ios-signing
+
+  # The list form above is required as soon as a group is linked; the shorter
+  # `name: value` mapping cannot hold one. Nothing below needs filling in — the
+  # Xcode project and its scheme are found on the agent, and everything about
+  # the Apple organization comes from the group, so this file stays identical in
+  # every repository.
+  - name: defaultNodeVersion      # only when the repository has no .nvmrc
+    value: '22.x'
+  - name: configuration
+    value: 'Release'
+  - name: sdk
+    value: 'iphoneos'
+  - name: archivePath
+    value: '$(Build.ArtifactStagingDirectory)/archive.xcarchive'
+  - name: exportPath
+    value: '$(Build.ArtifactStagingDirectory)/ipa'
 
 pool:
   vmImage: 'macOS-latest'
