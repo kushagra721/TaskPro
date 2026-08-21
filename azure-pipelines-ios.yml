@@ -110,8 +110,7 @@ steps:
   - script: |
       set -uo pipefail
       MISSING=""
-      for v in ASC_KEY_SECURE_FILE APPLE_TEAM_ID APPLE_CERT_PASSWORD \
-               ASC_KEY_ID ASC_ISSUER_ID; do
+      for v in APPLE_TEAM_ID APPLE_CERT_PASSWORD ASC_KEY_ID ASC_ISSUER_ID; do
         eval "value=\${$v:-}"
         if [ -z "$value" ]; then MISSING="$MISSING  $v\n"; fi
       done
@@ -124,13 +123,14 @@ steps:
         exit 1
       fi
       echo "Configuration present:"
-      echo "  App Store key   $ASC_KEY_SECURE_FILE"
       echo "  Apple team      $APPLE_TEAM_ID"
-      echo "  certificate     ios_distribution.p12 (fixed name — see the task below)"
-      echo "  profile         ios_appstore.mobileprovision (fixed name)"
+      echo
+      echo "Secure files are referenced by fixed name. They must be uploaded as:"
+      echo "  ios_distribution.p12"
+      echo "  ios_appstore.mobileprovision"
+      echo "  AuthKey.p8"
     displayName: 'Check the pipeline is configured'
     env:
-      ASC_KEY_SECURE_FILE: $(ASC_KEY_SECURE_FILE)
       APPLE_TEAM_ID: $(APPLE_TEAM_ID)
       APPLE_CERT_PASSWORD: $(APPLE_CERT_PASSWORD)
       ASC_KEY_ID: $(ASC_KEY_ID)
@@ -553,7 +553,10 @@ steps:
     name: ascKey
     displayName: 'Fetch the App Store Connect key'
     inputs:
-      secureFile: '$(ASC_KEY_SECURE_FILE)'
+      # Fixed, like the two above. DownloadSecureFile turned out to be validated
+      # the same way — an earlier run reported only two errors at a time, which
+      # made this one look exempt. It is not.
+      secureFile: 'AuthKey.p8'
 
   - script: |
       set -euo pipefail
