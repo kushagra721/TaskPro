@@ -110,8 +110,8 @@ steps:
   - script: |
       set -uo pipefail
       MISSING=""
-      for v in CERT_SECURE_FILE PROV_PROFILE_SECURE_FILE ASC_KEY_SECURE_FILE \
-               APPLE_TEAM_ID APPLE_CERT_PASSWORD ASC_KEY_ID ASC_ISSUER_ID; do
+      for v in ASC_KEY_SECURE_FILE APPLE_TEAM_ID APPLE_CERT_PASSWORD \
+               ASC_KEY_ID ASC_ISSUER_ID; do
         eval "value=\${$v:-}"
         if [ -z "$value" ]; then MISSING="$MISSING  $v\n"; fi
       done
@@ -124,14 +124,12 @@ steps:
         exit 1
       fi
       echo "Configuration present:"
-      echo "  certificate     $CERT_SECURE_FILE"
-      echo "  profile         $PROV_PROFILE_SECURE_FILE"
       echo "  App Store key   $ASC_KEY_SECURE_FILE"
       echo "  Apple team      $APPLE_TEAM_ID"
+      echo "  certificate     ios_distribution.p12 (fixed name — see the task below)"
+      echo "  profile         ios_appstore.mobileprovision (fixed name)"
     displayName: 'Check the pipeline is configured'
     env:
-      CERT_SECURE_FILE: $(CERT_SECURE_FILE)
-      PROV_PROFILE_SECURE_FILE: $(PROV_PROFILE_SECURE_FILE)
       ASC_KEY_SECURE_FILE: $(ASC_KEY_SECURE_FILE)
       APPLE_TEAM_ID: $(APPLE_TEAM_ID)
       APPLE_CERT_PASSWORD: $(APPLE_CERT_PASSWORD)
@@ -369,7 +367,15 @@ steps:
       # when it expires, and doing that should not mean a commit to fifteen
       # repositories. Apple's own export names are long and team-specific, so
       # this also avoids renaming the file before uploading it.
-      certSecureFile: '$(CERT_SECURE_FILE)'
+      # A fixed name, and not by choice. Azure DevOps validates a secure file
+      # reference on THIS task before the run is scheduled — before variable
+      # groups are read — so a variable here is never resolved, and the run is
+      # rejected naming the literal it looked for. DownloadSecureFile further
+      # down is not validated that way, which is why the App Store Connect key
+      # can be named from a variable and these two cannot.
+      #
+      # So: upload the certificate under this exact name.
+      certSecureFile: 'ios_distribution.p12'
       certPwd: '$(APPLE_CERT_PASSWORD)'
       keychain: 'temp'
       # A keychain that exists only for this run — a hosted agent is discarded
@@ -380,7 +386,8 @@ steps:
     displayName: 'Install the provisioning profile'
     inputs:
       provisioningProfileLocation: 'secureFiles'
-      provProfileSecureFile: '$(PROV_PROFILE_SECURE_FILE)'
+      # Same constraint as the certificate — upload under this exact name.
+      provProfileSecureFile: 'ios_appstore.mobileprovision'
       removeProfile: true
 
   # ---------------------------------------------------------------------------
