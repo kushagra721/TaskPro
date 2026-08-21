@@ -186,26 +186,35 @@ steps:
   # ---------------------------------------------------------------------------
   - script: |
       set -euo pipefail
-      echo "Xcode versions on this agent:"
-      BEST=""; BEST_MAJOR=0; BEST_VERSION=""
+      # Collected first, then sorted by version rather than compared as they are
+      # found. Comparing only the major number picks whichever 26.x came first
+      # in directory order, which on this image is 26.0.1 while 26.2 is sitting
+      # right there. sort -V understands that 26.2 is newer than 26.0.1 and that
+      # 26 is newer than 16 — neither of which a string sort gets right.
+      LIST="$(Agent.TempDirectory)/xcodes.txt"
+      : > "$LIST"
       for app in /Applications/Xcode*.app; do
         [ -d "$app" ] || continue
         V=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" \
               "$app/Contents/Info.plist" 2>/dev/null) || continue
-        echo "  $V   $app"
-        MAJOR=${V%%.*}
-        case "$MAJOR" in
+        case "${V%%.*}" in
           ''|*[!0-9]*) continue ;;
         esac
-        if [ "$MAJOR" -gt "$BEST_MAJOR" ]; then
-          BEST_MAJOR=$MAJOR; BEST="$app"; BEST_VERSION="$V"
-        fi
+        printf '%s\t%s\n' "$V" "$app" >> "$LIST"
       done
 
-      if [ -z "$BEST" ]; then
+      if [ ! -s "$LIST" ]; then
         echo "No Xcode found on this agent."
         exit 1
       fi
+
+      echo "Xcode versions on this agent:"
+      sort -V "$LIST" | sed 's/^/  /'
+
+      NEWEST=$(sort -V "$LIST" | tail -1)
+      BEST_VERSION=${NEWEST%%	*}
+      BEST=${NEWEST#*	}
+      BEST_MAJOR=${BEST_VERSION%%.*}
       if [ "$BEST_MAJOR" -lt "$(requiredXcodeMajor)" ]; then
         echo
         echo "The newest Xcode here is $BEST_VERSION, and Apple requires $(requiredXcodeMajor) or later."
