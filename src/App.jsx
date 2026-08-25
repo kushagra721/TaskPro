@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { selectAuth } from './store/slices/authSlice.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AppLayout from './layout/AppLayout.jsx';
+import { billingEnabled } from './utils/native.js';
 
 /* Route-level code splitting: each page is fetched the first time it is
    opened rather than shipping in the initial bundle. The layout and route
@@ -75,6 +76,12 @@ function PublicOnly({ children }) {
  * `HomeLanding` exactly as before.
  */
 export default function App({ nativeEntryPath }) {
+  // Withheld on iOS (App Store Review 3.1.1 — see `billingEnabled`). The two
+  // routes are blocked as well as the menu entry: a deep link, a back button
+  // or a stale history entry would otherwise still reach checkout, and the
+  // whole point is that this build cannot get there at all.
+  const billingOn = billingEnabled();
+
   return (
     <Suspense fallback={<div className="page"><div className="panel__empty"><span className="spinner" /></div></div>}>
     <Routes>
@@ -118,8 +125,11 @@ export default function App({ nativeEntryPath }) {
         {/* Plans & billing — admin/owner only, matching requireOrgAdmin on the
             API. The More menu hides the entry for members; the page itself
             surfaces the 403 rather than silently rendering empty. */}
-        <Route path="/more/billing" element={<BillingPage />} />
-        <Route path="/more/billing/plans" element={<ManagePlanPage />} />
+        <Route path="/more/billing" element={billingOn ? <BillingPage /> : <Navigate to="/more" replace />} />
+        <Route
+          path="/more/billing/plans"
+          element={billingOn ? <ManagePlanPage /> : <Navigate to="/more" replace />}
+        />
         <Route path="/more/storage" element={<StorageReportPage />} />
         <Route path="/more/organizations" element={<ManageOrganizationsPage />} />
         <Route path="/more/projects" element={<ManageProjectsPage />} />

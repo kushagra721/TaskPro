@@ -22,6 +22,7 @@ import { logout } from '../../store/slices/authSlice.js';
 import { resetProjects } from '../../store/slices/projectSlice.js';
 import { resetClients } from '../../store/slices/clientSlice.js';
 import { isAdminRole, isClientRole } from '../../utils/role.js';
+import { billingEnabled } from '../../utils/native.js';
 import OrgSwitcher from '../../layout/OrgSwitcher.jsx';
 
 /** Icon per company link, keyed off `companyLinks.js` so adding one there
@@ -84,7 +85,12 @@ export default function MorePage() {
     // Plans & Billing and the Storage report are both admin-only — mirroring
     // `requireOrgAdmin` on their APIs, so a member never sees an entry that
     // would 403 on open.
-    ...(isAdmin
+    //
+    // Plans & Billing carries a SECOND gate: it is withheld from the iOS app
+    // entirely (see `billingEnabled`), because it sells a subscription through
+    // Razorpay rather than Apple's in-app purchase. The route is blocked too —
+    // hiding only the menu entry would leave the screen a deep link away.
+    ...(isAdmin && billingEnabled()
       ? [
           {
             to: '/more/billing',
@@ -92,8 +98,10 @@ export default function MorePage() {
             desc: 'Your plan, task quota and invoice details',
             Icon: CreditCardIcon,
           },
-          { to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon },
         ]
+      : []),
+    ...(isAdmin
+      ? [{ to: '/more/storage', label: 'Storage', desc: 'Media uploaded by every member', Icon: DatabaseIcon }]
       : []),
     // Also hidden from a CLIENT: approvals are the workspace's own joining
     // decisions.
