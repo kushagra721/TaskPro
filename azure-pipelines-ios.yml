@@ -73,6 +73,20 @@ parameters:
     displayName: Console application id
     type: string
     default: ''
+  # The version people see on the App Store. Empty leaves whatever the Xcode
+  # project says, which is how this pipeline behaved before there was anywhere
+  # else to say it.
+  - name: versionString
+    displayName: Marketing version
+    type: string
+    default: ''
+  # The build number. Empty falls back to the run id, which is unique and always
+  # increasing. Given, it wins — a project that carries its own
+  # CURRENT_PROJECT_VERSION means it deliberately.
+  - name: buildNumber
+    displayName: Build number
+    type: string
+    default: ''
 
 variables:
   # The signing group, linked here rather than through the pipeline's UI. A
@@ -552,21 +566,41 @@ steps:
       # overwriting the reference with a literal would work for this build while
       # quietly breaking the project's own versioning. agvtool edits the setting
       # itself, which is what the reference points at.
+      # What Console asked for, or the run id when it asked for nothing. The run
+      # id is unique and always increasing, which is why it was the only
+      # behaviour for a long time — but it also meant a project that set its own
+      # build number had it replaced without being told.
+      WANTED="${{ parameters.buildNumber }}"
+      if [ -z "$WANTED" ]; then
+        WANTED="$(Build.BuildId)"
+        echo "No build number was asked for — using the run id."
+      fi
+
       CURRENT=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$PLIST" 2>/dev/null || echo "")
+      TARGET_PATH="$(xcodeWorkspace)"
+      PROJECT_DIR=$(dirname "$TARGET_PATH")
       case "$CURRENT" in
         '$'*)
           echo "CFBundleVersion is a build setting reference — using agvtool"
           # agvtool works on the directory holding the project, not the plist
-          TARGET_PATH="$(xcodeWorkspace)"
-          PROJECT_DIR=$(dirname "$TARGET_PATH")
-          ( cd "$PROJECT_DIR" && agvtool new-version -all "$(Build.BuildId)" )
+          ( cd "$PROJECT_DIR" && agvtool new-version -all "$WANTED" )
           ;;
         *)
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $(Build.BuildId)" "$PLIST"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $WANTED" "$PLIST"
           ;;
       esac
-      echo "Build number set to $(Build.BuildId)"
-      echo "##vso[task.setvariable variable=buildNumber]$(Build.BuildId)"
+      echo "Build number set to $WANTED"
+      echo "##vso[task.setvariable variable=buildNumber]$WANTED"
+
+      # The marketing version, when Console asked for one. Until now the
+      # pipeline only read it: the version came from the Xcode project and
+      # nothing else could change it, so a release prepared in Console as 1.1
+      # met a binary that said 1.0.
+      VERSION="${{ parameters.versionString }}"
+      if [ -n "$VERSION" ]; then
+        ( cd "$PROJECT_DIR" && agvtool new-marketing-version "$VERSION" )
+        echo "Marketing version set to $VERSION"
+      fi
       # The export compliance step needs the same plist, and finding it twice
       # risks the two steps disagreeing about which one is the app's
       echo "##vso[task.setvariable variable=appInfoPlist]$PLIST"
