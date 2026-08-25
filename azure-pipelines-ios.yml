@@ -800,10 +800,29 @@ steps:
       # validate-app first: it catches a wrong bundle id, a missing icon or an
       # unsigned binary in about a minute, where upload-app finds the same thing
       # after transferring the whole file
-      xcrun altool --validate-app -f "$IPA" -t ios \
+      # altool is not to be trusted with its exit code. It prints
+      # "Failed to upload archive" and an ENTITY_ERROR, and then returns 0 — so
+      # under set -e a rejected upload sails through and the step goes green.
+      # Both calls are therefore judged on what they said, not what they returned.
+      run_altool() {
+        WHAT="$1"; shift
+        LOG="$(Agent.TempDirectory)/altool-$WHAT.log"
+        set +e
+        xcrun altool "$@" 2>&1 | tee "$LOG"
+        STATUS=${PIPESTATUS[0]}
+        set -e
+        if [ "$STATUS" -ne 0 ] || ! grep -qE 'SUCCEEDED with no errors|No errors (validating|uploading)' "$LOG"; then
+          echo
+          echo "altool did not $WHAT the build."
+          grep -iE 'error|failed|DUPLICATE|reason' "$LOG" | head -20 | sed 's/^/  /'
+          exit 1
+        fi
+      }
+
+      run_altool validate --validate-app -f "$IPA" -t ios \
         --apiKey "$(ASC_KEY_ID)" --apiIssuer "$(ASC_ISSUER_ID)"
 
-      xcrun altool --upload-app -f "$IPA" -t ios \
+      run_altool upload --upload-app -f "$IPA" -t ios \
         --apiKey "$(ASC_KEY_ID)" --apiIssuer "$(ASC_ISSUER_ID)"
 
       echo "Uploaded. Apple now processes the build; it appears in TestFlight in 5-30 minutes."
