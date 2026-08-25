@@ -681,9 +681,9 @@ steps:
         -configuration "$(configuration)" \
         -archivePath "$(archivePath)" \
         archive \
-        CODE_SIGN_STYLE=Manual \
-        CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
-        PROVISIONING_PROFILE="$PROV_PROFILE_UUID"
+        CODE_SIGNING_ALLOWED=NO \
+        CODE_SIGNING_REQUIRED=NO \
+        CODE_SIGN_IDENTITY=""
 
       if [ ! -d "$(archivePath)" ]; then
         echo "xcodebuild reported success but wrote no archive at $(archivePath)."
@@ -691,9 +691,6 @@ steps:
       fi
       echo "Archived to $(archivePath)"
     displayName: 'Archive'
-    env:
-      SIGNING_IDENTITY: $(APPLE_CERTIFICATE_SIGNING_IDENTITY)
-      PROV_PROFILE_UUID: $(APPLE_PROV_PROFILE_UUID)
 
   # ---------------------------------------------------------------------------
   # Export the .ipa.
