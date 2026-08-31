@@ -62,20 +62,14 @@ export default function Login() {
    */
   const resolveDomains = async () => {
     if (!isNativeApp()) return null;
-    try {
-      const res = await authApi.loginDomains(form.email);
-      const list = res.domains || [];
-      if (list.length > 1) return list;
-      // Pin the single domain so every later request is scoped to it; without
-      // this the app falls back to the server's default-host mapping.
-      if (list.length === 1) domainStore.set(list[0].id);
-      else domainStore.clear();
-      return null;
-    } catch {
-      // A failed lookup must not block sign-in: fall through to the normal
-      // flow, which resolves the tenant the way it did before this existed.
-      return null;
-    }
+    const res = await authApi.loginDomains(form.email);
+    const list = res.domains || [];
+    if (list.length > 1) return list;
+    // Pin the single domain so every later request is scoped to it; without
+    // this the app falls back to the server's default-host mapping.
+    if (list.length === 1) domainStore.set(list[0].id);
+    else domainStore.clear();
+    return null;
   };
 
   /**
@@ -133,7 +127,34 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const choices = await resolveDomains();
+    let choices;
+    try {
+      choices = await resolveDomains();
+    } catch (err) {
+      /**
+       * ⚠️ A FAILED DOMAIN LOOKUP MUST STOP, NOT FALL THROUGH.
+       *
+       * This used to `catch { return null }`, which made every failure —
+       * unreachable API, blocked cleartext, rate limit — indistinguishable
+       * from "this email has one domain". The picker then never appeared and
+       * the login went out with no `X-Domain-Id`, so the server resolved the
+       * default tenant, found no account there, and the 404 handler below
+       * bounced the user to the SIGNUP page. Reproduced here by pointing the
+       * app at an unreachable host: on a two-domain account the picker simply
+       * did not appear and the form sat there.
+       *
+       * Stopping with the reason is the whole fix: the user sees what went
+       * wrong instead of being quietly signed in to the wrong tenant, or sent
+       * to sign up for an account they already have.
+       *
+       * Native only — the web build returns before this can throw.
+       */
+      setLoading(false);
+      setError(
+        `${err.message || 'Could not check which workspace this email belongs to.'} Please try again.`
+      );
+      return;
+    }
     setLoading(false);
     // More than one account for this address — let the user say which, then
     // `chooseDomain` resumes from here.

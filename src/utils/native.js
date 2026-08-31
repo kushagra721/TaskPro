@@ -47,6 +47,25 @@ export const nativePlatform = () => {
 export const isIosApp = () => isNativeApp() && nativePlatform() === 'ios';
 
 /**
+ * Build-time kill switch for the paid-plan surface, set by the iOS workflow in
+ * `codemagic.yaml` (`VITE_DISABLE_BILLING=1`).
+ *
+ * ⚠️ THIS IS A SEPARATE MECHANISM FROM `isIosApp()`, AND BOTH ARE NEEDED.
+ * `isIosApp()` is a RUNTIME test: it hides the screens, but the Razorpay
+ * loader and its `checkout.razorpay.com` URL are still compiled into the
+ * bundle, where anyone auditing the IPA can find them. This flag is read at
+ * BUILD time, so Vite folds the constant and the SDK URL is not in the iOS
+ * bundle at all — which is what "remove the payment SDK" actually means to a
+ * store reviewer.
+ *
+ * Vite inlines `import.meta.env.*` as a literal, so this whole expression
+ * becomes `true`/`false` at build time and everything behind it is dropped.
+ *
+ * Unset everywhere else, so the web and Android builds are untouched.
+ */
+export const BILLING_DISABLED_AT_BUILD = import.meta.env.VITE_DISABLE_BILLING === '1';
+
+/**
  * Is the paid-plan surface available to this build?
  *
  * Every place that leads to checkout asks this ONE question rather than
@@ -54,5 +73,9 @@ export const isIosApp = () => isNativeApp() && nativePlatform() === 'ios';
  * prompt would otherwise be three chances to reopen the hole a store review
  * closed. Named for the rule rather than for the platform, so bringing billing
  * back (via Apple IAP, say) is a change here and nowhere else.
+ *
+ * Two independent reasons to be off, deliberately belt-and-braces: the build
+ * flag above (so the code is absent from an iOS IPA) and the runtime platform
+ * test (so it stays off even if the flag is ever forgotten in CI).
  */
-export const billingEnabled = () => !isIosApp();
+export const billingEnabled = () => !BILLING_DISABLED_AT_BUILD && !isIosApp();

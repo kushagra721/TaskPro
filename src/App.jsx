@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { selectAuth } from './store/slices/authSlice.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AppLayout from './layout/AppLayout.jsx';
-import { billingEnabled } from './utils/native.js';
+import { billingEnabled, BILLING_DISABLED_AT_BUILD } from './utils/native.js';
 
 /* Route-level code splitting: each page is fetched the first time it is
    opened rather than shipping in the initial bundle. The layout and route
@@ -30,8 +30,22 @@ const MorePage = lazy(() => import('./pages/more/MorePage.jsx'));
 const ProfilePage = lazy(() => import('./pages/more/ProfilePage.jsx'));
 const UserProfilePage = lazy(() => import('./pages/more/UserProfilePage.jsx'));
 const StorageReportPage = lazy(() => import('./pages/more/StorageReportPage.jsx'));
-const BillingPage = lazy(() => import('./pages/more/BillingPage.jsx'));
-const ManagePlanPage = lazy(() => import('./pages/more/ManagePlanPage.jsx'));
+/**
+ * The two paid-plan screens, and the ONLY things that import the Razorpay
+ * loader.
+ *
+ * ⚠️ THE TERNARY IS WHAT KEEPS THEM OUT OF THE iOS BUNDLE — do not "simplify"
+ * it back to a bare `lazy(...)`. `BILLING_DISABLED_AT_BUILD` folds to a literal
+ * at build time, so in the iOS build the `import()` calls are dead code, Rollup
+ * emits no chunk for either page, and the whole checkout path — pages, hook and
+ * SDK — is absent from the IPA rather than merely unreachable. Verified against
+ * the built output.
+ *
+ * Everywhere else the flag is unset and these are ordinary lazy routes, exactly
+ * as before.
+ */
+const BillingPage = BILLING_DISABLED_AT_BUILD ? null : lazy(() => import('./pages/more/BillingPage.jsx'));
+const ManagePlanPage = BILLING_DISABLED_AT_BUILD ? null : lazy(() => import('./pages/more/ManagePlanPage.jsx'));
 const ManageOrganizationsPage = lazy(() => import('./pages/more/ManageOrganizationsPage.jsx'));
 const ManageProjectsPage = lazy(() => import('./pages/more/ManageProjectsPage.jsx'));
 const ManageTasksPage = lazy(() => import('./pages/more/ManageTasksPage.jsx'));
@@ -125,10 +139,17 @@ export default function App({ nativeEntryPath }) {
         {/* Plans & billing — admin/owner only, matching requireOrgAdmin on the
             API. The More menu hides the entry for members; the page itself
             surfaces the 403 rather than silently rendering empty. */}
-        <Route path="/more/billing" element={billingOn ? <BillingPage /> : <Navigate to="/more" replace />} />
+        {/* `billingOn` is the RUNTIME gate (iOS at runtime, or the build flag);
+            the null check is what makes this safe when the page was compiled
+            out. Both routes stay declared so a deep link, a back button or a
+            stale history entry lands on /more instead of a blank screen. */}
+        <Route
+          path="/more/billing"
+          element={billingOn && BillingPage ? <BillingPage /> : <Navigate to="/more" replace />}
+        />
         <Route
           path="/more/billing/plans"
-          element={billingOn ? <ManagePlanPage /> : <Navigate to="/more" replace />}
+          element={billingOn && ManagePlanPage ? <ManagePlanPage /> : <Navigate to="/more" replace />}
         />
         <Route path="/more/storage" element={<StorageReportPage />} />
         <Route path="/more/organizations" element={<ManageOrganizationsPage />} />

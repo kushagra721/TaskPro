@@ -19,6 +19,17 @@ const resolveApiUrl = () => {
   const web = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
   if (!isNativeApp()) return web;
 
+  /*
+   * The browser-based platform preview (`public/preview-platform.js`,
+   * `?platform=ios`) reports itself as native so the app takes the native
+   * path — but it really is a desktop browser, so the native REWRITES below
+   * must not apply. `10.0.2.2` is the Android emulator's alias for the host
+   * machine and is unreachable from a browser; without this every request in
+   * the preview would fail and the app would look broken for a reason that has
+   * nothing to do with what is being previewed.
+   */
+  if (typeof window !== 'undefined' && window.__TASKPRO_PREVIEW_PLATFORM__) return web;
+
   const native = import.meta.env.VITE_NATIVE_API_URL;
   if (native) return native;
 
@@ -57,6 +68,53 @@ const unreachableMessage = () =>
     ? `Cannot reach the server at ${API_URL}. Check VITE_NATIVE_API_URL and that this host is allowed in network_security_config.xml.`
     : 'Cannot reach the server. Is the backend running?';
 
+/**
+ * localStorage that cannot throw, and cannot silently lose a value.
+ *
+ * ⚠️ **THE NATIVE WEBVIEW IS NOT A BROWSER TAB.** On iOS the WebView origin is
+ * a custom scheme (`capacitor://localhost` by default), and WKWebView is
+ * entitled to refuse or partition storage for one — in which case
+ * `localStorage.setItem` THROWS. Two of the stores below were unguarded, so a
+ * refusal there did not degrade, it broke sign-in outright: the token was
+ * verified by the server and then thrown away on the way to being saved.
+ *
+ * The in-memory mirror is what makes a refusal survivable. The session lasts
+ * the launch instead of persisting, which is a far better failure than "you
+ * cannot log in at all" — and on every platform where storage works, this is
+ * byte-for-byte the old behaviour.
+ */
+const memoryStore = new Map();
+
+const safeStorage = {
+  get: (key) => {
+    try {
+      const v = localStorage.getItem(key);
+      // A null from a working store is a real "not set"; fall back to memory
+      // only when there is something there, so a genuine clear() still clears.
+      if (v !== null) return v;
+    } catch {
+      /* fall through to the mirror */
+    }
+    return memoryStore.has(key) ? memoryStore.get(key) : null;
+  },
+  set: (key, value) => {
+    memoryStore.set(key, value);
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      /* the mirror above is the whole point */
+    }
+  },
+  clear: (key) => {
+    memoryStore.delete(key);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* nothing to clear */
+    }
+  },
+};
+
 const TOKEN_KEY = 'taskpro_token';
 // Separate key from TOKEN_KEY — a platform (Super Admin/Reseller) session and
 // a normal client session must never collide/overwrite each other, since a
@@ -64,9 +122,9 @@ const TOKEN_KEY = 'taskpro_token';
 const PLATFORM_TOKEN_KEY = 'taskpro_platform_token';
 
 export const tokenStore = {
-  get: () => localStorage.getItem(TOKEN_KEY),
-  set: (token) => localStorage.setItem(TOKEN_KEY, token),
-  clear: () => localStorage.removeItem(TOKEN_KEY),
+  get: () => safeStorage.get(TOKEN_KEY),
+  set: (token) => safeStorage.set(TOKEN_KEY, token),
+  clear: () => safeStorage.clear(TOKEN_KEY),
 };
 
 export const platformTokenStore = {
@@ -109,27 +167,9 @@ const COMPANY_KEY = 'taskpro_company';
 const DOMAIN_KEY = 'taskpro_domain_id';
 
 export const domainStore = {
-  get: () => {
-    try {
-      return localStorage.getItem(DOMAIN_KEY);
-    } catch {
-      return null;
-    }
-  },
-  set: (id) => {
-    try {
-      localStorage.setItem(DOMAIN_KEY, id);
-    } catch {
-      /* private mode — the picker still works for this session */
-    }
-  },
-  clear: () => {
-    try {
-      localStorage.removeItem(DOMAIN_KEY);
-    } catch {
-      /* nothing to clear */
-    }
-  },
+  get: () => safeStorage.get(DOMAIN_KEY),
+  set: (id) => safeStorage.set(DOMAIN_KEY, id),
+  clear: () => safeStorage.clear(DOMAIN_KEY),
 };
 
 try {

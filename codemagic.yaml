@@ -63,6 +63,13 @@
 #
 #  Optional: VITE_APP_VERSION — reported with the push-token registration
 #  (`src/push/pushClient.js`). Harmless if unset; it degrades to undefined.
+#
+#  NOT a variable you set: `VITE_DISABLE_BILLING=1` is written into `.env` by
+#  the `Write .env` step of BOTH iOS workflows below. It compiles the paid-plan
+#  screens and the Razorpay SDK out of the build (App Store Review 3.1.1) and is
+#  deliberately absent everywhere else, so the web and Android builds are
+#  untouched. Do not add it to the Codemagic UI — it belongs to the iOS build,
+#  not to an environment.
 # ============================================================================
 
 workflows:
@@ -105,6 +112,17 @@ workflows:
             exit 1
           fi
           echo "VITE_API_URL=$VITE_API_URL" > .env
+          # App Store Review 3.1.1: digital goods sold inside an iOS app must go
+          # through Apple's in-app purchase. Task Pro bills through Razorpay,
+          # which is right on the web and on Android and is exactly what gets an
+          # iOS build rejected. This flag is read at BUILD time
+          # (`src/utils/native.js#BILLING_DISABLED_AT_BUILD`), so the two paid-plan
+          # screens, the checkout hook and the payment SDK are compiled OUT — the
+          # IPA a reviewer unpacks contains no checkout.razorpay.com reference and
+          # no window.Razorpay call, rather than merely hiding the screens.
+          # It is written HERE and nowhere else, so the web and Android builds
+          # keep billing exactly as they are.
+          echo "VITE_DISABLE_BILLING=1" >> .env
           if [ -n "$VITE_APP_VERSION" ]; then
             echo "VITE_APP_VERSION=$VITE_APP_VERSION" >> .env
           fi
@@ -229,6 +247,17 @@ workflows:
               ;;
           esac
           echo "VITE_API_URL=$VITE_API_URL" > .env
+          # App Store Review 3.1.1: digital goods sold inside an iOS app must go
+          # through Apple's in-app purchase. Task Pro bills through Razorpay,
+          # which is right on the web and on Android and is exactly what gets an
+          # iOS build rejected. This flag is read at BUILD time
+          # (`src/utils/native.js#BILLING_DISABLED_AT_BUILD`), so the two paid-plan
+          # screens, the checkout hook and the payment SDK are compiled OUT — the
+          # IPA a reviewer unpacks contains no checkout.razorpay.com reference and
+          # no window.Razorpay call, rather than merely hiding the screens.
+          # It is written HERE and nowhere else, so the web and Android builds
+          # keep billing exactly as they are.
+          echo "VITE_DISABLE_BILLING=1" >> .env
           if [ -n "$VITE_APP_VERSION" ]; then
             echo "VITE_APP_VERSION=$VITE_APP_VERSION" >> .env
           fi
